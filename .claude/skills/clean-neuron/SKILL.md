@@ -18,8 +18,9 @@ It is never a verdict about the unit.
 The program's bet (THE ALREADY-CLEAN TEST, #193; Cammarata, "Neural Networks Are
 Already Clean", https://already-clean.goodfire.com/) is that the answer is usually
 one job, and that a squeezed net's units get coarser rather than mixed. In 42 that
-bet has already survived a test that should have broken it: 24 neurons came out
-cleaner than 192 (0.83 vs 0.61). Stay curious about the next unit. You are not
+bet has already survived a test that should have broken it: 24 neurons fit our list
+better than 192 (0.695 vs 0.542 read raw, #233). The essay predicts coarser, not cleaner, so that
+is fit to our list, not the thesis winning. Stay curious about the next unit. You are not
 being asked to defend the bet. Full card: `wiki/topics/clean-neurons-42.md`.
 
 ## The ladder: walk it for every unit you cannot name
@@ -29,16 +30,24 @@ Check the rungs in this order, and write down which one you stopped at.
 1. **Tools.** Is the reading sound?
    - Top 1% of activations, both poles (the negative pole too).
    - Held-out rows only.
-   - The untrained floor **for the same list**, audited alongside the trained nets (an untrained
-     twin per width and seed). It rises with the list: 0.11–0.28 under v1, 0.28–0.39 under v2,
-     while trained nets barely move. A share quoted against another list's floor is wrong.
-   - Row Wilson intervals widened about 1.17× (the split-half A/A, #191).
+   - The untrained floor **for the same list and the same architecture**, audited alongside the
+     trained nets (an untrained twin per width and seed). On the field net it rises with the list
+     (0.11–0.28 under v1, 0.28–0.39 under v2), while trained nets barely move. Untrained Gus, a
+     transformer, scored 0.91–0.94, because its decision token reads the position. On a new
+     architecture, audit the untrained twins before registering any share prediction. Read a
+     sequence model's units against a play-count baseline (`--baseline n_plays`, #233).
+   - Every floor and correction factor is labelled by the experiment that measured it. Row Wilson
+     intervals widened about 1.17× is the field net's split-half A/A (#191). Re-estimate both when
+     the architecture, the sampling unit or the data changes.
    - In a causal test, name the rows and match them. Ablate among the rows where the unit fires,
      because the audit chose its name from those rows. Compare rows of the same difficulty: same
      seat in the trick, same number of legal moves, same decisiveness, or a random unit at the
      same dose.
    - Steer by small matched doses (k·σ) and report the dose-response. Read where the move goes,
      not only what it costs. One extreme clamp breaks the net and tells you nothing (#198).
+   - Report each row set's dose (on rate, mean activation) beside its effect. An ablation null where
+     the unit is nearly silent says it is quiet there, not that its verb stops there. Test the verb's
+     reach by forcing the unit on at the dose where it acts (paper 10).
 2. **Explanations (the vocabulary).** Does the list have a word for it?
    - The list is Silas concepts v1 (48) or v2 (70), plus the raw inputs.
    - If not: read the top positions as a gate, a shared pattern across them,
@@ -47,6 +56,9 @@ Check the rungs in this order, and write down which one you stopped at.
      for which pip is trump, and the net spent an eighth of its poles on it.
 3. **Data, inputs and learning.** Did the net learn the play, and could it be computing
    something its inputs or our positions cannot show?
+   - Before proposing a learning change, inventory what the model already has (residuals,
+     LayerNorm, optimizer) against the essay's list. Keep three things apart: learning quality,
+     evidence about the native mechanisms, and the observation tool itself.
    - Report the net's gap to the teacher closed beside every share. A net that did not learn the
      play did not learn its words either: two of three six-neuron nets in #196 closed 0.2 of the
      gap and fell to the floor.
@@ -99,13 +111,19 @@ finding.
 
 - Report an unnamed unit as **"not named in list vN"**. Never call it "mixed",
   "polysemantic" or "superposed".
-- Every result carries the scope sentence: *this net, these inputs (one
-  position, uniform beliefs, no history), this vocabulary (list vN). What we
-  learned from this model, not all of 42, yet.*
+- Every result carries the scope sentence, filled in for its model: *this net, these inputs
+  (for the field net: one position, uniform beliefs, no history; for a sequence model: the
+  history it actually reads), this vocabulary (list vN). What we learned from this model, not all
+  of 42, yet.*
 - Report every share with its interval, its chance baseline and the untrained
   floor.
 - Register predictions before the run, then grade them, including the ones you
   got wrong.
+- **Before sealing, check what you have already seen.** For each prediction, ask whether any number
+  already seen settles it by arithmetic or a bound. That includes pooled rows on a superset, the
+  per-seat rows whose union is the cell, and an earlier paper's published `unit.json`. If one does,
+  the prediction is confirmatory. "Mostly seen" is unseen until its row set is measured. Arithmetic
+  settles the rows, not the verb: read the dose before inferring where the verb stops.
 - **Before sealing any registration, get an independent read against the article**
   (Jason, 2026-10-20). Write the proposal: question, predictions, instrument and floors.
   Then spawn one fresh-context Opus subagent, which:
@@ -156,6 +174,14 @@ all five into this skill in the same commit:
 Keep the curiosity framing and the ladder's order unless a test broke them.
 
 Lessons folded in:
+- 2026-10-22, five logs from the GPT scope, the training audit, the Gus floor, and papers 9 and 10:
+  - the scope sentence is a template;
+  - floors and correction factors carry the experiment that measured them, and belong to the
+    architecture as well as the list;
+  - inventory the model before proposing a learning change;
+  - before sealing, check whether seen numbers settle a prediction by arithmetic;
+  - report each cell's dose; a low-dose null is not a boundary.
+  Git has the five logs.
 - 2026-10-17, five logs from #196–#198:
   - the ladder's third rung covers learning, and every share reports its net's gap closed;
   - the audit says `unnamed`, not `mixed`;

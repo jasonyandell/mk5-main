@@ -3,7 +3,7 @@ title: "Unit paper 10: the 16×8 seed-0 net's layer-1 unit 1, a trump vote shut 
 kind: experiment
 first_seen: 2026-10-21
 last_updated: 2026-10-21
-status: active
+status: complete
 ---
 
 The tenth **unit paper** of [[clean-neurons-42]]'s new mode (#235), on the 16×8 seed-0 field net.
@@ -341,6 +341,117 @@ arithmetic, and the card's "The work". Its points, and what changed:
 - Nothing weighs the net against the book, and nothing reads the unit as mixed.
 
 Sealed 2026-10-21.
+
+## Results
+
+The run of 2026-10-21 followed the registration: one `scripts/cpu-slot` run of 168 s
+(3.68e12 instructions). The evidence (`unit.json`, the log, the code, the raw scripts, the run
+script, `SHA256SUMS`) is `lem/unit-hold-trump-2026-10-21/` in
+[texas-42-zeb-research-2026-10](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/91f4a78e6b707de66928a1663fe5a31684ab6103/lem/unit-hold-trump-2026-10-21).
+
+**The picture.** Unit 1 is the net's **"save the doubles"** unit. Where it is on, it keeps the doubles
+back (the trump double most of all) and spends singles and lesser trumps instead. That means it
+trumps in on an opponent's lead and leads a lesser trump rather than the trump double. The
+registered verb, "take it from the opponents with trump", was the narrower half of it.
+- Prediction 1 missed toward B. On discards it holds the low doubles back.
+- The lead null in c2 was the dose: forced on at a follow-sized dose, it holds doubles back on
+  no-trump leads too.
+- Its kill is now explained: it shuts where the trump double must cover the second trump.
+  Where that gate is missing (the leader led the second trump), it holds the double back and
+  costs the take.
+
+**Confirmatory.**
+
+| | claim | result | |
+|---|---|---|---|
+| c1 | pooled leads, a trump and a non-trump legal: trump led falls | 0.389 → −0.164 [−0.168, −0.161]; low doubles +0.138 | held |
+| c2 | no-trump leads: little effect | L-0 low double +0.001 [0.000, 0.002] on 16,079 rows. The dose is low: mean activation 154, against 282 on L-T and 770 on discards | held, but see below |
+| c3 | forced on, the second trump before me, the trump double: played falls | −0.079 [−0.092, −0.067]; own − layer −0.054 | held |
+| c4 | F-R: trump played falls | −0.134 [−0.138, −0.131] from 0.586; take −0.133 | held |
+
+**Graded.**
+
+| | prediction | result | |
+|---|---|---|---|
+| 1 | F-D (discards): low double and count each within ±0.03 when ablated (A) | low double **+0.051** [0.047, 0.055], count **+0.072** [0.069, 0.075] on 53,235 rows; top off suit singles −0.034 | **missed, toward B** |
+| 2 | F-R: unit 1's trump fall ranks in the top 3 of the live layer-1 units (n = 15 others) | rank 3: L1 7 −0.295, L1 10 −0.245, unit 1 −0.134 | **held** |
+| 3 | L-27: ablating raises leading the trump double | +0.020 [0.011, 0.029] from 0.754; second trump −0.071 | **held (small)** |
+| 4 | at step 30,540, Δ trump led ≤ half the final (−0.082) | −0.193 (final −0.164) | **held** |
+| 5 | the near miss (the leader led the second trump, I am last, the trump double legal): ablating raises the trump double played | **+0.242** [0.199, 0.285] from 0.755, rank 1 of 16, on 376 rows | **held** |
+
+Four of five graded predictions held. The miss is the finding.
+
+**What the results say.**
+- **1, and the dose behind c2.** On discards, with no trump to play, unit 1 holds back low doubles
+  and count and throws the top off suit's singles. The same pattern shows in other cells:
+  - F-S (following an off suit, its double legal): the double played rises +0.150 [0.142, 0.158]
+    when ablated (rank 2), and taking with a double +0.152;
+  - F-27 (trump led, the trump double legal): the trump double played rises **+0.427** [0.417,
+    0.436] (rank 1), its largest effect.
+
+  On no-trump leads it did nothing measured because it is barely on there. Adding the follow on
+  value (790) where it is off on those leads cuts the low double led by −0.154 [−0.162, −0.146]
+  (own − layer −0.075). The paper-9 lesson held, and so did the reviewer's warning: the arithmetic
+  settled the rows, not the verb. "On leads it acts only through trump" was a fact about dose.
+- **2.** It is one of three trump-in votes on an opponent's off-suit lead, behind paper 5's L1 7 and
+  L1 10. Ablated there, it also raises the doubles played (+0.165), the trump double included
+  (+0.051): when it does not trump in, the net spends a double instead.
+- **3.** Small, and split by side. The bidding side leads the trump double more without it (+0.031
+  [0.020, 0.042], 9,494 rows). The defenders lead it *less* (−0.023 [−0.039, −0.007], 2,379 rows).
+  L1 9 is the layer's main trump-double lead vote there (−0.434).
+- **4.** The trump-lead use was there long before the gates. Δ trump led was already −0.286 at step
+  1,000, when the unit was on 0.987 of rows. The lead gate (off on no-trump leads 0.54) came at step
+  30,540, and the second-trump kill at 152,700. The job came first; both gates formed on the
+  negative side later.
+- **5.** The kill's reason is "let the trump double cover". Where the gate exists (the second trump
+  just played before me), the trump double is played 0.997. Where it is missing (the leader led
+  the second trump), it is played 0.755, and ablating unit 1 raises that by 0.242. Two counter-facts
+  stay open:
+  - Why the gate keys on the player before me and not the leader. In the input that is a different
+    slot of the trick block, so it is a separate weight to learn.
+  - Why the trump double played by the player before me does not shut it.
+
+**Read off.**
+- **Boundary.** The v3 candidate ("a lead holding a trump, or following unless the second trump was
+  just played before me") scores Cohen's κ 0.554, against a constant 0.307. The best v2 concept
+  (`¬lead-no-trump`) scores 0.447. Its follow half alone scores 0.506.
+- **R² on leads.** Trumps held 0.293; + trick 0.323; + low doubles held 0.515; + declaration 0.604.
+  Low doubles held carry as much as trumps held.
+- **The write, trained against the twin.**
+  - The twin pushed *for* the trump double (+0.97M on leads) and the top off double (+2.09M).
+  - Training turned the trump double to −1.44M, raised the top off suit's singles (+0.37M → +1.15M),
+    and lifted the lower trumps (+0.01M → +0.53M).
+  - The low doubles were already negative in the twin (−0.60M). Training deepened that to −0.84M.
+- **Readers.** At the end: L2 6 +338, L2 5 +336, L2 3 −282, L2 0 +220. Early in training the
+  weights were tens of times larger (L2 3 −20,746 and L2 5 +17,542 at step 3,000). They shrank from
+  step 30,540 on while the effects held. This is read as rescaling, not as the readers letting go.
+- **The rest of the follow off-set** (1,831 rows): partner holding the trick (0.644 against 0.309),
+  partner having played the trump double (0.358 against 0.025), and holding slot 19.
+- **Forced on where it is off, by dose.** On no-trump leads, low double own − layer: −0.006, +0.006,
+  +0.046 and −0.009 at k = 0.25, 0.5, 1 and 2, then −0.075 at the on value. That is not monotone;
+  the trump double on the second-trump rows goes −0.002 to −0.034. The k·σ doses are small beside
+  the follow on value.
+- **Poles.** + (top 1%): `last-setter-winning`, 0.96 last seat. − : all of them the second trump
+  just played before me.
+
+**Against the frame.**
+- The unit is clean in the essay's sense. One push in the net's frame, save the doubles and spend
+  singles and lesser trumps, read through two negative-side gates. It is shut where I have no trump
+  to spend on a lead. It is shut where the trump double has to cover.
+- The registered verbs A and B were nouns for two places the same push shows. On an opponent's
+  off-suit lead with a trump in hand, saving the doubles *is* trumping in.
+- **The vocabulary gap is named.** List v2 has `lead-no-trump` but no word for "the second trump
+  was just played before me", nor for "save the doubles". The v3 candidate boundary scores κ 0.554.
+- Not read as mixing.
+- **Beside the book.**
+  - The net's bidding-side leads with the trump double and another trump lead the double 0.738.
+    Without unit 1 that rises to 0.769.
+  - With the trump double in hand on a trump lead it plays the double 0.430, holding it back.
+  - *Winning 42*'s guidance on pulling trump with the double and on saving doubles as walkers is the
+    authority on reasons ([[book-authority]]). These are the net's choices, read beside it.
+
+Scope: this net, these inputs (one position, uniform beliefs, no history), list v2 plus the raw
+inputs. What we learned from this model, not all of 42, yet.
 
 ## Links
 

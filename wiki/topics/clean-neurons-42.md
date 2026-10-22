@@ -286,7 +286,7 @@ A2–A4 and experiment B are stages 3 and 4 of that program. **A1's result (2026
 
 **The squeeze (A3), 2026-10-17:** narrow nets cleaner, not mixed (0.61 → 0.83 at 24 neurons; [[lem-squeeze-2026-10-16]]). The follow-ups are THE ALREADY-CLEAN TEST, #193 (#194–#200), the core thesis of [[lem-the-teacher]].
 
-**The unit papers (#235), 2026-10-20 to 21: nine units of the 16×8 seed-0 net, read whole.** Each was
+**The unit papers (#235), 2026-10-20 to 21: ten units of the 16×8 seed-0 net, read whole.** Each was
 registered after a raw read, reviewed against the essay's full text by a fresh reader, sealed, and
 run. Together they read one circuit: how the net decides what to lead and what to throw.
 
@@ -301,6 +301,7 @@ run. Together they read one circuit: how the net decides what to lead and what t
 | [[lem-unit-pull-trump-2026-10-20]] | L1 8 | a dial on trump still out against me, cut by the lead | forced on, trump leads −0.330 beyond the layer; ablated +0.235, rank 2 of 16 | 3 / 5 |
 | [[lem-unit-count-on-it-2026-10-21]] | L2 4 | "feed partner's trick", a dial on who holds it; its tail is an opponent's trump | count on partner's trick 0.669 → 0.086 under ones–fours, rank 1 of 8 | 4 / 6 |
 | [[lem-unit-top-double-2026-10-21]] | L2 1 | "lead the top off double" under fives and sixes, gated by "slot 14 holds no ten"; on sixes follows it lays the 5-5 on partner's trick | top-double leads 0.633 → 0.197, rank 1 of 8 | 3 / 3 graded (1 confirmatory missed) |
+| [[lem-unit-hold-trump-2026-10-21]] | L1 1 | "save the doubles": spend singles and lesser trumps, keep the doubles (the trump double most); shut on leads short of trump and where the trump double must cover the second trump | trump double on trump-led follows +0.427, rank 1 of 16; discards hold doubles back (+0.051) | 4 / 5 |
 
 What carried across them:
 - **Read steering by where play goes, against the layer on the same rows.** A unit tied to one
@@ -327,4 +328,13 @@ What carried across them:
   120,000 steps after the lead job.
 - **A rare off-set is a dial's tail, not a boundary** (papers 7–8). Its κ against a constant reads
   0.00 because the instrument is wrong; a graded word fits it (paper 8: R² 0.640).
-- None of the nine read as mixing. Scope: one net, one position, uniform beliefs, no history.
+- **A dose can masquerade as a boundary** (paper 10). On no-trump leads the unit did nothing measured,
+  and the arithmetic said so before sealing. But it is barely on there (mean activation 154 against
+  770 on discards). Forced on at a follow dose, it holds doubles back there too. The arithmetic
+  settles the rows, not the verb. Report each cell's dose beside its effect.
+- **Gates form on the negative side after the job** (paper 10). The trump-lead use was there by step
+  1,000. The no-trump lead gate came at step 30,540, and the second-trump kill at 152,700: it shuts
+  the unit exactly where its anti-double vote would block the trump double from covering. Where
+  the gate is missing (the leader led the second trump), the vote costs the take (+0.242 when
+  ablated).
+- None of the ten read as mixing. Scope: one net, one position, uniform beliefs, no history.
