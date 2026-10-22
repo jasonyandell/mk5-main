@@ -3,7 +3,7 @@ title: "Unit paper 8: the 16×8 seed-0 net's layer-2 unit 4, a dial on feeding t
 kind: experiment
 first_seen: 2026-10-21
 last_updated: 2026-10-21
-status: active
+status: complete
 ---
 
 The eighth **unit paper** of [[clean-neurons-42]]'s new mode (#235), on the 16×8 seed-0 field
@@ -314,6 +314,118 @@ and what changed:
 - **No tilt against the book**, and nothing reads the unit as mixed.
 
 Sealed 2026-10-21.
+
+## Results
+
+The run of 2026-10-21 followed the registration: one `scripts/cpu-slot` run of 76 s
+(1.67e12 instructions). The evidence (`unit.json`, the log, the code, the raw scripts, the run
+script, `SHA256SUMS`) is `lem/unit-count-on-it-2026-10-21/` in
+[texas-42-zeb-research-2026-10](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/f0ac72ebde7ff19b7e161d16f30fe31266fd55a1/lem/unit-count-on-it-2026-10-21).
+
+**The picture.** Under blanks through fours, unit 4 is the net's main **"feed partner's trick"**
+unit. It is a dial on whose trick it is, and an opponent's trump on the trick lowers it.
+- Where partner holds the trick, ablating it drops count played from 0.669 to 0.086.
+- No other layer-2 unit moves count on those rows.
+- Its 1.3% off tail is where an opponent's trump holds the trick: 0.998 of off rows.
+- Whether I could take the trick back barely matters, so verb A stands and verb B lost.
+- Under fives and sixes, the same push lands on non-count tiles, and L2 2 does the feeding.
+
+**Graded.**
+
+| | prediction | result | |
+|---|---|---|---|
+| 1a | ablated, partner holds, declarations 1–4: count played falls ≥ 0.45 | −0.583 [−0.589, −0.575] from 0.669 (4: −0.621; 1–3: −0.504) | **held** (confirmatory) |
+| 1b | that Δ ranks first of the live layer-2 units on the same rows | rank 1 of 8; the next most negative is −0.003 | **held** |
+| 2 | under 5–6, another unit's Δ is more negative than unit 4's | L2 2 −0.367 against unit 4 −0.091 | **held** |
+| 3 | adjusted coefficient, trumped in / trump led ≥ 0.5 | 0.569 (−143k / −251k); raw third seat 0.418, last 0.763 | **held** (adjusted) |
+| 4 | last seat: partner with a trump vs without, \|Δz\| ≤ 0.25 of N − T | 0.265 (675k against 729k) | **missed, narrowly** |
+| 5 | `trick-holder-kind` × seat explains ≥ 0.59 of z on follows | 0.640 | **held** |
+| 6 | B: at third seat, the trump-lead dip where I cannot take is under half the dip overall | 0.894 (can take: 1.173) | **missed: B loses to A** |
+
+So 1, 2, 3 and 5 held. 4 missed narrowly, and 6 missed.
+
+**What the misses say.**
+- **6.** At third seat with RHO holding partner's trump lead, the dial falls almost as far where I
+  cannot take the trick (z 327k → 42k) as overall (341k → 22k). It falls a little further where I
+  can (349k → −25k). The dip is about an opponent's trump holding the trick, not about my chance
+  to win it back. Holding the boss of the led suit still deepens it (off 0.63 against 0.40), so
+  taking back is a small extra term, not the variable. Seed 1's smoke showed B's direction on its
+  own unit, and that did not carry over to seed 0. Two seeds' units can differ in this term.
+- **4.** Partner holding with a trump lowers the dial by 54k at last seat. That is 0.265 of N − T,
+  just over the bar. Any trump on the trick costs the dial a little, and an opponent's trump costs
+  it about four times as much.
+- **3** held only when adjusted. At third seat the raw ratio is 0.418, because trumped-in rows
+  there come later in the hand and from the other side than trump leads. The adjusted ratio
+  controls for that.
+
+**Read off.**
+- **The push is declaration-free in the net's frame. What it hits is not.**
+
+  Unit 4's own Δ when ablated where partner holds:
+
+  | declarations | count | count, not taking | boss trump played |
+  |---|---:|---:|---:|
+  | 1–4 | −0.583 | −0.528 | +0.043 |
+  | 5–6 | −0.091 | −0.146 | +0.079 |
+  | 0 | −0.242 | | |
+
+  The boss trump is released under every declaration. Count is withdrawn only where count sits
+  in its slots.
+- **The count tiles withdrawn** (partner holds, 1–4), by canonical slot: slot 10 (the 5-0) 0.313,
+  14 (the 5-5) 0.219, 8 (the 3-2) 0.184, 22 (fours' 4-1) 0.125. The 5-5's share is 0.219, under the
+  0.7 bar set in advance, so the label stays "count", not "the 5-5".
+- **Forced on.** Adding the typical on value (1,098) raises count played beyond the layer on every
+  row set, and most on the rows where it was off: count +0.407, take −0.162, boss trump −0.188
+  (own − layer). Forced on, the net feeds the trick instead of taking it back.
+- **The division of labour** (composition, not packing):
+  - **L2 2:** its write is count-aligned under 5 (+6,403 against −3,485) and against count under
+    0–4. Ablated, it drops feeding under 5–6 (−0.367).
+  - **L2 0:** its write runs the other way, count under 0–4 and against it under 5–6. Ablated
+    under 5–6 where an opponent holds, count played rises +0.495, so it works as a brake there.
+  - Seed 1 split the same job across its own units by declaration group (smoke).
+- **Circuit in.** L1 8 ("trump still out against me", paper 7) gives the largest steady push
+  (+194k to +211k).
+  - L1 2 (`partner-winning`) gives +125k where partner holds, +26k on a trump lead and +2k when
+    trumped in.
+  - L1 11 and L1 15 (`winner-cannot-be-beaten`) subtract hardest on trump leads (−90k and −60k).
+  - So the dial is partner holding, minus an opponent's trump holding, fed by the trump count
+    behind it.
+- **The tail cell.** At third seat with RHO holding a trump lead, off falls with trick number from
+  0.528 in trick 1 to 0.167 in trick 6. It is 0.48 on the bidding side and 0.37 for defenders.
+- **The boundary.** The bit `opponent holds with a trump` scores Cohen's κ 0.125. The narrower
+  `opponent holds a trump lead, third seat` scores 0.506. The κ against a constant is below 0 for
+  every bit, as expected for a 1.3% tail. The dial word (prediction 5) is where the vocabulary
+  fits: R² 0.640 against 0.622 for the trump-led version.
+- **The twin.** The untrained twin's unit 4 is on 0.967 of rows, with R² 0.042 on winner + seat
+  (trained: 0.509).
+- **Formation.**
+  - **Near-death, as on seed 1.** The unit fell to on 0.045 at step 300 and 0.024 at step 1,000.
+  - **Reborn on partner.** At step 1,000 its + pole is `partner-winning` (0.75), and by step 3,000
+    it is 0.99. At step 3,000 R² on the holder is 0.285.
+  - **Its write was count-aligned under 1–4 from initialisation** (+4,659 at step 0) and grew to
+    +7,000–9,000.
+  - **The trump tail came late.** The − pole became `trump-led` only at step 152,700. Off in the
+    third-seat RHO-trump-lead cell rose from 0.12 at step 3,000 to 0.53 at the end.
+  - So the dial came first and the tail later, as in papers 6 and 7, after a death and rebirth as
+    in paper 3.
+
+**Against the frame.**
+- The unit is clean in the essay's sense: one dial (who holds the trick, and with what) and one
+  push (feed it, hold the top trump back).
+- "Count" is what that push means under the declarations whose canonical slots carry count. The
+  net covers the other declarations with another unit: composition, not packing.
+- The off-set is the bottom of the dial, not a second meaning. Its κ 0.00 in #202 was the wrong
+  instrument, a bit against a 1.3% tail.
+- **The vocabulary gap is named.** List v2 has `partner-winning` and `trump-led` as bits but no
+  graded `trick-holder-kind` (partner; opponent; opponent with a trump). The v3 candidate is that
+  word, R² 0.640.
+- Not read as mixing.
+- **Beside the book.** *Winning 42*'s advice on when to put count on partner's trick and keep it
+  off the opponents' is the authority on reasons ([[book-authority]]). The side and trick crosses
+  above are read beside it, not weighed against it.
+
+Scope: this net, these inputs (one position, uniform beliefs, no history), list v2 plus the raw
+inputs. What we learned from this model, not all of 42, yet.
 
 ## Links
 

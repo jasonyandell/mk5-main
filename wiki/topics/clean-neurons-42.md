@@ -286,9 +286,9 @@ A2–A4 and experiment B are stages 3 and 4 of that program. **A1's result (2026
 
 **The squeeze (A3), 2026-10-17:** narrow nets cleaner, not mixed (0.61 → 0.83 at 24 neurons; [[lem-squeeze-2026-10-16]]). The follow-ups are THE ALREADY-CLEAN TEST, #193 (#194–#200), the core thesis of [[lem-the-teacher]].
 
-**The unit papers (#235), 2026-10-20: six units of the 16×8 seed-0 net, read whole.** Each was
+**The unit papers (#235), 2026-10-20 to 21: eight units of the 16×8 seed-0 net, read whole.** Each was
 registered after a raw read, reviewed against the essay's full text by a fresh reader, sealed, and
-run. The six together read one circuit: how the net decides what to lead and what to throw.
+run. Together they read one circuit: how the net decides what to lead and what to throw.
 
 | paper | unit | its verb, as found | its use (ablated where on, ranked against the layer on the same rows) | held |
 |---|---|---|---|---:|
@@ -298,6 +298,8 @@ run. The six together read one circuit: how the net decides what to lead and wha
 | [[lem-unit-lead-doubles-2026-10-20]] | L2 3 | "lead an off double", dimmed by trump length | off-double leads −0.686 of 0.757, rank 1 of 8 | 3 / 5 |
 | [[lem-unit-no-trump-yet-2026-10-20]] | L1 7 | a counter of trumps on the trick; open means trumping in is open | trumping in −0.411 of 0.797, rank 1 of 16 | 1 / 5 |
 | [[lem-unit-theirs-2026-10-20]] | L1 14 | "not partner's trick; keep your count off it" | count given away 0.044 → 0.426, rank 1 of 16 | 3 / 5 |
+| [[lem-unit-pull-trump-2026-10-20]] | L1 8 | a dial on trump still out against me, cut by the lead | forced on, trump leads −0.330 beyond the layer; ablated +0.235, rank 2 of 16 | 3 / 5 |
+| [[lem-unit-count-on-it-2026-10-21]] | L2 4 | "feed partner's trick", a dial on who holds it; its tail is an opponent's trump | count on partner's trick 0.669 → 0.086 under blanks–fours, rank 1 of 8 | 4 / 6 |
 
 What carried across them:
 - **Read steering by where play goes, against the layer on the same rows.** A unit tied to one
@@ -313,4 +315,9 @@ What carried across them:
   - Units were born whole (paper 4).
   - Facets were present at initialisation and refined by a late gate (paper 6).
 - **When two predictions contradict, suspect the premise they share** (paper 3).
-- None of the six read as mixing. Scope: one net, one position, uniform beliefs, no history.
+- **A unit's job can be split by declaration in the net's own frame** (paper 8). The push is the
+  same in canonical slots, and count lands under it only where count sits in those slots. Another
+  unit covers the other declarations: composition, not packing.
+- **A rare off-set is a dial's tail, not a boundary** (papers 7–8). Its κ against a constant reads
+  0.00 because the instrument is wrong; a graded word fits it (paper 8: R² 0.640).
+- None of the eight read as mixing. Scope: one net, one position, uniform beliefs, no history.
