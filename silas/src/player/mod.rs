@@ -32,6 +32,7 @@ use crate::quotient::Block;
 use crate::{Result, error};
 
 pub mod recount;
+pub mod trick1;
 
 type Q = BigRational;
 
