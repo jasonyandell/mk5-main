@@ -82,6 +82,8 @@ fn main() {
         let auction = Auction::won_by(Seat::S0, Bid::Points(30)).unwrap();
         let frame = Frame::new(auction, physics.clone(), viewer, dealt(viewer.index()), prefix).unwrap();
         let root = if at == 0 { Root::Posterior } else { Root::FiberUniform };
+        // A triples line's key: the deal for a lead root, the deal and the viewer for a follow root.
+        let key = if at == 0 { d.to_string() } else { format!("{d} {}", viewer.index()) };
         let problem = Problem::new(&frame, [law; 4], root).unwrap();
         let from: usize = arg(&args, "--from").unwrap_or("0").parse().unwrap();
         let to = arg(&args, "--to").map_or(problem.shards(), |s| s.parse::<usize>().unwrap().min(problem.shards()));
@@ -138,7 +140,7 @@ fn main() {
                         };
                         if let (Some(why), Some(path)) = (why, arg(&args, "--triples")) {
                             let mut out = std::fs::OpenOptions::new().create(true).append(true).open(path).unwrap();
-                            writeln!(out, "{d} {label} REFUSED {why}").unwrap();
+                            writeln!(out, "{key} {label} REFUSED {why}").unwrap();
                         }
                         ok = false;
                         continue;
@@ -189,7 +191,7 @@ fn main() {
                             let name = if per_reply { label.to_string() } else { a.to_string() };
                             writeln!(
                                 out,
-                                "{d} {name} {lo} {up} {} {} {} {} {} {} {fnv:016x} {sha} metal",
+                                "{key} {name} {lo} {up} {} {} {} {} {} {} {fnv:016x} {sha} metal",
                                 r.mass,
                                 g.leaves.len(),
                                 g.work.total(),
@@ -245,7 +247,7 @@ fn main() {
                     let mut out = std::fs::OpenOptions::new().create(true).append(true).open(path).unwrap();
                     writeln!(
                         out,
-                        "{d} {a} {lo} {up} {m} {leaves} {} {} {} {} split {n} metal",
+                        "{key} {a} {lo} {up} {m} {leaves} {} {} {} {} split {n} metal",
                         work.total(),
                         work.tree,
                         work.tails,
@@ -259,6 +261,10 @@ fn main() {
         }
         if spent > budget {
             println!("  rung k {k}: refused, {spent} plays past the budget {budget}");
+            if let Some(path) = arg(&args, "--triples") {
+                let mut out = std::fs::OpenOptions::new().create(true).append(true).open(path).unwrap();
+                writeln!(out, "{key} REFUSED budget {budget} at k {k}, plays {spent}").unwrap();
+            }
             ok = false;
         } else if let (Some(m), true) = (mass, actions.len() == legal.len()) {
             actions.sort_by_key(|a| a.0);

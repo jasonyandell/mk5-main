@@ -11,7 +11,7 @@
 
 use silas::player::{Root, SeatLaw};
 use silas::reference::Straight42;
-use silas::{Auction, Bid, DominoSet, Frame, Seat};
+use silas::{Auction, Bid, Domino, DominoSet, Frame, Seat};
 use silas_metal::Gpu;
 use silas_metal::ladder::{Gathered, Limits, Problem, Work};
 
@@ -47,6 +47,31 @@ fn deal0_probes_equal_exact_t1() {
         let bytes = g.to_bytes();
         assert_eq!(Gathered::from_bytes(&bytes).unwrap(), g);
         assert_eq!(fnv(&bytes), sum, "k {k}: the bytes of Exact-T1's probe file");
+    }
+}
+
+#[test]
+fn a_follow_root_equals_exact_t1() {
+    // Deal 5 (P2), viewer S1 behind S0's lead of tile 5: a FiberUniform root, shards 0..2000.
+    // The pins are Exact-T1's CPU run of the same piece (2026-10-22 19:20), equal byte for byte.
+    let hand = DominoSet::from_bits(221_806_592).unwrap();
+    let auction = Auction::won_by(Seat::S0, Bid::Points(30)).unwrap();
+    let lead = vec![Domino::from_index(5).unwrap()];
+    let frame = Frame::new(auction, Straight42::ALL[2].physics(), Seat::S1, hand, lead).unwrap();
+    let problem = Problem::new(&frame, [SeatLaw::Lowest; 4], Root::FiberUniform).unwrap();
+    assert_eq!(problem.shards(), 77_520);
+    let mut gpu = Gpu::new().expect("a Metal device");
+    let pins: [(usize, usize, Work, u64); 2] = [
+        (0, 1_365, Work { tree: 96_096_000, tails: 825_392_632, god: 3_962_954_061 }, 0x7abe_6cf0_b014_a781),
+        (1, 507_456, Work { tree: 638_570_902, tails: 2_655_761_044, god: 6_445_408_721 }, 0x3dbd_a10d_001d_0c79),
+    ];
+    for (k, leaves, work, sum) in pins {
+        let g = problem
+            .gather(&mut gpu, k, u32::MAX, u32::MAX, 0..2000, Limits { table_bits: 22, ..Limits::default() })
+            .unwrap();
+        assert_eq!(g.worlds, 3_432_000);
+        assert_eq!((g.leaves.len(), g.work), (leaves, work), "k {k}");
+        assert_eq!(fnv(&g.to_bytes()), sum, "k {k}: the bytes of Exact-T1's CPU piece");
     }
 }
 
