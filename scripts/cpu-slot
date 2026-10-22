@@ -38,7 +38,12 @@ All decisions are made under the short flock on $DIR/gate.
 The command sees MK5_CPU_SLOT_EXCLUSIVE=1 or 0 (a clocked player's record says whether
 its machine was quiet) and MK5_CPU_SLOT_THREADS. On exit cpu-slot prints what the run
 cost: wall, CPU (user+sys, children included), and on macOS the job's own instructions
-and cycles; $MK5_CPU_SLOT_COST names a file to append that as a JSON line.
+and cycles; $MK5_CPU_SLOT_COST names a file to append that as a JSON line. The
+instructions are the direct child's, so put a wrapper outside, not inside:
+`/usr/bin/time -l scripts/cpu-slot -- job`, never `cpu-slot -- /usr/bin/time -l job` (#249).
+
+The command runs in its own process group. The timeout ends the whole group, and an
+interrupt or hangup to cpu-slot is passed on to it, so nothing the job starts outlives the cap.
 
 Exit status is the command's own, or 124 on timeout, matching `timeout(1)`.
 """
@@ -48,6 +53,7 @@ import ctypes
 import fcntl
 import json
 import os
+import signal
 import subprocess
 import sys
 import time
@@ -369,13 +375,33 @@ try:
                 "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS", "VECLIB_MAXIMUM_THREADS"):
         env.setdefault(var, str(args.threads))
     load0, t0 = os.getloadavg(), time.monotonic()
-    proc = subprocess.Popen(cmd, env=env, preexec_fn=lambda: os.nice(args.nice))
+
+    def child_setup():
+        # Its own process group, so the cap reaches everything the job starts: a wrapper such
+        # as `/usr/bin/time -l` exited on terminate and left the runner going outside any slot
+        # (#249: 18 min at 21 GB after "timed out").
+        os.setpgid(0, 0)
+        os.nice(args.nice)
+
+    proc = subprocess.Popen(cmd, env=env, preexec_fn=child_setup)
+
+    def signal_group(sig):
+        try:
+            os.killpg(proc.pid, sig)
+        except ProcessLookupError:
+            pass
+
+    # Out of the terminal's foreground group, the job no longer hears Ctrl-C or a hangup
+    # itself; pass them on, so interrupting cpu-slot interrupts the job.
+    for sig in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP):
+        signal.signal(sig, lambda s, _f: signal_group(s))
     done = wait_exit(proc, args.timeout)
     if done is None:
-        proc.terminate()
+        signal_group(signal.SIGTERM)
         if wait_exit(proc, 10) is None:
-            proc.kill()
+            signal_group(signal.SIGKILL)
             proc.wait()
+        signal_group(signal.SIGKILL)  # anything the job left in its group
         print(f"cpu-slot: timed out after {args.timeout}s", file=sys.stderr, flush=True)
         sys.exit(124)
     report(done, time.monotonic() - t0, load0)

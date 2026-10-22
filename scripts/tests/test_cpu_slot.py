@@ -322,6 +322,45 @@ class LoadModeTest(Slots, unittest.TestCase):
         p = self.slot(name="x", hold=0, cmd=[sys.executable, "-c", "raise SystemExit(7)"])
         self.assertEqual(p.wait(), 7)
 
+    # A wrapper (like `/usr/bin/time -l`) that starts the real job and waits on it; the job
+    # writes its pid. Before #249 the cap ended the wrapper and left the job running.
+    WRAPPER = ("import subprocess,sys; subprocess.Popen([sys.executable,'-c',"
+               "'import os,sys,time; open(sys.argv[1],\"w\").write(str(os.getpid())); time.sleep(60)',"
+               "sys.argv[1]]).wait()")
+
+    def grandchild(self, name):
+        f = Path(self.tmp.name) / name
+        end = time.time() + 5
+        while time.time() < end and not (f.exists() and f.read_text()):
+            time.sleep(0.02)
+        return int(f.read_text())
+
+    def gone(self, pid, within=5.0):
+        end = time.time() + within
+        while time.time() < end:
+            try:
+                os.kill(pid, 0)
+            except ProcessLookupError:
+                return True
+            time.sleep(0.05)
+        os.kill(pid, signal.SIGKILL)
+        return False
+
+    def test_timeout_reaches_the_job_behind_a_wrapper(self):
+        f = str(Path(self.tmp.name) / "gc")
+        p = self.slot("--timeout", "1", name="gc", hold=0, cmd=[sys.executable, "-c", self.WRAPPER, f])
+        pid = self.grandchild("gc")
+        self.assertEqual(p.wait(), 124)
+        self.assertTrue(self.gone(pid), "the wrapped job outlived the cap")
+
+    def test_interrupting_cpu_slot_interrupts_the_job(self):
+        f = str(Path(self.tmp.name) / "gi")
+        p = self.slot(name="gi", hold=0, cmd=[sys.executable, "-c", self.WRAPPER, f])
+        pid = self.grandchild("gi")
+        p.send_signal(signal.SIGINT)
+        p.wait(timeout=10)
+        self.assertTrue(self.gone(pid), "the job outlived an interrupt of cpu-slot")
+
 
 if __name__ == "__main__":
     unittest.main()
