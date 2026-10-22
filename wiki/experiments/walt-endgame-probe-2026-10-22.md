@@ -3,7 +3,7 @@ title: "The Walt endgame probe: Walt's tile against the exact optimum of its own
 kind: experiment
 first_seen: 2026-10-22
 last_updated: 2026-10-22
-status: active
+status: complete
 ---
 <!-- SPDX-FileCopyrightText: Jason Yandell -->
 <!-- SPDX-License-Identifier: CC0-1.0 -->
@@ -101,7 +101,98 @@ deals stay in the sample.
 
 ## Result
 
-Pending.
+**Walt's endgame is the exact optimum of its own model wherever it enumerates, and within the pre-registered noise
+bar where it samples.** Both Walts pass. Every number below has its 95% deal-resampled interval.
+
+**The checks held everywhere.** At all 27,118 positions the twin's q equals the course's exact values. At all 27,118,
+Silas's BigRational solve (`silas family`) equals the Python Fraction reference, value for value and in the
+maximizing set.
+
+**Enumerated decisions: 0 outside, as predicted by construction.** That covers every two-left decision and every
+three-left decision with a fiber of at most 512: 16,133 for Zeb and 8,046 for the champion. In each, Walt's tile is
+in the exact maximizing set. Chance would miss 8–26% of them.
+
+**Sampled decisions (three left, fiber 560–1,680):**
+
+| Walt | n (deals) | outside the set | chance | regret, success prob. | chance regret |
+|---|---:|---|---|---|---|
+| Zeb (`k0,n512,F=250k,f=16`) | 1,941 (3,000) | 0.057 [0.047, 0.067] | 0.325 [0.310, 0.341] | 0.00077 [0.00058, 0.00098] | 0.038 [0.035, 0.041] |
+| champion (`k1,n512,m8`) | 998 (1,500) | 0.056 [0.042, 0.071] | 0.343 [0.321, 0.365] | 0.00052 [0.00036, 0.00070] | 0.036 [0.032, 0.041] |
+
+- **Against the pre-registration.** The miss share sits inside the prior of 2–20%, and the regret is far under the
+  predicted ceiling of 0.02. Both regret intervals exclude 0 but end below 0.001, so the registered reading applies:
+  *optimal for its model inside the noise*. The gap is measurable and small. Zeb's upper end, 0.00098, passes by a
+  hair.
+- **What a miss is.** It is a real but small error, never a tie broken badly: every miss has regret > 0. A miss
+  costs 0.0136 on average for Zeb (max 0.077) and 0.0093 for the champion (max 0.038). Bidders miss a little more
+  often than defenders: Zeb 0.063 against 0.048, the champion 0.070 against 0.038.
+- **Per hand.** Summed over every seat's decisions in a deal, Walt's sampling gives up 0.0005 success probability
+  per deal for Zeb and 0.00035 for the champion. For scale, in a different unit (one seat, one three-trick
+  endgame), an exploiter that knows Zeb takes +0.0040 ([[exploiter-endgames-2026-10-14]]).
+
+**Whole strata, by tricks left (every position, enumerated or not):**
+
+| Walt | tricks left | n | open | outside | chance | regret | chance regret |
+|---|---:|---:|---:|---|---|---|---|
+| Zeb | 3 | 8,922 | 3,894 | 0.012 [0.010, 0.015] | 0.255 [0.246, 0.264] | 0.00017 [0.00013, 0.00022] | 0.041 [0.039, 0.043] |
+| Zeb | 2 | 9,152 | 1,472 | 0 | 0.080 [0.076, 0.085] | 0 | 0.025 [0.023, 0.027] |
+| champion | 3 | 4,418 | 2,028 | 0.013 [0.010, 0.016] | 0.278 [0.264, 0.291] | 0.00012 [0.00008, 0.00016] | 0.040 [0.037, 0.043] |
+| champion | 2 | 4,626 | 731 | 0 | 0.079 [0.072, 0.086] | 0 | 0.024 [0.022, 0.026] |
+
+"Open" means not every legal tile ties. At one trick left the play is forced, so that stratum is not probed.
+
+**Descriptive arms (three left, the same positions).**
+
+| arm | Zeb outside | Zeb regret | champion outside | champion regret |
+|---|---|---|---|---|
+| as configured (f = 16) | 0.0123 [0.0102, 0.0146] | 0.00017 [0.00013, 0.00022] | 0.0127 [0.0095, 0.0161] | 0.00012 [0.00008, 0.00016] |
+| floor off (f = 1) | 0.0095 [0.0076, 0.0116] | 0.00009 [0.00007, 0.00011] | 0.0127 [0.0095, 0.0161] | 0.00011 [0.00008, 0.00015] |
+| n = 160 (the zeb package's default) | 0.0356 [0.0318, 0.0395] | 0.00069 [0.00058, 0.00080] | 0.0389 [0.0334, 0.0449] | 0.00064 [0.00052, 0.00078] |
+
+- **The floor, for Zeb.** Below the floor, Zeb hands the move to the field net. The floor is a net 25 of its 110
+  misses (41 fixed with it off, 16 introduced), and about half of its endgame regret: 0.00017 with the floor
+  against 0.00009 without.
+- **The floor, for the champion.** Below the floor, the champion hands the move to a rung-0 Walt. The floor changes
+  44 tiles and nets zero (18 fixed, 18 introduced).
+- **The rest is the sample.** n512 draws with replacement from a fiber of up to 1,680. At n = 160 the share outside
+  roughly triples.
+
+**Silas's controller at open three-left decisions.** This counts the raw states of the exact plan's controller:
+how much of what the viewer will see the plan must remember.
+
+| Walt | every | path | plan |
+|---|---|---|---|
+| Zeb | median 124, mean 201, max 1,378 | 38, 61, 471 | 38, 60, 470 |
+| champion | 138, 256, 1,664 | 42, 79, 676 | 42, 78, 673 |
+
+At two left it is 3 (every) and 2 (path, plan) at every open decision.
+
+**Cost (CPU seconds per sampled decision, Python referee, descriptive).** Zeb live 0.052, and the exact twin with
+the course and solve 0.145. The champion live 0.28, and exact 0.54.
+
+**Historical note.** The pours' own tiles come from the 2026-10-10 planner, before #110 and #112. They lie outside
+today's exact set at 463 of the champion's 9,044 positions. That is not a clean measure of those repairs: the model
+of the others changed with them (the #112 seed), so the exact set moved too.
+
+## Reading
+
+Walt plans an information-state optimum by construction, and in the endgame the probe confirms it exactly: wherever
+the fiber fits the rung, the tile is the exact argmax of Walt's model. The only gap is the 512-world sample on the
+fat three-trick fibers. It is about 1 decision in 18 there, about 0.01 success probability per miss, and about
+0.0005 make probability per deal. Under the pre-registered bar that is noise.
+
+- **The cheap repair.** Enumerate the live rung whenever the fiber holds at most 1,680 worlds. It would remove the
+  gap exactly, at about three times the cost of those decisions. It is a change under `scenario/`, so it goes to the
+  Mayor first. Filed as #246, low priority.
+- **What this does not test.** It tests Walt against its own model only. Whether that model is right (the uniform
+  belief, the field net or rung-0 Walts as the others) is the scope of [[exploiter-endgames-2026-10-14]],
+  [[endgames-o2-vs-o1-2026-10-12]] and the belief work. No per-world clairvoyant value enters
+  ([[strategy-fusion-fence]]).
+
+**Data.** Per-position rows (exact values, Silas's agreement, controller counts, arms), the report and the driver
+are at [texas-42-zeb-research-2026-10 / zeb/walt-endgame-probe-2026-10-22](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/main/zeb/walt-endgame-probe-2026-10-22).
+The courses (about 3 GB) were deleted after Silas solved them; `python -u -m lem.endgame run` rewrites any of them
+exactly.
 
 ## Links
 

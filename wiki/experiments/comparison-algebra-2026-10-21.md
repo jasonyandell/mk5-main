@@ -104,4 +104,7 @@ The brief asked for a decision on placement: a new Silas module, or an exporter 
 - **Measured, not proved:** the path statement (that good play meets only the knots) is a standard argument (an optimal plan cannot be improved at a history it reaches with positive mass) checked in Silas; it is not formalized.
 - **Measured, not proved:** that the raw and fork ladders of the Gus course stop at one block. That is a fact of this course.
 - **Scoped:** every fixture number is for one ending, one partner family (Low/High by tile order) and opponents who play low. The arena seats no such partner; the family is the note's, chosen to be exactly solvable, not a model of a person.
+- **Applied since (2026-10-22, #244):** the family form now reads Walt's real endgames whole. Walt's tile is
+  the exact optimum of its own model wherever it enumerates, and within noise where it samples
+  ([[walt-endgame-probe-2026-10-22]]). Feasibility items 1 and 2 are #242 and #243.
 - **Untouched:** nothing here reads a net. The quotient is a property of a course and an interface, as [[gus-decision-quotient-2026-10-21]] says, not of a learner.

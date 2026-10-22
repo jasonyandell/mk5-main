@@ -538,6 +538,14 @@ controller), and `silas/src/comparison.rs` counts the linear coordinates each de
 reads. `silas/tests/controller.rs` rebuilds the note's 560-deal no-trump ending on Silas's
 own frame and rules and reproduces its 767-state controller, ladder 1, 18, 31, 31.
 
+`silas family --courses FILE` reads family courses as JSON lines (`silas-family-course-v1`,
+`family::file`). Each choice is a menu, a mass and payoffs, which may be pairs at p = 0 and
+p = 1. Its blocks are keyed by the `(seat, tile)` plays seen. For each course the command
+reports the root in every parameter class and the controller's states for every reach.
+`lem/endgame.py` writes Walt's real endgames in this form. On 27,118 of them, Silas's
+BigRational solve equals the Python Fraction reference at every one
+([[walt-endgame-probe-2026-10-22]]).
+
 ## Where it sits
 
 - **Origin.** Moved from texas-42 `1c15cc51` (CC0), where it was written as the

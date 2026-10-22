@@ -946,6 +946,18 @@ exploitable one (> 0.50).
 
 [[exploiter-endgames-2026-10-14]].
 
+**Walt's endgame against the exact optimum of its own model (2026-10-22, #244).** On 27,118 real endgame decisions
+with two or three tricks left (Zeb's arena form and the champion), each decision was solved exactly over the whole
+fiber under Walt's own model of the others. Silas and a Python reference agree at every one.
+- Wherever Walt enumerates, its tile is in the exact maximizing set: 24,179 of 24,179.
+- Where it samples (three left, fiber 560–1,680), it misses 5.6–5.7% of decisions, against chance at about 33%.
+  The regret is 0.00077 [0.00058, 0.00098] success probability for Zeb and 0.00052 [0.00036, 0.00070] for the
+  champion. Both are under the pre-registered 0.001 bar.
+- For Zeb, the floor is about half its endgame regret.
+- Enumerating up to 1,680 would close the gap exactly (#246, gated).
+
+[[walt-endgame-probe-2026-10-22]].
+
 **The book player against Zeb (2026-10-13).** Read under [[book-authority]]: the book is the
 authority, and this arena, which has no cross-hand modeling, no partner reading and no fallible
 opponents, is the suspect ([[book-assumptions]]). The book's 18 rules as a [[silas]] policy
@@ -1148,6 +1160,7 @@ forecast runs 3–8 points hot. Nothing ships; the option is proposed for the ne
 [[tournament]] (the standing ladder: Walt, Zeb releases, fenced E[Q]; Bradley–Terry over append-only records) ·
 [[fly-connectome-42]] (the FlyWire fly brain as a 42 reservoir: viable as a toy, not as a player; the real wiring reads the 5-5's seat no better than rewired wiring) ·
 [[exploiter-endgames-2026-10-14]] (an exploiter against Zeb on three-trick endgames: not sturdy in points, small in contracts) ·
+[[walt-endgame-probe-2026-10-22]] (Walt's endgame tile against the exact optimum of its own model: exact where it enumerates, within noise where it samples) ·
 [[constellations-2026-10-14]] (constellations as Zeb's late-hand table) ·
 [[splat-search-bounds]] (searching over splats: what is sound) ·
 [[lumps-voi-2026-10-13]] (lumps by a hidden tile: hedge or robust, the value of knowing it, restricted choice) ·
