@@ -103,6 +103,9 @@ fn the_ladder_contains_nests_and_collapses_onto_the_second_construction() {
                 let piece = |a, b| Gathered::from_bytes(&ladder.gather(k, a, b, 2).to_bytes()).unwrap();
                 let g = piece(n / 3, n).merge(piece(0, n / 3 / 2)).unwrap().merge(piece(n / 3 / 2, n / 3)).unwrap();
                 assert!(g.clone().merge(piece(0, 1)).is_err(), "a shard gathered twice is refused");
+                let whole = ladder.gather(k, 0, n, 1);
+                assert!(g.agrees(&whole), "pieces merged are the whole gather");
+                assert_eq!(g.to_bytes(), whole.to_bytes(), "and write its bytes");
                 assert!(ladder.rung(&piece(1, n), u64::MAX).is_err(), "a rung needs every shard");
                 let whole = ladder.solve(k, 3, u64::MAX).unwrap();
                 let r = ladder.rung(&g, u64::MAX).unwrap();

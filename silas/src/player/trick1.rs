@@ -646,12 +646,26 @@ impl Gathered {
         }
         self.ranges.extend(o.ranges);
         self.ranges.sort_unstable();
+        // Adjacent ranges coalesce, so pieces merged write the bytes of the whole.
+        self.ranges.dedup_by(|b, a| {
+            let touch = a.1 == b.0;
+            if touch {
+                a.1 = b.1;
+            }
+            touch
+        });
         for (p, l) in o.leaves {
             self.leaves.entry(p).or_default().add(&l);
         }
         self.worlds += o.worlds;
         self.work.add(&o.work);
         Ok(self)
+    }
+
+    /// The same leaves, masses and bounds over the same shards: the parity another engine
+    /// must meet. Work is left out; it follows the search order, so each engine reports its own.
+    pub fn agrees(&self, o: &Gathered) -> bool {
+        (self.k, &self.ranges, &self.leaves, self.worlds) == (o.k, &o.ranges, &o.leaves, o.worlds)
     }
 
     /// Public histories gathered so far.
