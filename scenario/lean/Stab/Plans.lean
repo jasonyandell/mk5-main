@@ -4,7 +4,9 @@
 /-!
 # Fixed plans in a one-parameter family
 
-(Night-Math, 2026-10-22; `silas/src/family.rs`, `silas/tests/controller.rs`.)
+(Jason's note *A minimal comparison algebra for a declared 42 family*, 2026-10-21,
+section "Less demanding tasks have smaller exact answers"; Night-Math, 2026-10-22;
+`silas/src/family.rs`, `silas/tests/controller.rs`.)
 
 The partner is High with probability `p` and Low otherwise. A fixed plan of the viewer's
 (one play at every decision) succeeds on a fixed set of (deal, type) atoms, whose
@@ -20,7 +22,7 @@ pieces of the optimum. A plan's optimal set is an interval on which the optimum 
 that plan's line, so `k` plans give at most `k` pieces; and the plan optimal at a
 piece's midpoint serves the whole piece. In the note's 560-deal no-trump ending the
 optimum has five pieces, knots 1/16, 1/5, 1/3, 1/2, so five plans are enough and are
-needed, against 31 classes for the complete maximizing sets.
+needed (the note's 5), against 31 classes for the complete maximizing sets.
 -/
 
 namespace Stab.Plans

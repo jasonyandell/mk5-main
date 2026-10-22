@@ -23,7 +23,7 @@ Jason's note *A minimal comparison algebra for a declared 42 family* (2026-10-21
 - **Residual congruence.** It is the coarsest right congruence that keeps outputs, and an exact realization never merges two of its classes. The quotient machine attains it.
 - Refinement round k is exactly agreement on block words of length at most k. With the HALT/REJECT totalization and at most n own tiles, refinement is exact after n − 1 blocks.
 - **Mixing boundary.** The observation mass (1 + 18p)/560 is injective in p. Take any relation that keeps the decision sgn(5p − 1) and is kept by every convex mixture: on [0, 1] it is equality. The witness is explicit, λ = 1/5.
-- **Fixed plans.** A fixed plan's value is a line in p, and the optimum is the upper envelope of those lines. The parameters where a plan is optimal form an interval. Where one plan is optimal across a piece, any plan optimal at an interior point is optimal across it too. So the fewest fixed plans optimal at every p is the number of affine pieces of the optimum.
+- **Fixed plans (the note's five-policy argument).** A fixed plan's value is a line in p, and the optimum is the upper envelope of those lines. The parameters where a plan is optimal form an interval. Where one plan is optimal across a piece, any plan optimal at an interior point is optimal across it too. So the fewest fixed plans optimal at every p is the number of affine pieces of the optimum.
 
 **Two claims in the night's brief are false, and Lean proves it.**
 
@@ -55,9 +55,9 @@ Every other count matches too: nodes by stage and ply, menus, the discretionary 
 | every history | 722,863 | 767 | 1, 18, 31, 31 | 445 | 76 (root 1, 3, 22, 22) |
 | 2-1 committed (5,935 nodes, 10 thresholds, 23 classes) | | 302 | 1, 10, 23, 23 | | |
 
-**New: good play meets only the knots of the optimum.** The root's optimum, a convex function of p, has five affine pieces, with knots at 1/16, 1/5, 1/3 and 1/2. By `Stab/Plans.lean`, five fixed plans are therefore enough, and five are needed. Silas checks each piece's plan against the envelope at both ends.
+**The note's message counts, checked.** The root's optimum, a convex function of p, has five affine pieces, with knots at 1/16, 1/5, 1/3 and 1/2. So, as the note says, five fixed policies are optimal from the root and fewer cannot be. Lean now carries the note's argument (`Stab/Plans.lean`), and Silas checks each piece's plan against the envelope at both ends. Every threshold has a witness history whose only interior switch it is, with disjoint maximizing sets on its two sides, so any two open cells need different policies. That gives the note's 15, and 11 with 2-1 committed. Its 31 and 23 are the raw root classes, and 769 and 304 add HALT and REJECT.
 
-An ex-ante optimal plan is optimal at every history it reaches with positive mass. So along the plan's own path, the maximizing set can change only at those four knots, and 1/5 is the note's own threshold. The other ten thresholds move the best play only at histories reached after a play the plan never makes. Kept to the plan's path, the controller shrinks:
+**New: good play meets only the knots of the optimum.** An ex-ante optimal plan is optimal at every history it reaches with positive mass. So along the plan's own path, the maximizing set can change only at those four knots, and 1/5 is the note's own threshold. The other ten thresholds move the best play only at histories reached after a play the plan never makes. Kept to the plan's path, the controller shrinks:
 
 | Reach | Contexts | Raw states | Root ladder | Root classes are |
 | --- | ---: | ---: | --- | --- |
@@ -65,7 +65,7 @@ An ex-ante optimal plan is optimal at every history it reaches with positive mas
 | the plan's path (maximizing sets) | 26,533 | 142 | 1, 10, 11, 11 | 5 pieces, 4 knots, the 2 pure partners |
 | the plan's path (the plan's play) | 26,533 | 132 | 1, 5, 7, 7 | 5 plans, the 2 pure partners |
 
-At p = 0 and p = 1 one partner type has no mass, so fewer histories live; those two are classes of their own. The test asserts each partition directly against the envelope's knots. **The note's atlas of 31 is mostly counterfactual.** It describes what the viewer should do after its own mistakes. A viewer who plays well needs five plans and 132 states.
+At p = 0 and p = 1 one partner type has no mass, so fewer histories live; those two are classes of their own. The test asserts each partition directly against the envelope's knots. The note's gap between 5 messages and 15 already says the extra cells come from deviations; the path controller says the same in states. **Most of the 31-class atlas is counterfactual.** It describes what the viewer should do after its own mistakes. A viewer who plays well needs five plans and a 132-state controller, and on its path the best play changes only where the optimum bends.
 
 **How many numbers the viewer keeps.** Take a free belief over the 1,120 deal-and-type atoms. The comparison dimension of a decision is the fewest linear coordinates that keep every comparison of the viewer's programs. Each program's value is a 0/1 vector over the atoms, so this is the dimension of the span of the program differences (`silas/src/comparison.rs`).
 

@@ -411,8 +411,8 @@ headline theorems in `Axioms.lean` print only the standard three; no sorry. Wiki
   value is a line in p and the optimum is their upper envelope: `optimal_between` (the
   parameters where a plan is optimal form an interval) and `optimal_on_piece` (where one
   plan is optimal across [u, w], any plan optimal at an interior point is too). So the
-  fewest fixed plans optimal at every p is the number of affine pieces of the optimum.
-  The note's ending has five (`silas/tests/controller.rs`), against 31 classes for the
+  fewest fixed plans optimal at every p is the number of affine pieces of the optimum,
+  the note's five-policy argument. The note's ending has five (`silas/tests/controller.rs`), against 31 classes for the
   complete maximizing sets.
 
 ## Two findings against the night's brief

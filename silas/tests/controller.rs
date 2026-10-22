@@ -438,3 +438,28 @@ fn the_notes_gap_and_cell_are_the_fixtures() {
     assert!((0..family.len()).all(|i| family.best_at(i, &a) == family.best_at(i, &b)));
     assert!((0..family.len()).any(|i| family.best_at(i, &a) != family.best_at(i, &q(1, 5))));
 }
+
+/// The note's message counts. Every threshold has a witness whose only interior switch it
+/// is, with disjoint maximizing sets on its two sides; so any two open cells need different
+/// fixed policies, and being optimal after every deviation takes one message per open cell:
+/// 15, and 11 with 2-1 committed. Keeping every tie and domain takes the 31 and 23 root
+/// classes (above); choosing the root play takes one; a policy optimal from the root, five.
+#[test]
+fn the_notes_message_counts() {
+    let Built { family, root, .. } = build();
+    let isolated = |family: &Family<Domino, Vec<Domino>>, which: &[usize], t: &Q| {
+        which.iter().any(|&i| {
+            let only = family.thresholds(&[i]);
+            only == vec![t.clone()] && family.witnessed(&[i], &only) == only
+        })
+    };
+    let all: Vec<usize> = (0..family.len()).collect();
+    let thresholds = family.thresholds(&all);
+    assert!(thresholds.iter().all(|t| isolated(&family, &all, t)));
+    assert_eq!(thresholds.len() + 1, 15);
+    let family = family.restricted(root, &[tile("2-1")]).unwrap();
+    let later: Vec<usize> = family.reachable(&[root]).into_iter().filter(|&i| i != root).collect();
+    let thresholds = family.thresholds(&later);
+    assert!(thresholds.iter().all(|t| isolated(&family, &later, t)));
+    assert_eq!(thresholds.len() + 1, 11);
+}
