@@ -1,4 +1,4 @@
-examples/book/bidders-plan.silas be1e8e009889710b
+examples/book/bidders-plan.silas 3ce264f2ef79e67b
 examples/book/bidding/bid-only-enough.silas 871bf4036a292adc
 examples/book/bidding/bidder-holds-two-doubles.silas 58b4a0e33e8f3ce8
 examples/book/bidding/bidder-holds-two-offs.silas 586ae779718800a1
@@ -19,9 +19,9 @@ examples/book/cross-game/two-marks-out.silas b9bd7c118c14819c
 examples/book/dead-double.silas df2f44c485309f9e
 examples/book/defend-the-84.silas 79f603e50dcac47e
 examples/book/donate-when-safe.silas 3629ffed48140810
-examples/book/first-lead.silas 40fa90e0d2e3d009
+examples/book/first-lead.silas 9eb79c77441adffd
 examples/book/follow-low.silas 50e561c29d3ffe0b
-examples/book/follow-with-the-off.silas 2ece4846eec03387
+examples/book/follow-with-the-off.silas bf767f41175ef7bf
 examples/book/gates/c01a-top-trump-for-the-donation.silas 79d248d51a0d95bc
 examples/book/gates/c01b-partner-count-on-a-trump-lead.silas 3dc6e3a34a952465
 examples/book/gates/c02-high-trump-handoff.silas ede5a56d27b3d6f3
@@ -161,7 +161,8 @@ lib/book.silas:guards-count 307bf977762d9d2c
 lib/book.silas:draws-the-count-for 76c3be64f44632a9
 lib/book.silas:strips-the-suit-of 08212463d8e5e244
 lib/book.silas:protects 5e122f60f282e0c0
-lib/book.silas:bare-off b254ef6837acaffa
+lib/book.silas:stands-for-the-double 796bd55fdfb090f4
+lib/book.silas:bare-off caff64c1fbb68180
 lib/book.silas:every-trick 020304e749b97102
 lib/book.silas:lead-sets 6ecd43a572df33dc
 lib/book.silas:trump-he-cannot-draw 5858ebb214ca6c7d

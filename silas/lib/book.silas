@@ -395,10 +395,20 @@
   (off o)
   (or (draws-the-count-for dd o) (strips-the-suit-of dd o)))
 
-; An off of the viewer's whose own suit's double he does not hold.
+; The viewer's tile g stands for the double of the off o's suit: not trump, it
+; leads o's suit and cannot lose there. The double itself, or the top tile left
+; in the suit (p. 77, S-0105-d, Hand 23: under doubles trump the book saves the
+; 6-5 for next-to-last, treating it as the 6-1 off's double).
+(define stands-for-the-double (roles (domino g) (domino o))
+  (mine g)
+  (not (trump-tile g))
+  (strips-the-suit-of g o)
+  (not (can-lose g)))
+
+; An off of the viewer's with nothing standing for its own suit's double.
 (define bare-off (roles (domino o))
   (off o)
-  (none (roles dd) (mine dd) (double dd) (strips-the-suit-of dd o)))
+  (none (roles g) (stands-for-the-double g o)))
 
 ; -- The bid.
 

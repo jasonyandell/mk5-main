@@ -313,3 +313,50 @@ fn the_book_rules_in_the_short_forms_allow_what_they_allowed_written_out() {
         assert!(fired > 0, "{name} never fires on these frames");
     }
 }
+
+#[test]
+fn a_double_that_leads_an_offs_suit_always_stands_for_its_double() {
+    // #245: `stands-for-the-double` asks that the guard not be trump and not
+    // lose; a double that leads an off's suit is never trump and never loses
+    // there, so `bare-off` parts from the double-only reading only where a top
+    // tile that is not a double guards the off. Checked on every frame, for the
+    // bidder, the only seat whose rules read `bare-off`.
+    let registry = Registry::standard();
+    let parse = |text: &str| PolicyProgram::parse(&format!("(include book) {text}"), "t").unwrap();
+    let never = parse(
+        "(policy p (rule r (play dd) (viewer v) (mine dd) (double dd) (off o) (strips-the-suit-of dd o)
+           (not (stands-for-the-double dd o))))",
+    );
+    let old = parse(
+        "(policy p (rule r (play o) (viewer v) (bidder v) (off o)
+           (none (roles dd) (mine dd) (double dd) (strips-the-suit-of dd o))))",
+    );
+    let new = parse("(policy p (rule r (play o) (viewer v) (bidder v) (bare-off o)))");
+    let top_tile = parse(
+        "(policy p (rule r (play o) (viewer v) (bidder v) (off o)
+           (some (roles g) (stands-for-the-double g o) (not (double g)))))",
+    );
+    let answered = |p: &PolicyProgram, frame: &Frame| {
+        let allowed = p.compile(&registry, frame.physics()).unwrap().allowed(frame, &mut budget()).unwrap();
+        if allowed.provenance == DecisionProvenance::Fallback { DominoSet::default() } else { allowed.tiles }
+    };
+    let b = book();
+    let narrated: usize = ["hand-28", "hand-29", "hand-30", "hand-31", "hand-32", "hand-33", "hand-34", "hand-35"]
+        .iter()
+        .map(|id| 4 * b.line(&format!("{id}/prose")).plays().len())
+        .sum();
+    let (mut parted, mut parted_narrated) = (0, 0);
+    for (k, frame) in frames().iter().enumerate() {
+        assert!(answered(&never, frame).is_empty(), "a double failed to stand for itself");
+        let (was, now) = (answered(&old, frame), answered(&new, frame));
+        if was != now {
+            parted += 1;
+            parted_narrated += usize::from(k < narrated);
+            // Every off the new reading drops is one a top tile now guards.
+            let guarded = answered(&top_tile, frame);
+            assert!(was.iter().all(|t| now.contains(t) || guarded.contains(t)), "{was:?} {now:?}");
+            assert!(now.iter().all(|t| was.contains(t)));
+        }
+    }
+    eprintln!("bare-off parts from the double-only reading on {parted} frames ({parted_narrated} of the book's narrated)");
+}

@@ -56,6 +56,13 @@
 //! the table offers them (`tests/bidding.rs`; offered only the pip trumps,
 //! every call and declaration is the pinned digest's, on every hand).
 //!
+//! The bidder's guard for an off (#245, 2026-10-22) added the prelude's
+//! `stands-for-the-double` (the double, or the top tile left in the off's
+//! suit, p. 77) and moved four pins on purpose, each pinned by a test of
+//! `tests/book_rules.rs` (Hand 23's 6-5 saved ahead of the 6-1): the prelude's
+//! `bare-off`, the file `bidders-plan`, and, reading `bare-off`, `first-lead`
+//! and `follow-with-the-off` (their texts unchanged).
+//!
 //! Each prelude definition is pinned by the core of a query that calls it on
 //! roles of its parameters' sorts, so a definition no file calls is pinned too;
 //! a number definition by a comparison that reads it, `(<= (name ...) 5)`.

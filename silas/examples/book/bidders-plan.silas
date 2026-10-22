@@ -36,6 +36,12 @@
 ;   off goes last. Take your other winners first (a double that may draw an
 ;   off's count from another suit among them), then the double of the off's
 ;   own suit next-to-last (Hands 16, 17, 18, 19, 25, 26, 28, 34, 35).
+; - an off whose suit's double is not out of play but whose top tile is the
+;   viewer's: that tile stands for the double, and the off goes the bid-of-marks
+;   way even holding trumps: the trumps and other winners first, the top tile
+;   next-to-last, the off last (p. 77, S-0105-d: under doubles trump Hand 23
+;   saves the 6-5 for next-to-last, treating it as the 6-1's double, the way a
+;   bid of marks keeps a double ahead of its off; #245).
 ; Replaces gates/c01a-top-trump-for-the-donation.silas and
 ; gates/c11-double-ahead-of-the-off.silas. How it differs: C1a reads the
 ; bidder's knowledge (partner shown void, a trump out); the book leads the top
@@ -155,7 +161,10 @@
     (bidder b)
     (on-lead b)
     (no-setter-trump)
-    (or (none (roles t) (mine t) (trump-tile t)) (every-trick))
+    (or
+      (none (roles t) (mine t) (trump-tile t))
+      (every-trick)
+      (some (roles o g) (off o) (stands-for-the-double g o) (not (double g))))
     (some (roles o) (off o))
     (own-legal lead)
     (not (can-lose lead))
@@ -165,11 +174,13 @@
     (bidder b)
     (on-lead b)
     (no-setter-trump)
-    (or (none (roles t) (mine t) (trump-tile t)) (every-trick))
+    (or
+      (none (roles t) (mine t) (trump-tile t))
+      (every-trick)
+      (some (roles o g) (off o) (stands-for-the-double g o) (not (double g))))
     (own-legal lead)
-    (double lead)
     (off off)
-    (strips-the-suit-of lead off))
+    (stands-for-the-double lead off))
   (rule take-the-rest (play lead)
     (viewer b)
     (bidder b)
