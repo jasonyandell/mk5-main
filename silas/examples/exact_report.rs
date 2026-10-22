@@ -103,7 +103,7 @@ struct Cell {
 
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
-    let files: Vec<&String> = args.iter().filter(|a| a.ends_with(".jsonl")).collect();
+    let files: Vec<&String> = args.iter().filter(|a| !a.starts_with("--") && a.ends_with(".jsonl")).collect();
     let mut cells: BTreeMap<String, Cell> = BTreeMap::new();
     let mut hands: BTreeMap<String, (usize, usize, usize, f64, f64, usize, usize)> = BTreeMap::new();
     let mut walt: BTreeMap<String, BTreeMap<String, Vec<(f64, f64)>>> = BTreeMap::new();
