@@ -16,6 +16,7 @@
 //! a negative control that C exceeds H, never a value and never a choice.
 
 pub mod epoch;
+pub mod ladder;
 pub mod m3;
 pub mod metal;
 pub mod net;

@@ -24,17 +24,19 @@ use crate::epoch::{Backend, Batch, CHILD_WORDS, Child, EpochError, PART_WORDS, S
 use crate::tables::Tables;
 
 const SOURCE: &str = include_str!("../shaders/epoch.metal");
+const LADDER: &str = include_str!("../shaders/ladder.metal");
 
 /// Children per emit command: 2^22 children of 64 bytes, 256 MiB.
 pub const CHUNK_CHILDREN: usize = 1 << 22;
 
-type Buffer = Retained<ProtocolObject<dyn MTLBuffer>>;
+pub(crate) type Buffer = Retained<ProtocolObject<dyn MTLBuffer>>;
 
 pub struct Gpu {
     device: Retained<ProtocolObject<dyn MTLDevice>>,
     queue: Retained<ProtocolObject<dyn MTLCommandQueue>>,
     count: Retained<ProtocolObject<dyn MTLComputePipelineState>>,
     emit: Retained<ProtocolObject<dyn MTLComputePipelineState>>,
+    pub(crate) ladder: Retained<ProtocolObject<dyn MTLComputePipelineState>>,
     /// Commands committed, for the receipt.
     pub commands: u64,
 }
@@ -47,10 +49,13 @@ impl Gpu {
     /// The system's default Metal device, with the epoch kernels compiled.
     pub fn new() -> Result<Gpu, EpochError> {
         let device = MTLCreateSystemDefaultDevice().ok_or_else(|| device_error("no Metal device"))?;
-        let library = device
-            .newLibraryWithSource_options_error(&NSString::from_str(SOURCE), None)
-            .map_err(|e| EpochError::Device(format!("the shaders did not compile: {e:?}")))?;
-        let pipeline = |name: &str| {
+        let compile = |source: &str| {
+            device
+                .newLibraryWithSource_options_error(&NSString::from_str(source), None)
+                .map_err(|e| EpochError::Device(format!("the shaders did not compile: {e:?}")))
+        };
+        let (library, ladder_library) = (compile(SOURCE)?, compile(LADDER)?);
+        let pipeline = |library: &ProtocolObject<dyn MTLLibrary>, name: &str| {
             let function = library
                 .newFunctionWithName(&NSString::from_str(name))
                 .ok_or_else(|| EpochError::Device(format!("no kernel {name}")))?;
@@ -58,16 +63,17 @@ impl Gpu {
                 .newComputePipelineStateWithFunction_error(&function)
                 .map_err(|e| EpochError::Device(format!("no pipeline for {name}: {e:?}")))
         };
-        let (count, emit) = (pipeline("epoch_count")?, pipeline("epoch_emit")?);
+        let (count, emit) = (pipeline(&library, "epoch_count")?, pipeline(&library, "epoch_emit")?);
+        let ladder = pipeline(&ladder_library, "ladder_gather")?;
         let queue = device.newCommandQueue().ok_or_else(|| device_error("no command queue"))?;
-        Ok(Gpu { device, queue, count, emit, commands: 0 })
+        Ok(Gpu { device, queue, count, emit, ladder, commands: 0 })
     }
 
     pub fn device_name(&self) -> String {
         self.device.name().to_string()
     }
 
-    fn upload(&self, words: &[u32]) -> Result<Buffer, EpochError> {
+    pub(crate) fn upload(&self, words: &[u32]) -> Result<Buffer, EpochError> {
         let bytes = (words.len().max(1)) * 4;
         let one = [0u32; 1];
         let src = if words.is_empty() { &one[..] } else { words };
@@ -77,7 +83,7 @@ impl Gpu {
             .ok_or_else(|| device_error("buffer allocation failed"))
     }
 
-    fn zeroed(&self, words: usize) -> Result<Buffer, EpochError> {
+    pub(crate) fn zeroed(&self, words: usize) -> Result<Buffer, EpochError> {
         let buffer = self
             .device
             .newBufferWithLength_options(words.max(1) * 4, MTLResourceOptions::StorageModeShared)
@@ -89,13 +95,20 @@ impl Gpu {
 
     /// The buffer's first `words` u32s, copied out. Called only after the command that wrote
     /// them completed.
-    fn read(buffer: &Buffer, words: usize) -> Vec<u32> {
+    pub(crate) fn read(buffer: &Buffer, words: usize) -> Vec<u32> {
         assert!(buffer.length() >= words * 4, "a read past the buffer");
         // SAFETY: the buffer holds at least `words` u32s and no command is in flight on it.
         unsafe { std::slice::from_raw_parts(buffer.contents().as_ptr() as *const u32, words) }.to_vec()
     }
 
-    fn run(
+    /// Sets the buffer's first `words` u32s to `value`. Called only with no command in flight on it.
+    pub(crate) fn fill(buffer: &Buffer, words: usize, value: u32) {
+        assert!(buffer.length() >= words * 4, "a fill past the buffer");
+        // SAFETY: the buffer holds at least `words` u32s and no command is in flight on it.
+        unsafe { std::slice::from_raw_parts_mut(buffer.contents().as_ptr() as *mut u32, words) }.fill(value);
+    }
+
+    pub(crate) fn run(
         &mut self,
         pipeline: &ProtocolObject<dyn MTLComputePipelineState>,
         buffers: &[&Buffer],

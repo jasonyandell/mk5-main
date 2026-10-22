@@ -1,0 +1,60 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
+//! The Metal gather against Exact-T1's CPU gather (`silas::player::trick1`), on the trick-1
+//! lead of deal 0 of `pour_make_s1001_n512_d5000` (P4, S0 bids 30, every other seat lowest),
+//! shards 0..1000. The pins are Exact-T1's own `probe-k0.bin` and `probe-k1.bin` (its CPU
+//! run, 2026-10-22 08:26): the Metal bytes equalled those files byte for byte, and the pins
+//! are their counts and a checksum of their bytes.
+//!
+//! STRATEGY-FUSION FENCE: the gather's upper column is clairvoyant, a bound only.
+
+use silas::player::{Root, SeatLaw};
+use silas::reference::Straight42;
+use silas::{Auction, Bid, DominoSet, Frame, Seat};
+use silas_metal::Gpu;
+use silas_metal::ladder::{Gathered, Problem, Work};
+
+fn fnv(bytes: &[u8]) -> u64 {
+    bytes.iter().fold(0xcbf2_9ce4_8422_2325, |h, b| (h ^ u64::from(*b)).wrapping_mul(0x0100_0000_01b3))
+}
+
+fn deal0() -> (Frame, Problem) {
+    let physics = Straight42::ALL[4].physics();
+    let hand = DominoSet::from_bits(67_732_752).unwrap();
+    let auction = Auction::won_by(Seat::S0, Bid::Points(30)).unwrap();
+    let frame = Frame::new(auction, physics, Seat::S0, hand, vec![]).unwrap();
+    let problem = Problem::new(&frame, [SeatLaw::Lowest; 4], Root::Posterior).unwrap();
+    (frame, problem)
+}
+
+#[test]
+fn deal0_probes_equal_exact_t1() {
+    let (_, problem) = deal0();
+    assert_eq!(problem.shards(), 116_280);
+    let mut gpu = Gpu::new().expect("a Metal device");
+    let pins: [(usize, usize, Work, u64); 2] = [
+        (0, 12_060, Work { tree: 128_186_278, tails: 641_230_312, god: 1_984_392_674 }, 0xd884_3588_3c66_cf84),
+        (1, 509_459, Work { tree: 393_476_864, tails: 1_216_747_116, god: 2_317_763_457 }, 0x284b_3c22_c2f2_6d6f),
+    ];
+    for (k, leaves, work, sum) in pins {
+        let g: Gathered = problem.gather(&mut gpu, k, 0, 1000, 22).unwrap();
+        assert_eq!(g.worlds, 3_432_000);
+        assert_eq!(g.leaves.len(), leaves, "k {k}");
+        assert_eq!(g.work, work, "k {k}");
+        let bytes = g.to_bytes();
+        assert_eq!(Gathered::from_bytes(&bytes).unwrap(), g);
+        assert_eq!(fnv(&bytes), sum, "k {k}: the bytes of Exact-T1's probe file");
+    }
+}
+
+#[test]
+fn a_tiny_table_drains_and_still_agrees() {
+    // Shards 0..40 through a leaf table of 2^15 slots (drained many times) equal the same
+    // shards through 2^20 slots.
+    let (_, problem) = deal0();
+    let mut gpu = Gpu::new().expect("a Metal device");
+    let big = problem.gather(&mut gpu, 1, 0, 40, 20).unwrap();
+    let small = problem.gather(&mut gpu, 1, 0, 40, 15).unwrap();
+    assert_eq!(big, small);
+}
