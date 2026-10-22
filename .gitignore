@@ -169,6 +169,8 @@ parlor/sessions/
 scenario/core/target/
 # the Demon's binary, when built in place (the tournament builds it under scratch/)
 tournament/demon/target/
+# the exact player's Metal engine
+silas-metal/target/
 
 # Lean build artifacts (scenario/lean, the stabilization theorems)
 scenario/lean/.lake/

@@ -1,0 +1,45 @@
+[package]
+name = "silas-metal"
+version = "0.1.0"
+edition = "2024"
+description = "The exact player's bulk engine on Metal: the field epoch (from a focal action to the focal seat's next decision) over explicit worlds, exact integer masses, CPU-identical"
+license = "CC0-1.0"
+publish = false
+
+# Standalone, like Silas: it reads Silas's rules (Physics) and nothing else in the repository.
+[workspace]
+
+[dependencies]
+silas = { path = "../silas", default-features = false }
+num-bigint = "0.4"
+num-rational = "0.4"
+num-traits = "0.2"
+objc2 = "=0.6.4"
+objc2-foundation = { version = "=0.3.2", default-features = false, features = ["std", "NSError", "NSObject", "NSString"] }
+objc2-metal = { version = "=0.3.2", default-features = false, features = [
+    "std",
+    "MTLAllocation",
+    "MTLBuffer",
+    "MTLCommandBuffer",
+    "MTLCommandEncoder",
+    "MTLCommandQueue",
+    "MTLComputeCommandEncoder",
+    "MTLComputePipeline",
+    "MTLDevice",
+    "MTLLibrary",
+    "MTLResource",
+    "MTLTypes",
+] }
+
+[lints.rust]
+# One module, `metal`, speaks to the GPU and may use `unsafe`; nothing else does.
+unsafe_code = "deny"
+
+[lints.clippy]
+float_arithmetic = "deny"
+
+[profile.dev]
+opt-level = 1
+
+[profile.release]
+debug = 1
