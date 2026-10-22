@@ -299,7 +299,7 @@ run. Together they read one circuit: how the net decides what to lead and what t
 | [[lem-unit-no-trump-yet-2026-10-20]] | L1 7 | a counter of trumps on the trick; open means trumping in is open | trumping in −0.411 of 0.797, rank 1 of 16 | 1 / 5 |
 | [[lem-unit-theirs-2026-10-20]] | L1 14 | "not partner's trick; keep your count off it" | count given away 0.044 → 0.426, rank 1 of 16 | 3 / 5 |
 | [[lem-unit-pull-trump-2026-10-20]] | L1 8 | a dial on trump still out against me, cut by the lead | forced on, trump leads −0.330 beyond the layer; ablated +0.235, rank 2 of 16 | 3 / 5 |
-| [[lem-unit-count-on-it-2026-10-21]] | L2 4 | "feed partner's trick", a dial on who holds it; its tail is an opponent's trump | count on partner's trick 0.669 → 0.086 under blanks–fours, rank 1 of 8 | 4 / 6 |
+| [[lem-unit-count-on-it-2026-10-21]] | L2 4 | "feed partner's trick", a dial on who holds it; its tail is an opponent's trump | count on partner's trick 0.669 → 0.086 under ones–fours, rank 1 of 8 | 4 / 6 |
 
 What carried across them:
 - **Read steering by where play goes, against the layer on the same rows.** A unit tied to one

@@ -1,4 +1,4 @@
-## [2026-10-21 | claude | lem: unit paper 8 graded: 16×8 s0 layer-2 unit 4 is the net's "feed partner's trick" unit under blanks–fours (#235, #202)]
+## [2026-10-21 | claude | lem: unit paper 8 graded: 16×8 s0 layer-2 unit 4 is the net's "feed partner's trick" unit under ones–fours (#235, #202)]
 
 - Predictions 1, 2, 3 and 5 held. Under declarations 1–4, ablated where partner holds the trick,
   count played falls 0.669 → 0.086 (−0.583 [−0.589, −0.575]), rank 1 of 8. L2 2 does the same job

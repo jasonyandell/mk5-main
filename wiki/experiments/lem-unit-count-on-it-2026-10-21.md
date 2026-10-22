@@ -322,10 +322,13 @@ The run of 2026-10-21 followed the registration: one `scripts/cpu-slot` run of 7
 script, `SHA256SUMS`) is `lem/unit-count-on-it-2026-10-21/` in
 [texas-42-zeb-research-2026-10](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/f0ac72ebde7ff19b7e161d16f30fe31266fd55a1/lem/unit-count-on-it-2026-10-21).
 
-**The picture.** Under blanks through fours, unit 4 is the net's main **"feed partner's trick"**
+**The picture.** Under ones through fours, unit 4 is the net's main **"feed partner's trick"**
 unit. It is a dial on whose trick it is, and an opponent's trump on the trick lowers it.
 - Where partner holds the trick, ablating it drops count played from 0.669 to 0.086.
 - No other layer-2 unit moves count on those rows.
+- Under blanks (declaration 0), whose write is only half aligned, it is still the only feeder, but
+  smaller: −0.242. *Corrected 2026-10-21: the first version of this page said "blanks through
+  fours" for the −0.583, which is declarations 1–4 (Media caught it).*
 - Its 1.3% off tail is where an opponent's trump holds the trick: 0.998 of off rows.
 - Whether I could take the trick back barely matters, so verb A stands and verb B lost.
 - Under fives and sixes, the same push lands on non-count tiles, and L2 2 does the feeding.
