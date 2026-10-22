@@ -104,9 +104,12 @@ fn main() {
             let (mut spent, mut counted) = (0u64, 0usize);
             for (label, mask) in &pieces {
                 let t = Instant::now();
-                let (worlds, w) = problem.count(&mut gpu, k, Piece::roots(*mask), from..to, limits.table_bits).unwrap();
+                // A tile's walk stops once the rung is past the budget, mid-tile if need be.
+                let stop = budget - spent;
+                let (worlds, w, end) =
+                    problem.count(&mut gpu, k, Piece::roots(*mask), from..to, limits.table_bits, stop).unwrap();
                 println!(
-                    "deal {d} decl P{decl} viewer {} k {k} root {label} counted {from}..{to} worlds {worlds} plays {} (tree {} tails {} god {}) metal wall {} ms",
+                    "deal {d} decl P{decl} viewer {} k {k} root {label} counted {from}..{end} worlds {worlds} plays {} (tree {} tails {} god {}) metal wall {} ms",
                     viewer.index(),
                     w.total(),
                     w.tree,
@@ -118,7 +121,8 @@ fn main() {
                     let mut out = std::fs::OpenOptions::new().create(true).append(true).open(path).unwrap();
                     writeln!(
                         out,
-                        "{key} {label} COUNT worlds {worlds} plays {} {} {} {} metal",
+                        "{key} {label} COUNT{} worlds {worlds} plays {} {} {} {} metal",
+                        if end < to { format!(" shards {from}..{end} of {from}..{to}") } else { String::new() },
                         w.total(),
                         w.tree,
                         w.tails,
@@ -127,7 +131,7 @@ fn main() {
                     .unwrap();
                 }
                 spent += w.total();
-                counted += 1;
+                counted += usize::from(end == to);
                 // Past the budget is all a refusal needs; the remaining pieces are not walked.
                 if spent > budget {
                     break;

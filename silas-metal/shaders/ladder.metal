@@ -55,6 +55,9 @@ constant uint L_SECOND = 587;     // the plays gathered at depth 2 (the next sea
 constant uint EMPTY = 0xffffffffu;
 constant uint MAXK = 6;
 constant uint ERR_TABLE = 1;
+// Probes an insert may make before it refuses: a table that full refuses the gather at once,
+// where probing every slot would take hours.
+constant uint PROBES = 4096;
 constant uint ERR_DEPTH = 2;
 constant uint ERR_PATH = 3;
 
@@ -193,7 +196,7 @@ static inline void add64(device atomic_uint* pair, uint x) {
 static inline void insert(device atomic_uint* keys, device atomic_uint* vals, device atomic_uint* out, uint mask,
                           thread const Path& path, uint t0, uint t1, uint g, thread uint& err) {
     uint h = mix(path.w[0] ^ mix(path.w[1] ^ mix(path.w[2] ^ mix(path.w[3]))));
-    for (uint probe = 0; probe <= mask; probe++) {
+    for (uint probe = 0; probe <= min(mask, PROBES); probe++) {
         uint slot = (h + probe) & mask;
         bool match = true;
         for (uint w = 0; w < 4 && match; w++) {
@@ -294,6 +297,7 @@ kernel void ladder_gather(device const uint* p [[buffer(0)]],
     bool counted = false;
     uint vmask = 0xFFFFFFFFu;
     uint mask = chunk[2];
+    bool gather = chunk[3] != 0;  // a count walk keeps no leaves and touches no table
     uint k = p[L_K];
     if (k >= MAXK) { atomic_fetch_max_explicit(errw, ERR_DEPTH, memory_order_relaxed); return; }
     uint viewer = p[L_VIEWER];
@@ -361,14 +365,14 @@ kernel void ladder_gather(device const uint* p [[buffer(0)]],
         uint depth = sp + 1;
         int d = decided(p, nx);
         if (d >= 0) {
-            insert(keys, vals, out, mask, px, uint(d), uint(d), uint(d), err);
+            if (gather) insert(keys, vals, out, mask, px, uint(d), uint(d), uint(d), err);
             continue;
         }
         if (depth > k) {
             uint t0 = tail(p, nx, 0, tails);
             uint t1 = tail(p, nx, 1, tails);
             uint g = god(p, nx, gwork, err);
-            insert(keys, vals, out, mask, px, t0, t1, g, err);
+            if (gather) insert(keys, vals, out, mask, px, t0, t1, g, err);
             continue;
         }
         sp += 1;

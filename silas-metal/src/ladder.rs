@@ -458,11 +458,13 @@ impl Problem {
         shards: std::ops::Range<usize>,
         limits: Limits,
     ) -> Result<Gathered, EpochError> {
-        self.walk(gpu, k, piece, shards, limits, true)
+        self.walk(gpu, k, piece, shards, limits, None)
     }
 
     /// The same walk as `gather`, keeping no leaves: its worlds and plays only, exactly as the
-    /// gather counts them. Evidence for a play budget; a rung needs the gather.
+    /// gather counts them. Evidence for a play budget; a rung needs the gather. The walk stops
+    /// after the first chunk whose plays pass `stop`, and says where: the first shard not
+    /// counted (the range's end when it counted them all).
     pub fn count(
         &self,
         gpu: &mut Gpu,
@@ -470,9 +472,10 @@ impl Problem {
         piece: Piece,
         shards: std::ops::Range<usize>,
         table_bits: u32,
-    ) -> Result<(u64, Work), EpochError> {
+        stop: u64,
+    ) -> Result<(u64, Work, usize), EpochError> {
         let limits = Limits { table_bits, ..Limits::default() };
-        self.walk(gpu, k, piece, shards, limits, false).map(|g| (g.worlds, g.work))
+        self.walk(gpu, k, piece, shards, limits, Some(stop)).map(|g| (g.worlds, g.work, g.ranges[0].1))
     }
 
     fn walk(
@@ -482,7 +485,7 @@ impl Problem {
         piece: Piece,
         shards: std::ops::Range<usize>,
         limits: Limits,
-        keep: bool,
+        stop: Option<u64>,
     ) -> Result<Gathered, EpochError> {
         let (from, to) = (shards.start, shards.end);
         let Limits { table_bits, max_leaves, min_free } = limits;
@@ -506,7 +509,7 @@ impl Problem {
         // (a stable sort of two runs) and its equal paths summed, 48 bytes a leaf.
         let mut leaves: Vec<(u128, Leaf)> = Vec::new();
         let drain = |leaves: &mut Vec<(u128, Leaf)>| {
-            if !keep {
+            if stop.is_some() {
                 Gpu::fill(&keys, slots * 4, EMPTY);
                 Gpu::fill(&vals, slots * 4, 0);
                 return;
@@ -538,8 +541,12 @@ impl Problem {
             Gpu::fill(&keys, slots * 4, EMPTY);
             Gpu::fill(&vals, slots * 4, 0);
         };
-        let chunk_worlds = CHUNK_WORLDS.min(slots as u64 / 4);
-        let mut claimed_at_drain = 0u32;
+        // A command's worlds start few and follow the leaves each claims: doubled while a command
+        // claims under a sixteenth of the slots, halved past an eighth. Deep horizons lay many
+        // leaves a world, and a command must not fill the table between drains.
+        let cap = CHUNK_WORLDS.min(slots as u64 / 4);
+        let mut chunk_worlds = cap.min(1 << 12);
+        let (mut claimed_at_drain, mut claimed_before) = (0u32, 0u32);
         let mut i = from;
         while i < to {
             let mut shards = Vec::new();
@@ -551,7 +558,8 @@ impl Problem {
                 prefix.push(total as u32);
                 i += 1;
             }
-            let chunk = gpu.upload(&[total as u32, shards.len() as u32, (slots - 1) as u32])?;
+            let gather = u32::from(stop.is_none());
+            let chunk = gpu.upload(&[total as u32, shards.len() as u32, (slots - 1) as u32, gather])?;
             let (shards_b, prefix_b) = (gpu.upload(&shards)?, gpu.upload(&prefix)?);
             let ladder = gpu.ladder.clone();
             gpu.run(&ladder, &[&p, &chunk, &shards_b, &prefix_b, &keys, &vals, &out, &err], total as usize)?;
@@ -562,11 +570,23 @@ impl Problem {
                 e => return Err(EpochError::Device(format!("the ladder kernel refused with code {e}"))),
             }
             let claimed = Gpu::read(&out, 9)[8];
+            let fresh = claimed.wrapping_sub(claimed_before) as usize;
+            claimed_before = claimed;
+            chunk_worlds = if fresh > slots / 8 {
+                (chunk_worlds / 2).max(1)
+            } else if fresh < slots / 16 {
+                (chunk_worlds * 2).min(cap)
+            } else {
+                chunk_worlds
+            };
             let plays = || {
                 let o = Gpu::read(&out, 8);
                 (1..4).map(|j| u64::from(o[2 * j]) | (u64::from(o[2 * j + 1]) << 32)).sum::<u64>()
             };
-            if (claimed - claimed_at_drain) as usize > slots / 4 {
+            if stop.is_some_and(|s| plays() > s) {
+                break;
+            }
+            if claimed.wrapping_sub(claimed_at_drain) as usize > slots / 4 {
                 drain(&mut leaves);
                 claimed_at_drain = claimed;
                 if leaves.len() > max_leaves {
@@ -598,7 +618,7 @@ impl Problem {
         }
         Ok(Gathered {
             k,
-            ranges: vec![(from, to)],
+            ranges: vec![(from, i)],
             leaves,
             worlds: pair(0),
             work: Work { tree: pair(2), tails: pair(4), god: pair(6) },

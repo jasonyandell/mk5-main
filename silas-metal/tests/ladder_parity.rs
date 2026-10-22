@@ -48,7 +48,12 @@ fn deal0_probes_equal_exact_t1() {
         assert_eq!(fnv(&bytes), sum, "k {k}: the bytes of Exact-T1's probe file");
         // The count walk keeps no leaves and counts the same worlds and plays, through a table
         // small enough to drain many times.
-        assert_eq!(problem.count(&mut gpu, k, Piece::ALL, 0..1000, 15).unwrap(), (3_432_000, work));
+        assert_eq!(problem.count(&mut gpu, k, Piece::ALL, 0..1000, 15, u64::MAX).unwrap(), (3_432_000, work, 1000));
+        // Told to stop at half the plays, it stops past them and short of the range's end, and
+        // counts exactly the shards it names.
+        let (worlds, part, end) = problem.count(&mut gpu, k, Piece::ALL, 0..1000, 15, work.total() / 2).unwrap();
+        assert!(part.total() > work.total() / 2 && end < 1000, "k {k}: stopped at {end}");
+        assert_eq!(problem.count(&mut gpu, k, Piece::ALL, 0..end, 15, u64::MAX).unwrap(), (worlds, part, end));
     }
 }
 
