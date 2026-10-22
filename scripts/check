@@ -78,6 +78,11 @@ def no_cuda():
         "forge is GPU-only and needs CUDA (no nvidia-smi); skipped, not a failure"
 
 
+def apple_silicon():
+    return None if sys.platform == "darwin" and os.uname().machine == "arm64" else \
+        "silas-metal needs a Metal device (Apple silicon); unavailable here, not a failure"
+
+
 def first(*checks):
     for c in checks:
         r = c() if callable(c) else c
@@ -115,6 +120,10 @@ SUITES = [
           what="Playwright, src/tests/e2e, on its own dev-server port"),
     Suite("silas", ("silas/",), [("silas", ["python3", "run-tests", "--locked"])], (),
           lambda: which("cargo"), what="cargo test --release, the test binaries run side by side (silas/run-tests)"),
+    Suite("silas-metal", ("silas-metal/", "silas/"),
+          [("silas-metal", ["cargo", "test", "--release", "--locked"])], (),
+          lambda: first(which("cargo"), apple_silicon),
+          what="cargo test --release: the Metal kernels against their CPU twins (epoch, M3 h8, trick-1 gather) (#248)"),
     Suite("scenario-core", ("scenario/core/", "silas/"),
           [("scenario/core", ["cargo", "test", "--locked"]),
            ("scenario/core", ["cargo", "test", "--locked", "--features", "silas"])], (),
