@@ -736,8 +736,9 @@ pub mod file {
 
     /// One decision's row: the position at this decision, the declared model, the root's
     /// exact values and maximizing set in every parameter class, the act at `p`, the counts
-    /// and the wall time; with `quotient`, the controller's states (every, path, plan; raw
-    /// and fork) and root ladders. With `recount` n > 0, the second construction
+    /// and the wall time; with `quotient` at `Some(max)`, the controller's states (every,
+    /// path, plan; raw and fork) and root ladders, or where the course has more than `max`
+    /// parameter classes, only that count (`quotient_skipped`). With `recount` n > 0, the second construction
     /// ([`super::recount`]) is run at n parameter classes (all of them when there are at
     /// most n, else n spaced evenly from the first to the last) and must agree exactly in
     /// mass, value and maximizing set, or the row is refused.
@@ -753,7 +754,7 @@ pub mod file {
         solved: &Solved,
         p: &BigRational,
         wall_ns: u128,
-        quotient: bool,
+        quotient: Option<usize>,
         recount: usize,
     ) -> Result<Value> {
         let f = &solved.family;
@@ -815,7 +816,9 @@ pub mod file {
             "wall_ns": wall_ns as u64,
             "recounted": recounted,
         });
-        if quotient {
+        if quotient.is_some_and(|max| reps.len() > max) {
+            out["quotient_skipped"] = Value::from(reps.len());
+        } else if quotient.is_some() {
             let mut q = serde_json::Map::new();
             for (name, reach) in [("every", Reach::Every), ("path", Reach::Path), ("plan", Reach::Plan)] {
                 let (course, roots) = f.controller(solved.root, &reps, reach)?;
