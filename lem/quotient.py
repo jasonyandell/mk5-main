@@ -191,6 +191,137 @@ INTERFACES = {"raw": (output_raw, successors_raw), "shape": (output_shape, succe
               "fork": (output_shape, successors_fork)}
 
 
+# ---- tile-free observation labels -----------------------------------------
+#
+# Each observed play is described by facts that name no tile: how it stands in its trick and
+# against the focal seat's remaining tiles, which are named only by slot (rank by tile id among
+# them, as menu slots are).  A label keeps a subset of the facts; the block label is the action's
+# menu slot and the sequence of play labels.  A label routes when every (slot, label) out of a
+# state leads to one state.
+
+FIELDS = ("seat", "trump", "follows", "count", "beats_all", "winning", "follow_slots", "beats_slots")
+LABELS = {
+    "hand_relative": FIELDS,
+    "brief_follow_slots": ("seat", "trump", "follows", "count", "beats_all", "follow_slots"),
+    "brief_winning": ("seat", "trump", "follows", "count", "beats_all", "winning"),
+    "brief": ("seat", "trump", "follows", "count", "beats_all"),
+    "seat_follows": ("seat", "follows"),
+    "seat": ("seat",),
+}
+
+
+def replay(tokens):
+    """Rules, the focal seat's original tiles, and the public record after the history's plays."""
+    from scenario.record import empty_record
+    from scenario.rules import rules_for
+    rules = rules_for(tokens[3] - 32)
+    ps = pairs(tokens)
+    record = empty_record(ps[0][0] - YOU)
+    for seat, tile in ps:
+        if seat - YOU != record.seat:
+            raise ValueError("history out of turn")
+        record = record.advance(tile, rules)
+    return rules, set(tokens[5:12]), record
+
+
+def play_facts(rules, record, left, tile):
+    """The facts of one observed play, before it joins the record; `left` holds the focal seat's tiles."""
+    led = record.led
+    suit = rules.led_suit[tile if led is None else led]
+    rank = rules.rank[suit]
+    mine = sorted(left)
+    top = max((rank[t] for t in record.trick), default=-1)
+    return (record.seat, (rules.follow_bits[7] >> tile) & 1,
+            2 if led is None else int(rules.follows(tile, led)), rules.count[tile],
+            int(all(rank[tile] > rank[u] for u in mine)), int(rank[tile] > top),
+            tuple(i for i, u in enumerate(mine) if (rules.follow_bits[suit] >> u) & 1) if led is None else (),
+            tuple(i for i, u in enumerate(mine) if rank[tile] > rank[u]))
+
+
+def block_facts(course):
+    """For every non-root node: its action's slot in the parent menu and the facts of each observed play."""
+    facts = {}
+    for key, node in course.items():
+        if not node.children:
+            continue
+        rules, own, history = replay(node.tokens)
+        played = {t for s, t in pairs(node.tokens) if s == YOU}
+        slots = {t: i for i, t in enumerate(node.legal)}
+        for (action, observed), child in node.children.items():
+            record, left = history.advance(action, rules), own - played - {action}
+            plays = []
+            for seat, tile in observed:
+                if seat - YOU != record.seat or seat == YOU:
+                    raise ValueError("observed play out of turn")
+                plays.append(play_facts(rules, record, left, tile))
+                record = record.advance(tile, rules)
+            facts[child] = (slots[action], tuple(plays))
+    return facts
+
+
+def project(plays, fields):
+    at = [FIELDS.index(f) for f in fields]
+    return tuple(tuple(p[i] for i in at) for p in plays)
+
+
+def successors_labelled(facts, fields):
+    """Per (action slot, play-label sequence), the set of successor classes."""
+    def succ(node, nodes, cls):
+        per = defaultdict(set)
+        for child in node.children.values():
+            slot, plays = facts[child]
+            per[(slot, project(plays, fields))].add(cls[child])
+        return tuple(sorted((k, tuple(sorted(v))) for k, v in per.items()))
+    return succ
+
+
+def routing(course, cls, succ, facts, fields):
+    """Where a label fails to route: a (slot, label) out of one node that reaches two states.
+    Each colliding group is a *decision* collision when the states it reaches answer differently
+    (menu size or maximizing slots), a *domain* collision when they answer alike but accept
+    different label sequences afterwards, else *deeper*.  For consecutive colliding blocks, the
+    facts outside the label that tell them apart; "nothing" means no field of the family does."""
+    groups_by_kind, nodes_by_kind, told_apart, examples = Counter(), defaultdict(set), Counter(), []
+    failing = set()
+
+    def keys(node):
+        return {(facts[c][0], project(facts[c][1], fields)) for c in node.children.values()}
+
+    for key in sorted(course):
+        node = course[key]
+        groups = defaultdict(list)
+        for block, child in sorted(node.children.items()):
+            groups[(facts[child][0], project(facts[child][1], fields))].append((block, child))
+        for label, group in sorted(groups.items()):
+            reps = {}
+            for block, child in group:
+                reps.setdefault(cls[child], (block, child))
+            if len(reps) < 2:
+                continue
+            reps = sorted(reps.values())
+            outs = [output_shape(course[c]) for _, c in reps]
+            kind = ("decision: menu size" if len({o[1] for o in outs}) > 1 else
+                    "decision: maximizing slots" if len(set(outs)) > 1 else
+                    "domain" if len({frozenset(keys(course[c])) for _, c in reps}) > 1 else "deeper")
+            groups_by_kind[kind] += 1
+            nodes_by_kind[kind.split(":")[0]].add(key)
+            failing.add(cls[key])
+            for (b1, c1), (b2, c2) in zip(reps, reps[1:]):
+                f1, f2 = facts[c1][1], facts[c2][1]
+                differ = [f for i, f in enumerate(FIELDS) if any(x[i] != y[i] for x, y in zip(f1, f2))]
+                told_apart["+".join(differ) or "nothing"] += 1
+            if kind.startswith("decision") and len(examples) < 8:
+                examples.append({"root": node.root_id, "ply": node.ply, "kind": kind,
+                                 "blocks": [[b[0], [list(o) for o in b[1]]] for b, _ in reps],
+                                 "next_menus": [list(course[c].legal) for _, c in reps],
+                                 "next_q": [{str(t): str(v) for t, v in course[c].q.items()} for _, c in reps]})
+    return {"routes": not failing, "states_that_fail": len(failing), "of_states": len(set(cls.values())),
+            "nodes_that_fail_by_stage": dict(Counter(stage(course[k]) for k in set().union(*nodes_by_kind.values()))),
+            "colliding_groups_by_kind": dict(sorted(groups_by_kind.items())),
+            "nodes_with_collision_by_kind": {k: len(v) for k, v in sorted(nodes_by_kind.items())},
+            "consecutive_colliding_blocks_told_apart_by": dict(told_apart.most_common()), "examples": examples}
+
+
 def signatures(nodes, out, succ):
     """Bottom-up: a node's signature is its output plus its labelled successor signatures."""
     sig = {}
@@ -248,7 +379,8 @@ def stage(node):
     return "root" if node.ply == ROOT_PLY else "second" if node.ply <= ROOT_PLY + 4 else "third"
 
 
-def analyse(study: Path, *, eligible_only=True):
+def load_course(study: Path, *, eligible_only=True):
+    """Every (eligible) root of a study, loaded and audited: the course and its per-root parts."""
     roots = []
     for p in sorted((study / "roots").iterdir()):
         if not (p / "teacher.json").exists():
@@ -266,6 +398,11 @@ def analyse(study: Path, *, eligible_only=True):
         rid = next(iter(nodes.values())).root_id
         course.update(nodes)
         per_root[rid] = nodes
+    return course, per_root
+
+
+def analyse(study: Path, *, eligible_only=True, labels=False):
+    course, per_root = load_course(study, eligible_only=eligible_only)
     report = {"study": str(study), "eligible_only": eligible_only, "roots": len(per_root),
               "splits": dict(Counter(next(iter(n.values())).split for n in per_root.values())),
               "nodes": len(course),
@@ -293,42 +430,56 @@ def analyse(study: Path, *, eligible_only=True):
                          "tier_types": {"/".join(map(str, k)): v for k, v in sorted(types.items())}}
     report["decision_classes"] = classes
     for name, (out, succ) in INTERFACES.items():
-        sig = signatures(course, out, succ)
-        sig_cls = intern({k: sig[k] for k in sorted(course)})
-        rounds = refine(course, out, succ)
-        ref_cls = rounds[-1]
-        if not same_partition(sig_cls, ref_cls):
-            raise ValueError(f"{name}: signature and refinement partitions differ")
-        ladder = [len(set(r.values())) for r in rounds]
-        root_keys = [k for k, n in course.items() if stage(n) == "root"]
-        root_ladder = [len({r[k] for k in root_keys}) for r in rounds]
-        per = {rid: len({sig_cls[k] for k in nodes}) for rid, nodes in per_root.items()}
-        ratios = sorted(Fraction(len(nodes), per[rid]) for rid, nodes in per_root.items())
-        roots_of = defaultdict(set)
-        for k, n in course.items():
-            roots_of[sig_cls[k]].add(n.root_id)
-        train_classes = {sig_cls[k] for k, n in course.items() if n.split == "train"}
-        coverage = {}
-        for st in ("root", "second", "third"):
-            keys = [k for k, n in course.items() if n.split == "test" and stage(n) == st]
-            dkeys = [k for k in keys if len(course[k].legal) > 1 and not course[k].settled]
-            coverage[st] = {"all": {"seen": sum(1 for k in keys if sig_cls[k] in train_classes), "of": len(keys)},
-                            "discretionary_unsettled": {"seen": sum(1 for k in dkeys if sig_cls[k] in train_classes),
-                                                        "of": len(dkeys)}}
-        states_by_stage = {st: len({sig_cls[k] for k, n in course.items() if stage(n) == st})
-                           for st in ("root", "second", "third")}
-        report["interfaces"][name] = {
-            "states": len(set(sig_cls.values())), "halt_and_reject": 2,
-            "ladder_by_block_depth": ladder,
-            "root_ladder_by_block_depth": root_ladder,
-            "states_by_stage": states_by_stage,
-            "per_root_states": {"min": min(per.values()), "max": max(per.values()), "sum": sum(per.values())},
-            "per_root_compression_nodes_per_state": {"min": str(ratios[0]), "median": str(ratios[len(ratios) // 2]),
-                                                     "max": str(ratios[-1])},
-            "classes_in_more_than_one_root": sum(1 for s in roots_of.values() if len(s) > 1),
-            "test_coverage_by_train_classes": coverage,
-        }
+        report["interfaces"][name] = measure(course, per_root, name, out, succ)[0]
+    if labels:
+        facts = block_facts(course)
+        report["label_fields"] = {name: list(fields) for name, fields in LABELS.items()}
+        report["label_interfaces"] = {}
+        for name, fields in LABELS.items():
+            succ = successors_labelled(facts, fields)
+            entry, cls = measure(course, per_root, name, output_shape, succ)
+            entry["routing"] = routing(course, cls, succ, facts, fields)
+            report["label_interfaces"][name] = entry
     return report
+
+
+def measure(course, per_root, name, out, succ):
+    """States, ladders, per-root compression and TEST coverage of one interface; and its classes."""
+    sig = signatures(course, out, succ)
+    sig_cls = intern({k: sig[k] for k in sorted(course)})
+    rounds = refine(course, out, succ)
+    ref_cls = rounds[-1]
+    if not same_partition(sig_cls, ref_cls):
+        raise ValueError(f"{name}: signature and refinement partitions differ")
+    ladder = [len(set(r.values())) for r in rounds]
+    root_keys = [k for k, n in course.items() if stage(n) == "root"]
+    root_ladder = [len({r[k] for k in root_keys}) for r in rounds]
+    per = {rid: len({sig_cls[k] for k in nodes}) for rid, nodes in per_root.items()}
+    ratios = sorted(Fraction(len(nodes), per[rid]) for rid, nodes in per_root.items())
+    roots_of = defaultdict(set)
+    for k, n in course.items():
+        roots_of[sig_cls[k]].add(n.root_id)
+    train_classes = {sig_cls[k] for k, n in course.items() if n.split == "train"}
+    coverage = {}
+    for st in ("root", "second", "third"):
+        keys = [k for k, n in course.items() if n.split == "test" and stage(n) == st]
+        dkeys = [k for k in keys if len(course[k].legal) > 1 and not course[k].settled]
+        coverage[st] = {"all": {"seen": sum(1 for k in keys if sig_cls[k] in train_classes), "of": len(keys)},
+                        "discretionary_unsettled": {"seen": sum(1 for k in dkeys if sig_cls[k] in train_classes),
+                                                    "of": len(dkeys)}}
+    states_by_stage = {st: len({sig_cls[k] for k, n in course.items() if stage(n) == st})
+                       for st in ("root", "second", "third")}
+    return {
+        "states": len(set(sig_cls.values())), "halt_and_reject": 2,
+        "ladder_by_block_depth": ladder,
+        "root_ladder_by_block_depth": root_ladder,
+        "states_by_stage": states_by_stage,
+        "per_root_states": {"min": min(per.values()), "max": max(per.values()), "sum": sum(per.values())},
+        "per_root_compression_nodes_per_state": {"min": str(ratios[0]), "median": str(ratios[len(ratios) // 2]),
+                                                 "max": str(ratios[-1])},
+        "classes_in_more_than_one_root": sum(1 for s in roots_of.values() if len(s) > 1),
+        "test_coverage_by_train_classes": coverage,
+    }, sig_cls
 
 
 def main():
@@ -336,8 +487,9 @@ def main():
     ap.add_argument("study", type=Path, help="a contingent-teacher study root holding roots/*/teacher.json")
     ap.add_argument("--out", type=Path)
     ap.add_argument("--all-solved", action="store_true", help="include solved roots the study rejected as ineligible")
+    ap.add_argument("--labels", action="store_true", help="also measure the tile-free observation-label interfaces")
     args = ap.parse_args()
-    report = analyse(args.study, eligible_only=not args.all_solved)
+    report = analyse(args.study, eligible_only=not args.all_solved, labels=args.labels)
     text = json.dumps(report, indent=1)
     if args.out:
         args.out.write_text(text)

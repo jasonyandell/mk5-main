@@ -95,10 +95,13 @@ def load_model(ckpt: str | Path | None, untrained_seed: int | None = None, confi
     saved = torch.load(ckpt, map_location="cpu", weights_only=True)
     if saved["tokenizer"] != VERSION:
         raise ValueError("checkpoint has a different input encoding")
+    state = saved["model"]
+    if any(k.startswith("backbone.") for k in state):   # a Splat checkpoint: Gus is its backbone
+        state = {k.removeprefix("backbone."): v for k, v in state.items() if k.startswith("backbone.")}
     m = Observer(Config(**saved["config"])).eval()
-    m.load_state_dict(saved["model"])
+    m.load_state_dict(state)
     return m, {"path": str(ckpt), "sha256": hashlib.sha256(Path(ckpt).read_bytes()).hexdigest(),
-               "step": int(saved["step"]), "config": saved["config"], "data_sha256": saved["data_sha256"]}
+               "step": int(saved["step"]), "config": saved["config"], "data_sha256": saved.get("data_sha256")}
 
 
 def forward(model, tokens: np.ndarray, lengths: np.ndarray) -> Activations:
