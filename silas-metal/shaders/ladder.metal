@@ -49,6 +49,7 @@ constant uint L_RECORD = 325;     // 28: seat * 32 + tile
 constant uint L_BINOM = 353;      // 29 * 8: C(n, r), r < 8
 constant uint L_ROOTS = 585;      // the root tiles gathered (the rest of the root's legal tiles skipped)
 constant uint L_REPLY = 586;      // the replies gathered at depth 1 (the next seat's play after a root tile)
+constant uint L_SECOND = 587;     // the plays gathered at depth 2 (the next seat's, or the viewer's own)
 
 // The chunk: [threads, shards, table mask].
 constant uint EMPTY = 0xffffffffu;
@@ -291,6 +292,7 @@ kernel void ladder_gather(device const uint* p [[buffer(0)]],
     uint err = 0;
     uint tree = 0, tails = 0, gwork = 0;
     bool counted = false;
+    uint vmask = 0xFFFFFFFFu;
     uint mask = chunk[2];
     uint k = p[L_K];
     if (k >= MAXK) { atomic_fetch_max_explicit(errw, ERR_DEPTH, memory_order_relaxed); return; }
@@ -333,6 +335,27 @@ kernel void ladder_gather(device const uint* p [[buffer(0)]],
                 tree = tree0;
                 continue;
             }
+            // The play after the reply. Another seat's is on the path already; where the viewer
+            // moves, its own tiles in the piece are the only ones walked at the next decision, and
+            // the plays so far are the piece's that holds the viewer's lowest legal tile.
+            uint second = (px.w[3] >> 14) & 31u;
+            vmask = 0xFFFFFFFFu;
+            // (No second play on the path: the hand decided, or the horizon ends at this node.)
+            if (second != 0 || decided(p, nx) >= 0 || k == 0) {
+                uint b2 = second == 0 ? 31u : second - 1;
+                if (((p[L_SECOND] >> b2) & 1u) == 0) {
+                    tree = tree0;
+                    continue;
+                }
+            } else {
+                uint v = legal(p, nx.hands[viewer], nx);
+                if ((v & p[L_SECOND]) == 0) {
+                    tree = tree0;
+                    continue;
+                }
+                vmask = p[L_SECOND];
+                if (((v & (~v + 1u)) & vmask) == 0) tree = tree0;
+            }
             counted = true;
         }
         uint depth = sp + 1;
@@ -351,7 +374,7 @@ kernel void ladder_gather(device const uint* p [[buffer(0)]],
         sp += 1;
         st[sp] = nx;
         path[sp] = px;
-        rem[sp] = legal(p, nx.hands[viewer], nx);
+        rem[sp] = legal(p, nx.hands[viewer], nx) & (sp == 1 ? vmask : 0xFFFFFFFFu);
     }
     if (err != 0) {
         atomic_fetch_max_explicit(errw, err, memory_order_relaxed);

@@ -24,7 +24,7 @@ use silas::reference::Straight42;
 use silas::{Auction, Bid, Domino, DominoSet, Frame, Seat};
 use silas_metal::Gpu;
 use silas_metal::epoch::EpochError;
-use silas_metal::ladder::{Gathered, Limits, Problem, Rung, Work, available_bytes};
+use silas_metal::ladder::{Gathered, Limits, Piece, Problem, Rung, Work, available_bytes, viewer_moves_after};
 
 fn npy(path: &str) -> Vec<u8> {
     let bytes = std::fs::read(path).unwrap_or_else(|e| panic!("{path}: {e}"));
@@ -104,7 +104,7 @@ fn main() {
             let (mut spent, mut counted) = (0u64, 0usize);
             for (label, mask) in &pieces {
                 let t = Instant::now();
-                let (worlds, w) = problem.count(&mut gpu, k, *mask, u32::MAX, from..to, limits.table_bits).unwrap();
+                let (worlds, w) = problem.count(&mut gpu, k, Piece::roots(*mask), from..to, limits.table_bits).unwrap();
                 println!(
                     "deal {d} decl P{decl} viewer {} k {k} root {label} counted {from}..{to} worlds {worlds} plays {} (tree {} tails {} god {}) metal wall {} ms",
                     viewer.index(),
@@ -152,19 +152,42 @@ fn main() {
         let mut mass = None;
         let mut spent = 0u64;
         // `--per-reply` splits each root tile by the next seat's answer (that seat's node sums,
-        // so the pieces' (L, U, mass), leaves and plays add to the tile's); empty pieces are skipped.
+        // so the pieces' (L, U, mass), leaves and plays add to the tile's). `--per-second R`
+        // splits the tile's reply R (`-`: none) by the play after it, and folds the pieces by
+        // that node: summed, or maximized side by side where the viewer moves (`Piece`).
+        // Empty pieces are skipped.
         let per_reply = args.iter().any(|a| a == "--per-reply");
+        let per_second = arg(&args, "--per-second");
+        // A tile's pieces at one depth: tile bits per depth, as `Piece`.
+        let symbol =
+            |b: u32| if b == 31 { "-".to_string() } else { Domino::from_index(b as usize).unwrap().to_string() };
+        let split_bits = (0..28).chain([31]);
         for (tile_label, mask) in &pieces {
-            let replies: Vec<(String, u32)> = if per_reply {
+            let (split, viewer_node): (Vec<(String, Piece)>, bool) = if per_reply {
                 assert_eq!(mask.count_ones(), 1, "--per-reply splits one root tile at a time");
-                let answers = (0..28).map(|b| (format!("{tile_label}/{}", Domino::from_index(b).unwrap()), 1u32 << b));
-                answers.chain([(format!("{tile_label}/-"), 1u32 << 31)]).collect()
+                let at = |b: u32| Piece { replies: 1 << b, ..Piece::roots(*mask) };
+                (split_bits.clone().map(|b| (format!("{tile_label}/{}", symbol(b)), at(b))).collect(), false)
+            } else if let Some(reply) = per_second {
+                assert_eq!(mask.count_ones(), 1, "--per-second splits one root tile at a time");
+                let root: Domino = tile_label.parse().unwrap();
+                let (bit, plays) = match reply {
+                    "-" => (31, vec![root]),
+                    r => {
+                        let r: Domino = r.parse().unwrap();
+                        (r.index() as u32, vec![root, r])
+                    }
+                };
+                let at = |b: u32| Piece { roots: *mask, replies: 1 << bit, seconds: 1 << b };
+                let pieces =
+                    split_bits.clone().map(|b| (format!("{tile_label}/{reply}/{}", symbol(b)), at(b))).collect();
+                (pieces, viewer_moves_after(&frame, &plays))
             } else {
-                vec![(tile_label.clone(), u32::MAX)]
+                (vec![(tile_label.clone(), Piece::roots(*mask))], false)
             };
-            // The tile's sums over its pieces: L, U, mass, leaves, work, pieces.
-            let mut sum = (0u64, 0u64, 0u64, 0usize, Work::default(), 0usize);
-            for (label, reply) in &replies {
+            let splitting = per_reply || per_second.is_some();
+            // The fold over the pieces: L, U, mass, leaves, work, pieces.
+            let mut sum = (0u64, 0u64, None::<u64>, 0usize, Work::default(), 0usize);
+            for (label, piece) in &split {
                 let label = label.as_str();
                 let free = available_bytes();
                 if free < min_free {
@@ -175,7 +198,7 @@ fn main() {
                     continue;
                 }
                 let t = Instant::now();
-                let g = match problem.gather(&mut gpu, k, *mask, *reply, from..to, limits) {
+                let g = match problem.gather(&mut gpu, k, *piece, from..to, limits) {
                     Ok(g) => g,
                     Err(e) => {
                         println!("deal {d} decl P{decl} k {k} root {label}: refused, {e:?}");
@@ -196,7 +219,7 @@ fn main() {
                         continue;
                     }
                 };
-                if per_reply && g.worlds == 0 {
+                if splitting && g.leaves.is_empty() {
                     continue;
                 }
                 let ms = t.elapsed().as_millis().max(1);
@@ -238,7 +261,7 @@ fn main() {
                         // One line per piece: deal tile L U mass leaves plays tree tails god fnv64 sha256 engine.
                         let mut out = std::fs::OpenOptions::new().create(true).append(true).open(path).unwrap();
                         for (a, lo, up) in &r.actions {
-                            let name = if per_reply { label.to_string() } else { a.to_string() };
+                            let name = if splitting { label.to_string() } else { a.to_string() };
                             writeln!(
                                 out,
                                 "{key} {name} {lo} {up} {} {} {} {} {} {} {fnv:016x} {sha} metal",
@@ -252,12 +275,20 @@ fn main() {
                             .unwrap();
                         }
                     }
-                    if per_reply {
+                    if splitting {
                         let (_, lo, up) = r.actions[0];
                         let w = &mut sum.4;
                         *w =
                             Work { tree: w.tree + g.work.tree, tails: w.tails + g.work.tails, god: w.god + g.work.god };
-                        sum = (sum.0 + lo, sum.1 + up, sum.2 + r.mass, sum.3 + g.leaves.len(), sum.4, sum.5 + 1);
+                        if viewer_node {
+                            // Every piece holds the node's worlds; the viewer takes each side's best.
+                            assert!(sum.2.is_none_or(|m| m == r.mass), "a viewer's play changed the mass");
+                            sum =
+                                (sum.0.max(lo), sum.1.max(up), Some(r.mass), sum.3 + g.leaves.len(), sum.4, sum.5 + 1);
+                        } else {
+                            let m = sum.2.unwrap_or(0) + r.mass;
+                            sum = (sum.0 + lo, sum.1 + up, Some(m), sum.3 + g.leaves.len(), sum.4, sum.5 + 1);
+                        }
                     } else {
                         actions.extend(r.actions);
                         mass = Some(r.mass);
@@ -288,16 +319,21 @@ fn main() {
                     }
                 }
             }
-            if per_reply && whole && ok {
+            if splitting && whole && ok {
                 let (lo, up, m, leaves, work, n) = sum;
-                let a: Domino = tile_label.parse().unwrap();
-                println!("  tile {a}: {n} pieces, L {lo} U {up} mass {m} leaves {leaves} plays {}", work.total());
+                let m = m.expect("a piece");
+                // The fold's line: the tile's under `--per-reply`, the reply's under `--per-second`
+                // (with how that node folds), and how many pieces.
+                let (name, how) = match per_second {
+                    Some(reply) => (format!("{tile_label}/{reply}"), if viewer_node { " max" } else { " sum" }),
+                    None => (tile_label.clone(), ""),
+                };
+                println!("  {name}: {n} pieces{how}, L {lo} U {up} mass {m} leaves {leaves} plays {}", work.total());
                 if let Some(path) = arg(&args, "--triples") {
-                    // The tile's line: its pieces' sums, and how many pieces.
                     let mut out = std::fs::OpenOptions::new().create(true).append(true).open(path).unwrap();
                     writeln!(
                         out,
-                        "{key} {a} {lo} {up} {m} {leaves} {} {} {} {} split {n} metal",
+                        "{key} {name} {lo} {up} {m} {leaves} {} {} {} {} split {n}{how} metal",
                         work.total(),
                         work.tree,
                         work.tails,
@@ -305,8 +341,10 @@ fn main() {
                     )
                     .unwrap();
                 }
-                actions.push((a, lo, up));
-                mass = Some(m);
+                if per_reply {
+                    actions.push((tile_label.parse().unwrap(), lo, up));
+                    mass = Some(m);
+                }
             }
         }
         if spent > budget {

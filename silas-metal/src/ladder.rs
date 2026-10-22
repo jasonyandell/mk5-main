@@ -15,12 +15,12 @@
 //! chooses by it.
 
 use silas::player::{Root, SeatLaw};
-use silas::{Context, Domino, Frame, HIDDEN_SEATS, Seat};
+use silas::{Context, Domino, Frame, HIDDEN_SEATS, Physics, Seat};
 
 use crate::epoch::EpochError;
 use crate::metal::Gpu;
 
-const L_WORDS: usize = 353 + 29 * 8 + 2;
+const L_WORDS: usize = 353 + 29 * 8 + 3;
 const EMPTY: u32 = u32::MAX;
 /// Worlds per command, at most; also at most a quarter of the leaf table's slots, the
 /// table being drained once a quarter full. A command that fills it anyway refuses the gather.
@@ -180,6 +180,56 @@ struct Public {
     trick: Vec<Domino>,
 }
 
+impl Public {
+    fn start(frame: &Frame) -> Public {
+        Public { leader: frame.leader(), trick: frame.prefix().to_vec() }
+    }
+
+    fn then(&self, physics: &Physics, t: Domino) -> Public {
+        let mut n = self.clone();
+        n.trick.push(t);
+        if let Ok(four) = <[Domino; 4]>::try_from(n.trick.as_slice()) {
+            n.leader = physics.trick_winner(n.leader, four);
+            n.trick.clear();
+        }
+        n
+    }
+
+    fn mover(&self) -> Seat {
+        self.leader.plus(self.trick.len())
+    }
+}
+
+/// Whether the viewer moves after `plays` from the frame's position: the node the rung
+/// maximizes over (each side separately) rather than sums. Read from the public plays alone.
+pub fn viewer_moves_after(frame: &Frame, plays: &[Domino]) -> bool {
+    let s = plays.iter().fold(Public::start(frame), |s, t| s.then(frame.physics(), *t));
+    s.mover() == frame.viewer()
+}
+
+/// The part of a root a gather covers, as tile bits per depth of the public path. `roots`:
+/// the viewer's tiles at the root. `replies`: the next play (bit 31: none, the hand decided or
+/// the viewer to move). `seconds`: the play after that, the next seat's or the viewer's own
+/// (bit 31: none on the path, the hand decided or the horizon ending there, at k = 0). A root's pieces by `replies` sum, since that node is another
+/// seat's; a reply's pieces by `seconds` sum, or are maximized side by side where the viewer
+/// moves there (`viewer_moves_after`). Where the viewer moves, every piece holds the node's
+/// worlds, and its plays up to the node are counted in the piece of the viewer's lowest legal
+/// tile only, so plays still partition.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Piece {
+    pub roots: u32,
+    pub replies: u32,
+    pub seconds: u32,
+}
+
+impl Piece {
+    pub const ALL: Piece = Piece { roots: u32::MAX, replies: u32::MAX, seconds: u32::MAX };
+
+    pub fn roots(roots: u32) -> Piece {
+        Piece { roots, ..Piece::ALL }
+    }
+}
+
 /// Every `k`-subset of the bits of `set`, in Exact-T1's order (`trick1::subsets`).
 fn subsets(set: u32, k: usize) -> Vec<u32> {
     let tiles: Vec<u32> = (0..32).filter(|i| set >> i & 1 == 1).map(|i| 1u32 << i).collect();
@@ -333,18 +383,10 @@ impl Problem {
         let leaves = &g.leaves[..];
         let at =
             |bits: u128, i: u8| Domino::from_index((((bits >> (5 * (24 - i))) & 31) - 1) as usize).expect("a tile");
-        let start = Public { leader: frame.leader(), trick: frame.prefix().to_vec() };
+        let start = Public::start(frame);
         let viewer = frame.viewer();
         let physics = frame.physics();
-        let play = |s: &Public, t: Domino| {
-            let mut n = s.clone();
-            n.trick.push(t);
-            if let Ok(four) = <[Domino; 4]>::try_from(n.trick.as_slice()) {
-                n.leader = physics.trick_winner(n.leader, four);
-                n.trick.clear();
-            }
-            n
-        };
+        let play = |s: &Public, t: Domino| s.then(physics, t);
         fn reduce(
             leaves: &[(u128, Leaf)],
             depth: u8,
@@ -360,7 +402,7 @@ impl Problem {
             if leaves.iter().any(|x| path_len(x.0) <= depth) {
                 return Err(format!("a leaf is a prefix of another at depth {depth}"));
             }
-            let focal = s.leader.plus(s.trick.len()) == viewer;
+            let focal = s.mover() == viewer;
             let (mut lo, mut up, mut mass) = (0u64, 0u64, None::<u64>);
             let mut i = 0;
             while i < leaves.len() {
@@ -404,25 +446,19 @@ impl Problem {
         binomial(u64::from((rest & self.allowed[1]).count_ones()), self.capacity[1] as u64)
     }
 
-    /// The leaves of horizon `k` over `shards` whose root tile is in `roots` (tile
-    /// bits; `u32::MAX` for every one), on the GPU. A gather of some root tiles is exactly
-    /// the leaves of the whole gather whose first symbol is one of them (Exact-T1's
-    /// `Ladder::gather(k, roots_bits, ..)`), so per-tile gathers join in `rung`.
-    ///
-    /// `replies` keeps, below each root tile, only the worlds whose next seat answers with a
-    /// tile in it (bit 31: no answer, the hand decided at the root). The next seat's node
-    /// sums, so a root tile's pieces by reply partition its leaves, plays and worlds, and
-    /// their (L, U, mass) add to the tile's. `u32::MAX` keeps every reply.
+    /// The leaves of horizon `k` over `shards` in `piece`, on the GPU. A gather of some root
+    /// tiles is exactly the leaves of the whole gather whose first symbol is one of them
+    /// (Exact-T1's `Ladder::gather(k, roots_bits, ..)`), so per-tile gathers join in `rung`;
+    /// below a tile, the pieces by reply and by the play after it fold as `Piece` says.
     pub fn gather(
         &self,
         gpu: &mut Gpu,
         k: usize,
-        roots: u32,
-        replies: u32,
+        piece: Piece,
         shards: std::ops::Range<usize>,
         limits: Limits,
     ) -> Result<Gathered, EpochError> {
-        self.walk(gpu, k, roots, replies, shards, limits, true)
+        self.walk(gpu, k, piece, shards, limits, true)
     }
 
     /// The same walk as `gather`, keeping no leaves: its worlds and plays only, exactly as the
@@ -431,22 +467,19 @@ impl Problem {
         &self,
         gpu: &mut Gpu,
         k: usize,
-        roots: u32,
-        replies: u32,
+        piece: Piece,
         shards: std::ops::Range<usize>,
         table_bits: u32,
     ) -> Result<(u64, Work), EpochError> {
         let limits = Limits { table_bits, ..Limits::default() };
-        self.walk(gpu, k, roots, replies, shards, limits, false).map(|g| (g.worlds, g.work))
+        self.walk(gpu, k, piece, shards, limits, false).map(|g| (g.worlds, g.work))
     }
 
-    #[allow(clippy::too_many_arguments)]
     fn walk(
         &self,
         gpu: &mut Gpu,
         k: usize,
-        roots: u32,
-        replies: u32,
+        piece: Piece,
         shards: std::ops::Range<usize>,
         limits: Limits,
         keep: bool,
@@ -459,8 +492,9 @@ impl Problem {
         }
         let mut words = self.words.clone();
         words[296] = k as u32;
-        words[585] = roots;
-        words[586] = replies;
+        words[585] = piece.roots;
+        words[586] = piece.replies;
+        words[587] = piece.seconds;
         let p = gpu.upload(&words)?;
         let slots = 1usize << table_bits;
         let keys = gpu.zeroed(slots * 4)?;

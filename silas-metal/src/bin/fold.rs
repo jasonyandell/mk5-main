@@ -2,9 +2,12 @@
 // SPDX-License-Identifier: CC0-1.0
 
 //! `fold`: one root's rung from its triples lines, in exact integers. A line is `KEY TILE L U
-//! MASS …`; a split tile's own line is its pieces' sums, so `TILE/REPLY` pieces are skipped,
-//! and so are COUNT and REFUSED lines. When a tile appears twice, the later line stands.
-//! Every tile's mass must agree. Settled means one survivor, or Γ = 0.
+//! MASS …`; a split tile's own line is its pieces' sums, so `TILE/REPLY` pieces count only for
+//! a tile with no line of its own (one a reply refused), summed (the next seat's node sums);
+//! a refused reply's own line comes from `--per-second`, its `TILE/REPLY/SECOND` pieces are
+//! skipped, and so are COUNT and REFUSED lines. When a name appears twice, the later line
+//! stands. Every tile's mass must agree, which a missing reply would break. Settled means one
+//! survivor, or Γ = 0.
 //!
 //! STRATEGY-FUSION FENCE: U is the clairvoyant bound that refutes; the choice reads L only.
 //!
@@ -29,18 +32,33 @@ fn main() {
     let (path, key) = (&args[1], format!("{} ", args[2]));
     let text = std::fs::read_to_string(path).unwrap_or_else(|e| panic!("{path}: {e}"));
     let mut tiles: BTreeMap<Domino, (u64, u64, u64)> = BTreeMap::new();
+    let mut replies: BTreeMap<(Domino, &str), (u64, u64, u64)> = BTreeMap::new();
     for line in text.lines() {
         let Some(rest) = line.strip_prefix(&key) else { continue };
         let f: Vec<&str> = rest.split(' ').collect();
-        if f.len() < 4 || f[0].contains('/') {
+        if f.len() < 4 {
             continue;
         }
-        let (Ok(tile), Ok(lo), Ok(up), Ok(mass)) =
-            (f[0].parse::<Domino>(), f[1].parse::<u64>(), f[2].parse::<u64>(), f[3].parse::<u64>())
-        else {
+        let mut name = f[0].split('/');
+        let (Some(Ok(tile)), reply, None, Ok(lo), Ok(up), Ok(mass)) = (
+            name.next().map(str::parse::<Domino>),
+            name.next(),
+            name.next(),
+            f[1].parse::<u64>(),
+            f[2].parse::<u64>(),
+            f[3].parse::<u64>(),
+        ) else {
             continue;
         };
-        tiles.insert(tile, (lo, up, mass));
+        match reply {
+            None => tiles.insert(tile, (lo, up, mass)),
+            Some(r) => replies.insert((tile, r), (lo, up, mass)),
+        };
+    }
+    let whole: Vec<Domino> = tiles.keys().copied().collect();
+    for ((tile, _), (lo, up, mass)) in replies.into_iter().filter(|((t, _), _)| !whole.contains(t)) {
+        let t = tiles.entry(tile).or_default();
+        *t = (t.0 + lo, t.1 + up, t.2 + mass);
     }
     assert!(!tiles.is_empty(), "no tile lines under key {:?}", args[2]);
     let mass = tiles.values().next().unwrap().2;
