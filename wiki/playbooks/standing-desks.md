@@ -2,11 +2,11 @@
 title: Standing desks — Playbook
 kind: playbook
 first_seen: 2026-10-14
-last_updated: 2026-10-20
+last_updated: 2026-10-22
 status: active
 ---
 
-A few long-lived Claude Code sessions, each owning one beat. Jason talks to any of them
+Four desks, each owning one beat and each defined by an agent file in `.claude/agents/`. Jason talks to any of them
 directly over Remote Control. They talk to each other by message. Jason (2026-10-14): "I just
 want a few standing sessions." Ad hoc lab work comes and goes around them ("jagged
 lifecycles"); the desks are durable.
@@ -15,15 +15,16 @@ lifecycles"); the desks are durable.
 
 | Desk | Remote Control name | Beat |
 |---|---|---|
-| **Mayor** | the lead session | Central admin. Priorities and routing; the gate for coordinated changes; keeper of the link registry. |
+| **Mayor** | `Mayor` | Central admin. Priorities and routing; the gate for coordinated changes; keeper of the link registry; the tournament ladder and [The 42 Ladder](https://claude.ai/artifact/TJYRL2ac7afwMookxGPdhp); the project's data (Hugging Face, provenance, Plunge backups). It spawns its watch (`mayor-loop`) and its cleanup (`sweep`). |
 | **Book** | `Book` | The [[book-authority]] role, permanently: *Winning 42*, the private archive, the Silas book encodings, [[book-assumptions]], driving the book to completion. |
 | **Media** | `Media` | The "journalinfluencer". The 42 Feed, reels and front pages, the Haiku cold-read pipeline and the Haiku feed workers. It turns every result into a post. |
-| **Archive** | `Archive` | Data. Hugging Face datasets, the Plunge backups, the tournament store, "recover everything to HF", data hygiene and provenance. |
 | **Lem** | `Lem` | The generative player and the interpretability program: learn 42 as completely as it can be learned (policies, beliefs, models of others), then read the net's concepts. Lem, "who will grow to be our noble teacher" (Jason, 2026-10-15). |
 
-Lab work, meaning experiments like Horatio, #149 or the Demon, runs as ad hoc agents that the
-Mayor or Jason commissions. A finished experiment hands its results to Media and its data to
-Archive.
+Archive and Sweep were desks until 2026-10-22. Their beats fold into the Mayor, which spawns
+them as subagents when there is work (Jason: "sweep can be something mayor spawns like media
+spawns the media loop"). Lab work, meaning experiments like Horatio, #149 or the Demon, runs
+as ad hoc agents that the Mayor or Jason commissions. A finished experiment hands its results
+to Media and its data to the Mayor.
 
 ## Comms: blob first, link second
 
@@ -131,16 +132,28 @@ first, and let the central authority manage only links and lookups.
 
 ## Starting a desk
 
-From `/Users/jason/code/mk5-main`, each desk is a background Claude Code session (since the
-2026-10-20 reboot; before that, a detached tmux session named `desk-<name>`):
+A desk is an agent file plus short sessions (2026-10-22). The agent file
+(`.claude/agents/<desk>.md`: `mayor`, `media`, `book`, `lem`) holds the desk's identity, beat,
+model and effort, so every session of that desk starts the same way and holds its model. A
+session starts from the desk's notebook and its latest handoff, does its job, and ends by
+writing the next handoff. It doesn't run on until it compacts. From a checkout of main:
 
-    claude --bg -n <Name> --remote-control <Name> --permission-mode bypassPermissions '<the desk prompt>'
-    claude --bg --resume <session id>        # to bring a desk back after a reboot
+    claude --bg --agent <desk> -n <Name> --remote-control <Name> --model opus --effort medium \
+      --permission-mode bypassPermissions 'Start your desk.'
 
-Passing flags to `--resume` forks the session into a copy, so a resumed desk keeps its saved
-options. Desks auto-compact at 300k (`autoCompactWindow` in Jason's user settings). Lem gets more
-room: launch it with `--autocompact 400k` after `claude` (Jason, 2026-10-20: "give the team room
-to breathe"; his gut says 500k). Never run `/autocompact` inside a desk, because it saves to the
+Handoffs live outside git, in `~/code/mk5-main/scratch/desks/<desk>/handoff-<date>-<slug>.md`,
+in the `handoff` skill's schema: decisions and rejections, constraints found, parked threads,
+artifacts, the next action. A session hands off at the end of a job or past about 250k of
+context (Lem: 300k), then stops. A fresh session beats a compacted one.
+
+Why: standing sessions drifted. Background sessions retitle themselves to their current task,
+the daemon retires one after 8 idle hours, and on 2026-10-20 the app's model picker switched
+the Mayor to Fable through Remote Control for about 12 hours. Context is also the cost: a turn
+at 700k costs about four times one at 150k. A desk that keeps itself small and spawns its loops
+(the Mayor's `mayor-loop` on Haiku, Media's feed loop) pays for its size only when it wakes.
+
+`claude --bg --resume <session id>` brings back a retired session. Passing flags to `--resume`
+forks the session into a copy. Never run `/autocompact` inside a desk, because it saves to the
 shared per-model settings and changes every desk.
 
 **Lem sessions are listed by id.** The after-compact hook (`.claude/hooks/after-compact.sh`)
@@ -148,9 +161,7 @@ reloads the essay's method sections only for a session whose id is in
 `~/code/mk5-main/scratch/lem/sessions` (local, gitignored, one id per line); every other session
 gets one line. When you launch a Lem desk or a Lem lab agent, add its session id there.
 
-The desk prompt names the desk and says: read `wiki/playbooks/standing-desks.md`, create or
-find your notebook, register it, then take your first job. Jason reaches each desk from the
-Claude app over Remote Control under its name.
+Jason reaches each desk from the Claude app over Remote Control under its name.
 
 ## Links
 

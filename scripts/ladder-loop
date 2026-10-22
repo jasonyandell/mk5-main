@@ -1,0 +1,27 @@
+#!/bin/zsh
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+#
+# Endless tournament backfill: two worker loops, each chunk one `tournament work` through
+# cpu-slot. No model tokens. Run it from a checkout of current main (the Mayor keeps one at
+# .claude/worktrees/ladder) with nohup; logs go to that checkout's scratch/ladder/w<i>.log.
+#
+# A chunk starts no new faceoff after 180 s, so its last game finishes inside cpu-slot's
+# 300 s cap (at 240 s the cap cut a game off about once an hour, 2026-10-21).
+cd "${0:A:h}/.." || exit 1
+export HF_TOKEN="$(security find-generic-password -s huggingface-token -w)"
+log=scratch/ladder; mkdir -p $log
+worker() {
+  local i=$1 fails=0
+  while true; do
+    if scripts/cpu-slot --owner ladder -- timeout 300 python -u -m tournament work --budget-s 180 >> $log/w$i.log 2>&1; then
+      fails=0
+    else
+      fails=$((fails+1)); echo "$(date) chunk failed ($fails)" >> $log/w$i.log
+      (( fails >= 8 )) && { echo "worker $i: 8 failures in a row, stopping" >> $log/w$i.log; return 1; }
+      sleep 300
+    fi
+  done
+}
+worker 1 & worker 2 & wait
+echo "$(date) ladder: all workers stopped" >> $log/w1.log
