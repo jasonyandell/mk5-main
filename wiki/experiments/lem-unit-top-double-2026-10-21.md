@@ -3,7 +3,7 @@ title: "Unit paper 9: the 16×8 seed-0 net's layer-2 unit 1, leading the top off
 kind: experiment
 first_seen: 2026-10-21
 last_updated: 2026-10-21
-status: active
+status: complete
 ---
 
 The ninth **unit paper** of [[clean-neurons-42]]'s new mode (#235), on the 16×8 seed-0 field
@@ -297,6 +297,123 @@ exploratory scripts and logs. Its points, and what changed:
 - **No tilt against the book**, and nothing reads the unit as mixed.
 
 Sealed 2026-10-21.
+
+## Results
+
+The run of 2026-10-21 followed the registration: one `scripts/cpu-slot` run of 82 s
+(1.84e12 instructions). The evidence (`unit.json`, the log, the code, the raw scripts, the run
+script, `SHA256SUMS`) is `lem/unit-top-double-2026-10-21/` in
+[texas-42-zeb-research-2026-10](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/a2566f4d7f8afe459ea1f89fc73deaf630eac107/lem/unit-top-double-2026-10-21).
+
+**The picture.** Under fives and sixes, unit 1 is the net's **"lead the top off double"** unit, and
+on sixes follows the same push **lays the 5-5 on partner's trick**.
+- On leads where I hold the top double (the 6-6, or the 5-5 under sixes), ablating it drops that
+  lead from 0.633 to 0.197. It ranks first of 8.
+- Its gate reads one pattern in the net's frame: slot 14 holds no ten. That boundary scores Cohen's κ
+  0.786, against 0.437 for the best v2 concept.
+- It works against a group, not one unit. The slot-14 lead it holds back is pushed by L2 0, L2 3 and
+  L2 4 together.
+- Training gave it the slot-20 push and the gate. Its slot-14 brake was there at initialisation.
+
+**Confirmatory (seen by arithmetic before sealing).**
+
+| | claim | result | |
+|---|---|---|---|
+| 1a | top-double leads where it is on, ablated: falls ≥ 0.40 | −0.436 [−0.446, −0.428] from 0.633 (fives −0.433, sixes −0.446) | held |
+| 1b | rank 1 of the live layer-2 units on those rows | rank 1; next L2 3 −0.229, L2 2 −0.144 | held |
+| — | both doubles legal: base leads the top double more than slot 14, and ablating unit 1 reverses it | base top double 0.244, slot 14 0.447; ablated 0.001 and 0.771 | **base half missed** |
+
+The base half was called "mostly seen". It was not. With both doubles in hand, the net leads the 4-4
+first (0.447) more often than the top double (0.244). Unit 1 moves that choice by −0.243 and +0.323,
+but it does not decide it.
+
+**Graded.**
+
+| | prediction | result | |
+|---|---|---|---|
+| 2 | both doubles: ablating L2 1 and L2 3 together brings slot 14 to at most half of L2 1 alone, difference below 0 | 0.040 against 0.771; Δ −0.730 [−0.753, −0.707] | **held** |
+| 3 | sixes follows with the 5-5 legal: the 5-5's fall is larger in B (void, partner holds) than in A (fives led), B below 0 | B −0.571 [−0.604, −0.538] of 0.622; A −0.279 [−0.340, −0.223] of 0.870 | **held** |
+| 4 | the sixes-follow job reaches half its final on rate no earlier than the lead job (read from the rebirth) | lead job at step 30,540 (0.92 of 0.971); follow job at step 152,700 (0.255 of 0.452) | **held** |
+
+All three graded predictions held.
+
+**What the results say.**
+- **2.** The joint ablation held, but the read-off beside it widens the picture. Ablated alone, L2 0,
+  L2 3 and L2 4 each take slot 14's lead on these rows to 0.000. Their writes on slot 14 are +14,696,
+  +16,538 and +18,398. So the slot-14 lead is a vote shared by three layer-2 units, and unit 1 is
+  the one unit that writes against it (−11,648) and for slot 20 (+7,048). "The correction of L2 3"
+  was too narrow. It is the correction of the layer's slot-14 vote, which is the right double (the
+  5-5, a ten) under blanks–fours.
+- **3.** On sixes follows unit 1 serves both cells, and B is larger. In B the 5-5 is withdrawn almost
+  entirely (−0.571 of 0.622), never by taking. In A, where the 5-5 follows suit, it falls by
+  −0.279, −0.186 of that taking. Where an opponent holds and I am void, it falls −0.113 of 0.125.
+  The regression agrees: the partner-holds coefficient is 633k, and fives led is 10k. So on follows
+  the push is "lay the 5-5 where partner has the trick", which feeds a ten. Unit 1 ranks first in
+  every cell.
+- **4.** The unit was born on, at on 0.055 at step 0, with a write of −23,660 on slot 14 and −683 on
+  slot 20. It died from step 300 to step 15,270. At step 30,540 it came back as the unit read here:
+  - on 0.90 at fives leads, 0.97 at sixes leads, 0.03 elsewhere;
+  - slot 20 at +8,155;
+  - ablated, top-double leads fall −0.415.
+
+  The lead job and its gate came back together. The sixes-follow job stayed near 0.03 until step
+  76,350 and grew between steps 152,700 and 305,400 (0.255 → 0.487): a later branch, as the
+  essay's account of growth has it. Before the death, at step 30, sixes follows were on 0.27 against
+  0.14 at leads. That early state is read but not counted.
+
+**Read off.**
+- **Feeding under sixes, re-measured** (the demoted prediction). On sixes choice follows where unit 1
+  is on and partner holds, ablating it lowers count played by −0.218 [−0.231, −0.204], count not
+  taking −0.214. It ranks first; L2 2 is −0.125. Where an opponent holds, L2 2 ranks first (−0.220)
+  and unit 1 second (−0.091). The demoted prediction would have missed on these rows. Paper 8's
+  rows (fives and sixes pooled, where unit 4 is on) gave L2 1 −0.039. On sixes rows where unit 1 is
+  on, unit 1 is the main feeder.
+- **Forced on.** Adding the on value (417) where it is off raises the top-double lead beyond the
+  layer:
+  - under blanks–fours with the 6-6 legal: +0.585 [0.579, 0.592] from a base of 0.315; slot 14
+    −0.085; trump −0.170;
+  - on fives leads holding the 6-6 and the 6-4: +0.443 [0.420, 0.467] from 0.072.
+
+  The doses rise monotonically: +0.043, +0.134, +0.458, +0.628 at k = 0.25, 0.5, 1, 2 under 0–4.
+- **Ablated on top-double leads, every read.** Trump leads +0.169, off doubles −0.170, slot 14
+  +0.049. Under sixes count falls −0.437, because the 5-5 is a ten.
+- **The 6-4 dim under fives** is carried by L1 12, which is active only under fives (−164k when I
+  hold the 6-4, −51k when I don't), and L1 14 (−129k against −57k). L2 2 writes +16,364 on slot 19,
+  the 6-4 under fives.
+- **The gate.**
+  - On leads, L1 15 closes it under blanks–fours (−1,033k).
+  - On follows, L1 10 does (−11,764k under blanks–fours, 0 under fives, −3k under sixes). That is why
+    sixes follows alone are open.
+  - Its 0–4 on-leads (0.05–0.09) are mostly hands holding the 5-5 (0.79). There it holds the 5-5 lead
+    back.
+- **Boundary.** `lead ∧ slot 14 holds no ten` scores Cohen's κ 0.786 and κ against a constant 0.692,
+  as the arithmetic said. Adding any sixes follow scores 0.769. The best v2 concept, `lead`, scores
+  0.437.
+- **R² on leads.** Declaration group 0.588; + holding slot 19 by group 0.595; + trumps held by group
+  0.625.
+- **Poles.** + (top 1%): all fives or sixes (2,785 and 1,539 of 4,345; 21 fours), 0.63 leads.
+  − : all blanks–fours, 0.70 last seat and 0.24 second seat: following into a decided trick.
+- **The twin** is on 0.055, with R² 0.071 on the declaration group. Its write is the step-0 write,
+  with slot 14 at −23,660. The brake was there before training.
+
+**Against the frame.**
+- The unit is clean in the essay's sense: one push in the net's frame (lead or lay the top off
+  double, not the second, not trump) behind one gate (slot 14 holds no ten).
+- Its two jobs are one push read in two places. On a lead it chooses the double. On a sixes follow,
+  void on partner's trick, it lays the 5-5, which is a ten. The follow job grew later, as a branch.
+- With the layer it is composition: three units vote for slot 14, the right double under 0–4, and
+  one unit, opened where slot 14 holds no ten, votes for slot 20.
+- **The vocabulary gap is named.** List v2 has `trump-is-fives` and `trump-is-sixes` but no word for
+  "slot 14 holds no ten", or, in the game's own terms, "the second off double is not a count double".
+  The v3 candidate is that word: κ 0.786.
+- Not read as mixing.
+- **Beside the book.** With both doubles in hand the net leads the 4-4 before the 6-6 or 5-5 (0.447
+  against 0.244). It also leads trump first when it holds the 6-4 under fives. *Winning 42*'s
+  guidance on leading doubles and walkers before or after pulling trump is the authority on reasons
+  ([[book-authority]]). These are the net's choices, read beside the book, not weighed against it.
+
+Scope: this net, these inputs (one position, uniform beliefs, no history), list v2 plus the raw
+inputs. What we learned from this model, not all of 42, yet.
 
 ## Links
 

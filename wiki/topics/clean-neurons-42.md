@@ -286,7 +286,7 @@ A2–A4 and experiment B are stages 3 and 4 of that program. **A1's result (2026
 
 **The squeeze (A3), 2026-10-17:** narrow nets cleaner, not mixed (0.61 → 0.83 at 24 neurons; [[lem-squeeze-2026-10-16]]). The follow-ups are THE ALREADY-CLEAN TEST, #193 (#194–#200), the core thesis of [[lem-the-teacher]].
 
-**The unit papers (#235), 2026-10-20 to 21: eight units of the 16×8 seed-0 net, read whole.** Each was
+**The unit papers (#235), 2026-10-20 to 21: nine units of the 16×8 seed-0 net, read whole.** Each was
 registered after a raw read, reviewed against the essay's full text by a fresh reader, sealed, and
 run. Together they read one circuit: how the net decides what to lead and what to throw.
 
@@ -300,6 +300,7 @@ run. Together they read one circuit: how the net decides what to lead and what t
 | [[lem-unit-theirs-2026-10-20]] | L1 14 | "not partner's trick; keep your count off it" | count given away 0.044 → 0.426, rank 1 of 16 | 3 / 5 |
 | [[lem-unit-pull-trump-2026-10-20]] | L1 8 | a dial on trump still out against me, cut by the lead | forced on, trump leads −0.330 beyond the layer; ablated +0.235, rank 2 of 16 | 3 / 5 |
 | [[lem-unit-count-on-it-2026-10-21]] | L2 4 | "feed partner's trick", a dial on who holds it; its tail is an opponent's trump | count on partner's trick 0.669 → 0.086 under ones–fours, rank 1 of 8 | 4 / 6 |
+| [[lem-unit-top-double-2026-10-21]] | L2 1 | "lead the top off double" under fives and sixes, gated by "slot 14 holds no ten"; on sixes follows it lays the 5-5 on partner's trick | top-double leads 0.633 → 0.197, rank 1 of 8 | 3 / 3 graded (1 confirmatory missed) |
 
 What carried across them:
 - **Read steering by where play goes, against the layer on the same rows.** A unit tied to one
@@ -318,6 +319,12 @@ What carried across them:
 - **A unit's job can be split by declaration in the net's own frame** (paper 8). The push is the
   same in canonical slots, and count lands under it only where count sits in those slots. Another
   unit covers the other declarations: composition, not packing.
+- **A unit can correct the layer** (paper 9). Three layer-2 units vote for slot 14's double, which is
+  the 5-5, a ten, under blanks–fours. One unit, gated open where slot 14 holds no ten, votes for the
+  top off double instead. Its gate is a pattern in the net's frame, not a list of declarations.
+- **A branch grows from the push, later** (paper 9). The same push that picks the double on a lead
+  lays the 5-5 on partner's trick on a sixes follow. That job reached half its final rate about
+  120,000 steps after the lead job.
 - **A rare off-set is a dial's tail, not a boundary** (papers 7–8). Its κ against a constant reads
   0.00 because the instrument is wrong; a graded word fits it (paper 8: R² 0.640).
-- None of the eight read as mixing. Scope: one net, one position, uniform beliefs, no history.
+- None of the nine read as mixing. Scope: one net, one position, uniform beliefs, no history.
