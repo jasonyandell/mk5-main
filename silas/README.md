@@ -1425,6 +1425,50 @@ impl Paired { pub fn from_ledger(ledger: &Ledger, utility: &Utility, confidence:
   is how a ledger from a field Silas cannot play earns trust in its plumbing.
   `silas compare --ledger FILE` prints the comparison.
 
+## The decision quotient
+
+A solved course of a viewer's decisions is reduced to the fewest states that
+give the same answers to every block sequence (Jason's note *A minimal
+comparison algebra for a declared 42 family*, 2026-10-21; the theorems are in
+`scenario/lean/Stab/Residual.lean`; `src/quotient.rs`, `tests/quotient.rs`).
+
+```rust
+pub struct Decision<A, X> { menu: Vec<A>, best: Vec<A>, blocks: Vec<Block<A, X>> }
+pub struct Block<A, X> { play: A, seen: X, next: usize }
+pub enum Interface { Raw, Shape, Fork }
+impl Course<A, X> { pub fn new(decisions: Vec<Decision<A, X>>) -> Result<Course<A, X>>;
+                    pub fn quotient(&self, interface: Interface) -> Result<Quotient>; }
+pub struct Quotient { class: Vec<usize>, states: usize, rounds: Vec<Vec<usize>> }
+impl CourseFile { pub fn from_json(source: &str) -> Result<CourseFile>; pub fn report(&self) -> Result<Value>; }  // the `course` feature
+```
+
+- **The course.** A decision is its legal menu, its complete maximizing set
+  and its blocks: an own play, what was seen until the next own decision, and
+  that decision. A block the course lacks is REJECT; a decision with no blocks
+  is the final tile, whose play is HALT. `new` refuses an unsorted menu, a
+  maximizing set outside it, a play outside it, a repeated label, a dangling
+  block and a cycle. Nothing here knows 42: tiles and observations are any
+  ordered type.
+- **The quotient** is the coarsest right congruence that keeps the output,
+  computed twice, bottom-up by signatures and by Moore refinement from the
+  output partition; `quotient` refuses if they differ. Round `k` separates
+  exactly what block sequences of length at most `k` reveal, so the rounds are
+  the block-depth ladder. With at most `n` own tiles it is exact after `n - 1`
+  blocks, not one (`ladder_42`; `tests/quotient.rs` has the three-tile witness).
+- **Interfaces.** `Raw` outputs the menu and maximizing set as tiles and labels
+  blocks by play and observation. `Shape` keeps no tile identity: menu size,
+  maximizing slots, and under each slot the multiset of successor classes.
+  `Fork` keeps the set instead. Values are never outputs.
+- **The file** (`silas-decision-course-v1`, written by `lem/quotient.py
+  --export`) lists every decision with its group (the root), split, stage,
+  ply, menu, maximizing set, `q` aligned with the menu, mass, settled flag and
+  blocks; it carries no hidden hand. `from_json` audits it: the maximizing set
+  is the argmax of `q`, the blocks under each play partition the mass, and
+  Bellman holds exactly. `report` gives every count of the Python report.
+  `silas quotient --course FILE` prints it; on the 256 roots of the Gus
+  maskbreadth study it reproduces `lem/quotient.py`'s report in every count
+  (`wiki/experiments/comparison-algebra-2026-10-21.md`).
+
 ## Numbers
 
 Weights are exact rationals (`Weight`, a nonnegative `BigRational`). Silas
@@ -1462,6 +1506,7 @@ silas query    QUERY --hand ID [--trick N] [--seat ROLE] [--cap N] [--book FILE]
                 [--auction C,C,C,C [--shaker ROLE] [--offered D,...] [--scoring S]]]
 silas query    DOMINANCE
 silas compare  --ledger FILE [--utility marks|points] [--confidence P/Q]
+silas quotient --course FILE
 silas coverage POLICY-OR-QUERY [--hand ID] [--random N [--bidders POLICY [--offered D,...] [--scoring S]]
                [--play POLICY]] [--book FILE]
 silas expand   FILE ...

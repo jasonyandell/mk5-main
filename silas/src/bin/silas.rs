@@ -11,6 +11,7 @@
 //!                 [--auction C,C,C,C [--shaker ROLE] [--offered D,...] [--scoring S]]]
 //! silas query    DOMINANCE
 //! silas compare  --ledger FILE [--utility marks|points] [--confidence P/Q]
+//! silas quotient --course FILE
 //! silas coverage POLICY-OR-QUERY [--hand ID] [--random N [--bidders POLICY [--offered D,...] [--scoring S]]
 //!                [--play POLICY]] [--book FILE]
 //! silas expand   FILE ...
@@ -49,7 +50,10 @@
 //! hands of a paired comparison, outcomes only), replays and settles every
 //! row under Silas's rules, and prints the mean paired difference in the
 //! ledger's unit (or `--utility`), its interval at `--confidence` (19/20 by
-//! default), the flips, the verdict and the chance arm. `coverage` reads a policy (or a query of
+//! default), the flips, the verdict and the chance arm. `quotient` reads a
+//! solved course (`lem/quotient.py --export`), audits it, and prints its
+//! decision quotient under the raw, shape and fork interfaces as JSON: the
+//! states, the block-depth ladders, and the counts beside them. `coverage` reads a policy (or a query of
 //! the viewer's frame) at every point of the book's narrated lines, and of
 //! `--random` seeded deals, and counts how often each rule answered, allowed a
 //! legal tile and decided, and how often each step of each pattern held: a
@@ -86,6 +90,7 @@ usage:
                   [--auction C,C,C,C [--shaker ROLE] [--offered D,...] [--scoring S]]]
   silas query    DOMINANCE
   silas compare  --ledger FILE [--utility marks|points] [--confidence P/Q]
+  silas quotient --course FILE
   silas coverage POLICY-OR-QUERY [--hand ID] [--random N [--bidders POLICY [--offered D,...] [--scoring S]]
                  [--play POLICY]] [--book FILE]
   silas expand   FILE ...
@@ -104,6 +109,7 @@ fn main() -> ExitCode {
         Some("bid") => bid(rest),
         Some("query") => query(rest),
         Some("compare") => compare(rest),
+        Some("quotient") => quotient(rest),
         Some("coverage") => coverage(rest),
         Some("expand") => expand(rest),
         Some("fmt") => fmt(rest),
@@ -177,6 +183,19 @@ fn decimal(x: &num_rational::BigRational) -> String {
     let digits = format!("{:05}", scaled.magnitude());
     let (whole, frac) = digits.split_at(digits.len() - 4);
     format!("{sign}{whole}.{frac}")
+}
+
+/// A solved course's decision quotient, every interface, as JSON.
+fn quotient(args: &[String]) -> Result<bool> {
+    let options = Options::parse(args, &[], &["course"])?;
+    if !options.words.is_empty() {
+        return Err(fail("silas quotient --course FILE"));
+    }
+    let path = options.need("course")?;
+    let course = quotient::file::CourseFile::from_json(&read(path)?).map_err(|e| fail(format!("{path}: {e}")))?;
+    let report = course.report()?;
+    println!("{}", serde_json::to_string_pretty(&report).map_err(|e| fail(e.to_string()))?);
+    Ok(true)
 }
 
 /// An arena ledger's paired comparison, replayed and settled by Silas.

@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from lem.quotient import PREFIX, ROOT_PLY, YOU, analyse, audit, load_root
+from lem.quotient import PREFIX, ROOT_PLY, YOU, analyse, audit, export, load_course, load_root
 
 PREFIX_TOKENS = [0] * PREFIX + [29, 1] * ROOT_PLY
 
@@ -141,3 +141,20 @@ def test_identical_facts_with_different_futures_are_told_apart_by_nothing(tmp_pa
 def test_default_report_has_no_label_interfaces(study):
     rep = analyse(study, eligible_only=False)
     assert "label_interfaces" not in rep and set(rep["interfaces"]) == {"raw", "shape", "fork"}
+
+
+def test_export_is_the_course_without_hidden_state(study):
+    course, _ = load_course(study, eligible_only=False)
+    graph = json.loads(json.dumps(export(course)))
+    assert graph["schema"] == "silas-decision-course-v1"
+    nodes = graph["nodes"]
+    assert len(nodes) == 15
+    assert all(set(n) == {"group", "split", "stage", "ply", "menu", "best", "q", "mass", "settled", "children"}
+               for n in nodes)
+    for n in nodes:
+        assert len(n["q"]) == len(n["menu"]) and set(n["best"]) <= set(n["menu"])
+        for c in n["children"]:
+            assert c["play"] in n["menu"] and 0 <= c["next"] < len(nodes)
+            assert nodes[c["next"]]["ply"] > n["ply"]
+    # Every block of the course appears once.
+    assert sum(len(n["children"]) for n in nodes) == sum(len(n.children) for n in course.values())

@@ -52,6 +52,7 @@ mod nouns;
 mod outcome;
 mod physics;
 mod policy;
+pub mod quotient;
 mod reading;
 pub mod reference;
 mod registry;

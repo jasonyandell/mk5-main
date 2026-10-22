@@ -23,7 +23,10 @@ Interfaces (what a block label and an output are allowed to mention):
          the menu), and under each slot the *multiset* of successor classes.
          This counts distinct decision-problem shapes, not a controller.
 
-Run: python -u -m lem.quotient <study> [--out report.json] [--all-solved]
+Run: python -u -m lem.quotient <study> [--out report.json] [--all-solved] [--labels] [--export course.json]
+
+--export writes the audited course as a neutral graph (silas-decision-course-v1) for
+Silas's independent implementation, `silas quotient --course course.json`.
 
 Side audits performed on the saved rows alone (no native field, no models):
   * every non-root node has a parent row; every non-final node has at least one
@@ -401,6 +404,22 @@ def load_course(study: Path, *, eligible_only=True):
     return course, per_root
 
 
+def export(course):
+    """The course as a neutral decision graph, schema silas-decision-course-v1, which
+    `silas quotient` reads: menus, maximizing sets, q, masses and block labels, no hidden
+    state.  Nodes are numbered in sorted key order; q is aligned with the menu."""
+    ids = {k: i for i, k in enumerate(sorted(course))}
+    nodes = []
+    for k in sorted(course):
+        n = course[k]
+        nodes.append({"group": n.root_id, "split": n.split, "stage": stage(n), "ply": n.ply,
+                      "menu": list(n.legal), "best": list(n.best), "q": [str(n.q[a]) for a in n.legal],
+                      "mass": str(n.mass), "settled": n.settled,
+                      "children": [{"play": a, "seen": [list(p) for p in o], "next": ids[c]}
+                                   for (a, o), c in sorted(n.children.items())]})
+    return {"schema": "silas-decision-course-v1", "nodes": nodes}
+
+
 def analyse(study: Path, *, eligible_only=True, labels=False):
     course, per_root = load_course(study, eligible_only=eligible_only)
     report = {"study": str(study), "eligible_only": eligible_only, "roots": len(per_root),
@@ -488,7 +507,11 @@ def main():
     ap.add_argument("--out", type=Path)
     ap.add_argument("--all-solved", action="store_true", help="include solved roots the study rejected as ineligible")
     ap.add_argument("--labels", action="store_true", help="also measure the tile-free observation-label interfaces")
+    ap.add_argument("--export", type=Path, help="also write the course graph for `silas quotient`")
     args = ap.parse_args()
+    if args.export:
+        course, _ = load_course(args.study, eligible_only=not args.all_solved)
+        args.export.write_text(json.dumps(export(course)))
     report = analyse(args.study, eligible_only=not args.all_solved, labels=args.labels)
     text = json.dumps(report, indent=1)
     if args.out:
