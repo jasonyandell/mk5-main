@@ -8,12 +8,18 @@
 #
 # A chunk starts no new faceoff after 180 s, so its last game finishes inside cpu-slot's
 # 300 s cap (at 240 s the cap cut a game off about once an hour, 2026-10-21).
+#
+# Pause: `touch scratch/ladder/PAUSED` (a line inside says who and why). The loop won't start
+# while it exists, and running workers stop at their next chunk boundary. Remove it to resume.
+# Restarting the loop alone does not undo a pause (2026-10-22: a session restarted a ladder
+# Jason had stopped, from a handoff that predated the stop).
 cd "${0:A:h}/.." || exit 1
-export HF_TOKEN="$(security find-generic-password -s huggingface-token -w)"
 log=scratch/ladder; mkdir -p $log
+[[ -e $log/PAUSED ]] && { echo "ladder paused: $(cat $log/PAUSED)"; exit 0; }
+export HF_TOKEN="$(security find-generic-password -s huggingface-token -w)"
 worker() {
   local i=$1 fails=0
-  while true; do
+  while [[ ! -e $log/PAUSED ]]; do
     if scripts/cpu-slot --owner ladder -- timeout 300 python -u -m tournament work --budget-s 180 >> $log/w$i.log 2>&1; then
       fails=0
     else

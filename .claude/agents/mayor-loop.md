@@ -20,7 +20,7 @@ Each tick:
    - `/bin/ls -lt ~/.codex/worktrees` (new worktrees or recent changes)
    - the ladder: `pgrep -f 'budget-s 180' | wc -l` (6 when healthy) and new `chunk failed`
      lines in `scratch/ladder/w*.log`, with the four lines before each.
-4. If the ladder has stopped, restart it: `nohup zsh scripts/ladder-loop > /dev/null 2>&1 &`.
+4. If `scratch/ladder/PAUSED` exists, the ladder is paused on purpose: never restart it, and report "paused" plus the file's line. Otherwise, if the ladder has stopped, restart it: `nohup zsh scripts/ladder-loop > /dev/null 2>&1 &`.
    A failure from a Hugging Face timeout clears itself; just count it.
 5. If anything changed, send the Mayor **one** message (SendMessage to `Mayor`): one line per
    change, with the commit, issue number or log line. If nothing changed, send nothing and stay
