@@ -1821,3 +1821,222 @@ def run_double(sample, labels: np.ndarray, names: list[str], net_path: str, j: i
                 f"top {f['top double led, final net\'s rows']:.3f} Δ {f['Δ ablated']:+.3f} + {f['+']} − {f['-']}")
         out["formation"] = form
     return out
+
+
+LOW_DOUBLES = [p * (p + 1) // 2 + p for p in range(5)]   # canonical slots 0-0 … 4-4, below the top off double
+TRUMP_DOUBLE, SECOND_TRUMP = 27, 26
+TOP_SINGLES = list(range(15, 20))                         # the top off suit's singles: 6-x (5-x under sixes)
+
+
+def run_hold(sample, labels: np.ndarray, names: list[str], net_path: str, j: int, twin_path: str,
+             audit: dict, formation_dir: str | None, log=print) -> dict:
+    """A unit paper for a layer-1 unit on almost everywhere, shut on leads short of trump and when
+    the player before me has just played the second trump (#235, paper 10). Its write is read as
+    "keep the doubles back, play a single", against "play trump": the two part where no trump can
+    be played (leads holding none, pure discards), where the first still moves play and the second
+    cannot."""
+    x = sample.x
+    fn = feature_names(x.shape[1])
+    net = load_net(net_path)
+    acts = forward(net, x)
+    z, a = acts.z1[:, j].astype(np.float64), acts.a1[:, j]
+    on = a > 0
+    k = max(1, int(round(TOP * len(z))))
+    top_p, top_n = np.argsort(-z, kind="stable")[:k], np.argsort(z, kind="stable")[:k]
+    trick = Trick(sample)
+    lab = Labeller(labels, names, x, sample.n_plays.astype(np.int64))
+    decl, lead, fol = trick.decl, trick.seat == 0, trick.seat > 0
+    bit = lambda f: x[:, fn.index(f)] > 0
+    hand = x[:, [fn.index(f"x:hand:{t}") for t in range(N_TILES)]].astype(bool)
+    n_trump = hand[:, TRUMPS].sum(1)
+    n_low = hand[:, LOW_DOUBLES].sum(1)
+    tn = sample.n_plays.astype(np.int64) // 4
+    rho26 = bit(f"x:trick:{2 * N_TILES + SECOND_TRUMP}")      # the player before me just played the second trump
+    lho26 = bit(f"x:trick:{SECOND_TRUMP}")                    # the leader, when I am last, led it
+    out: dict = {"unit": j, "net": net_path, "rows total": len(z), "top_k": k, "on": float(on.mean()),
+                 "max_z": float(z.max()), "min_z": float(z.min())}
+
+    # 1. label
+    cell = lambda m: {"rows": int(m.sum()), "on": float(on[m].mean()), "mean_z": float(z[m].mean())} if m.sum() >= 200 else None
+    out["by seat"] = {SEATS[s]: cell(trick.seat == s) for s in range(4)}
+    out["leads"] = {"by declaration × trumps held": {int(d): {int(t): cell(lead & (decl == d) & (n_trump == t)) for t in range(6)} for d in range(7)},
+                    "by trick": {int(n): cell(lead & (tn == n)) for n in range(7)},
+                    "by low doubles held, 0 trumps": {int(n): cell(lead & (n_trump == 0) & (np.minimum(n_low, 3) == n)) for n in range(4)},
+                    "by low doubles held, 1+ trumps": {int(n): cell(lead & (n_trump > 0) & (np.minimum(n_low, 3) == n)) for n in range(4)}}
+    out["follows"] = {"by the player before me's trump": {int(t): cell(fol & bit(f"x:trick:{2 * N_TILES + t}")) for t in TRUMPS},
+                      "the leader led the second trump, I am last": cell(lho26),
+                      "off share explained by the second trump": float(rho26[fol & ~on].mean())}
+    rest = fol & ~on & ~rho26
+    xb = x != 0
+    dres = xb[rest].mean(0) - xb[fol & on].mean(0)
+    out["follows"]["the rest of the follow off-set"] = {"rows": int(rest.sum()), "inputs, rate off-rest vs on follows": [
+        {"input": fn[i], "off rest": float(xb[rest, i].mean()), "on": float(xb[fol & on, i].mean())} for i in np.argsort(-np.abs(dres))[:15]]}
+    def kappas(c: np.ndarray) -> dict:
+        po = float((c == on).mean())
+        pe = c.mean() * on.mean() + (1 - c.mean()) * (1 - on.mean())
+        ch = max(on.mean(), 1 - on.mean())
+        return {"rate": float(c.mean()), "agree": po, "cohen": float((po - pe) / (1 - pe)), "vs constant": float((po - ch) / (1 - ch))}
+    lnt = labels[:, names.index("lead-no-trump")].astype(bool)
+    out["boundary"] = {"¬lead-no-trump (best v2, seen)": kappas(~lnt),
+                       "following, unless the player before me played the second trump (v3 part)": kappas(fol & ~rho26),
+                       "a lead holding a trump, or following unless the player before me played the second trump (v3 candidate)":
+                           kappas((lead & (n_trump > 0)) | (fol & ~rho26))}
+    zl = z[lead]
+    oh = lambda v, n: np.eye(n)[np.minimum(v, n - 1)][:, 1:]
+    out["r2 on leads"] = {"trumps held": r2(zl, oh(n_trump[lead], 6)),
+                          "+ trick": r2(zl, np.c_[oh(n_trump[lead], 6), oh(tn[lead], 7)]),
+                          "+ low doubles held": r2(zl, np.c_[oh(n_trump[lead], 6), oh(tn[lead], 7), oh(n_low[lead], 4)]),
+                          "+ declaration": r2(zl, np.c_[oh(n_trump[lead], 6), oh(tn[lead], 7), oh(n_low[lead], 4), oh(decl[lead], 7)])}
+    out["poles"] = {"+": lab.best(top_p), "-": lab.best(top_n), "- lead share": float(lead[top_n].mean()),
+                    "- the second trump just played": float(rho26[top_n].mean()), "+ seat": [float((trick.seat[top_p] == s).mean()) for s in range(4)]}
+    log(f"label: on {out['on']:.3f} boundary {out['boundary']} r2 {out['r2 on leads']}")
+
+    # 2. circuit in: the weights, by block, and the trick block as a table (who played which slot)
+    w = net.w1[:, j].astype(np.float64)
+    out["weights"] = [{"input": fn[f], "w": int(w[f])} for f in np.argsort(-np.abs(w))[:24]]
+    out["bias"] = int(net.b1[j])
+    out["weights, hand"] = [int(v) for v in w[[fn.index(f"x:hand:{t}") for t in range(N_TILES)]]]
+    out["weights, trick"] = {who: [int(v) for v in w[[fn.index(f"x:trick:{o * N_TILES + t}") for t in range(N_TILES)]]]
+                             for o, who in enumerate(WINNERS)}
+    # 3. circuit out: readers, and the write through the net (base minus ablated tile scores, canonical)
+    reader_label = {r["name"]: r["label"] for r in audit["rows"]}
+    col = net.w2[:, j]
+    out["readers"] = [{"unit": int(i), "w2": int(col[i]), "labels": [reader_label.get(f"L2+{i:03d}"), reader_label.get(f"L2-{i:03d}")]}
+                      for i in np.argsort(-np.abs(col))]
+    actions, deal = sample.actions, sample.deal
+    canon = sample.canon()
+    rows_i = np.arange(len(z))
+    acts_ = actions.astype(np.int64)
+    legal = np.zeros((len(z), N_TILES), bool)
+    for c in range(acts_.shape[1]):
+        ok = acts_[:, c] >= 0
+        legal[rows_i[ok], canon[rows_i[ok], acts_[ok, c]]] = True
+    def canon_write(fnet, fout: np.ndarray, m: np.ndarray) -> np.ndarray:
+        d = fout.astype(np.int64) - downstream(fnet, x, 1, j, 0)
+        dc = np.zeros((len(z), N_TILES))
+        for real in range(N_TILES):
+            dc[rows_i, canon[:, real]] = d[:, real]
+        return dc[m].mean(0) if m.any() else np.full(N_TILES, np.nan)
+    wr = {"leads, on": canon_write(net, acts.out, lead & on), "follows, on": canon_write(net, acts.out, fol & on)}
+    summ = lambda v: {"low doubles": float(v[LOW_DOUBLES].mean()), "slot 20": float(v[20]), "trump double": float(v[TRUMP_DOUBLE]),
+                      "trumps 21-26": float(v[21:27].mean()), "off singles": float(np.delete(v[:21], LOW_DOUBLES + [20]).mean()),
+                      "top off suit singles": float(v[TOP_SINGLES].mean()), "other off singles": float(np.delete(v[:15], LOW_DOUBLES).mean()),
+                      "per slot": [None if np.isnan(t) else int(t) for t in v]}
+    out["write"] = {m: summ(v) for m, v in wr.items()}
+    tw = load_net(twin_path)
+    ta = forward(tw, x)
+    out["twin"] = {"on": float((ta.a1[:, j] > 0).mean()), "w trick, the second trump before me": int(tw.w1[fn.index(f"x:trick:{2 * N_TILES + SECOND_TRUMP}"), j]),
+                   "off on leads, 0 / 3+ trumps": [float((ta.a1[lead & (n_trump == 0), j] <= 0).mean()), float((ta.a1[lead & (n_trump >= 3), j] <= 0).mean())],
+                   "write": {m: summ(canon_write(tw, ta.out, msk)) for m, msk in (("leads, on", lead & (ta.a1[:, j] > 0)), ("follows, on", fol & (ta.a1[:, j] > 0)))}}
+    log("write: " + "  ".join(f"{m}: low {v['low doubles']:+.0f} 27 {v['trump double']:+.0f} singles {v['off singles']:+.0f} trumps {v['trumps 21-26']:+.0f}" for m, v in out["write"].items()))
+
+    # 5. steering: ablate every live layer-1 unit on the same rows; the cells part the two verbs
+    base_pick = picks(acts.out, actions, canon)
+    low_l, single_l = legal[:, LOW_DOUBLES].any(1), (legal & ~np.isin(np.arange(N_TILES), LOW_DOUBLES + [20, TRUMP_DOUBLE])[None, :]).any(1)
+    trump_l = legal[:, TRUMPS].any(1)
+    # following suit: a legal tile belongs to the led suit (a trump when trump is led; else a non-trump with the led pip)
+    pips = np.array([(p, q) for p in range(7) for q in range(p + 1)])     # real tile ids share the triangular order
+    follows_suit = np.zeros(len(z), bool)
+    for c in range(acts_.shape[1]):
+        okc, tc = acts_[:, c] >= 0, np.maximum(acts_[:, c], 0)
+        is_tr = trick.trump(acts_[:, c])
+        member = np.where(trick.suit == TRUMP_SUIT, is_tr, ~is_tr & ((pips[tc, 0] == trick.suit) | (pips[tc, 1] == trick.suit)))
+        follows_suit |= okc & member
+    follows_suit &= fol
+    def reads(pick: np.ndarray) -> dict[str, np.ndarray]:
+        sl = canon[rows_i, np.maximum(pick, 0)]
+        return {"low double": np.isin(sl, LOW_DOUBLES).astype(float), "any double": np.isin(sl, LOW_DOUBLES + [20, TRUMP_DOUBLE]).astype(float),
+                "trump double": (sl == TRUMP_DOUBLE).astype(float), "trump": np.isin(sl, TRUMPS).astype(float),
+                "count": trick.count(pick).astype(float), "take": trick.beats(pick).astype(float),
+                "double, taking": (np.isin(sl, LOW_DOUBLES + [20]) & trick.beats(pick)).astype(float),
+                "top off suit single": np.isin(sl, TOP_SINGLES).astype(float), "second trump": (sl == SECOND_TRUMP).astype(float)}
+    base = reads(base_pick)
+    h1 = net.b1.shape[0]
+    live = [u for u in range(h1) if u != j and (acts.a1[:, u] > 0).sum() >= 200]
+    sig = {u: float(acts.a1[:, u][acts.a1[:, u] > 0].std()) for u in [j] + live}
+    rng = np.random.default_rng(SEED)
+    pdn = {u: picks(downstream(net, x, 1, u, 0), actions, canon) for u in [j] + live}
+    rdn = {u: reads(pdn[u]) for u in [j] + live}
+    # the led suit's own double (real pip p's double is real id p(p+1)/2 + p), legal, while following a non-trump suit
+    p_led = np.clip(trick.suit, 0, 6)
+    sd = fol & (trick.suit != TRUMP_SUIT) & legal[rows_i, canon[rows_i, p_led * (p_led + 1) // 2 + p_led]]
+    cells = [
+        ("L-T: leads, 1+ trumps, a low double and a single legal", "low double", lead & on & (n_trump > 0) & low_l & single_l),
+        ("L-0: leads, no trump, a low double and a single legal", "low double", lead & on & (n_trump == 0) & low_l & single_l),
+        ("F-D: discards (void, no trump legal), a low double and a single legal", "low double", fol & on & ~follows_suit & ~trump_l & low_l & single_l),
+        ("F-S: following suit, the led suit's double and another of the suit legal", "any double", on & follows_suit & sd & (legal.sum(1) > 1)),
+        ("L-27: leads, the trump double and another trump legal", "trump double", lead & on & legal[:, TRUMP_DOUBLE] & (legal[:, TRUMPS].sum(1) > 1)),
+        ("L-27b: leads, the trump double and another trump legal, bidding side", "trump double",
+         lead & on & legal[:, TRUMP_DOUBLE] & (legal[:, TRUMPS].sum(1) > 1) & labels[:, names.index("bidding-side")].astype(bool)),
+        ("L-27d: leads, the trump double and another trump legal, defenders", "trump double",
+         lead & on & legal[:, TRUMP_DOUBLE] & (legal[:, TRUMPS].sum(1) > 1) & ~labels[:, names.index("bidding-side")].astype(bool)),
+        ("F-R: void in a led off suit, a trump and a non-trump legal (trump in or not)", "trump",
+         fol & on & (trick.suit != TRUMP_SUIT) & ~follows_suit & trump_l & (legal & ~np.isin(np.arange(N_TILES), TRUMPS)[None, :]).any(1)),
+        ("F-27: trump led, the trump double and another trump legal", "trump double", fol & on & (trick.suit == TRUMP_SUIT) & legal[:, TRUMP_DOUBLE] & (legal[:, TRUMPS].sum(1) > 1)),
+        ("near miss: the leader led the second trump, I am last, the trump double legal", "trump double", lho26 & legal[:, TRUMP_DOUBLE] & (legal.sum(1) > 1)),
+        ("the player before me played the second trump, the trump double legal", "trump double", rho26 & legal[:, TRUMP_DOUBLE] & (legal.sum(1) > 1))]
+    down = {}
+    for nm, fo, m in cells:
+        sh = {u: rdn[u][fo] - base[fo] for u in [j] + live}
+        down[nm] = {"rows": int(m.sum()), "focus": fo, "base": {r: float(base[r][m].mean()) for r in base},
+                    "dose: on, mean a, mean z": [float(on[m].mean()) if m.any() else None, float(a[m].mean()) if m.any() else None, float(z[m].mean()) if m.any() else None],
+                    "own Δ, every read": {r: clustered(rdn[j][r][m] - base[r][m], deal[m], rng) for r in base},
+                    "units Δ focus": {int(u): float(sh[u][m].mean()) for u in [j] + live},
+                    "rank of own Δ focus, most positive first": 1 + int(sum(sh[u][m].mean() > sh[j][m].mean() for u in live)),
+                    "rank of own Δ focus, most negative first": 1 + int(sum(sh[u][m].mean() < sh[j][m].mean() for u in live))}
+        log(f"down {nm}: rows {m.sum()} base {base[fo][m].mean():.3f} own Δ {down[nm]['own Δ, every read'][fo][0]:+.3f} rank {down[nm]['rank of own Δ focus, most positive first']}")
+    out["null_units"], out["n live units"], out["sigma"] = live, len(live), sig[j]
+    out["steer"] = {"down, every unit on the same rows": down}
+    # pooled leads where on (seen before sealing, confirmatory)
+    choice = lead & on & trump_l & (legal & ~np.isin(np.arange(N_TILES), TRUMPS)[None, :]).any(1)
+    out["steer"]["pooled leads, a trump and a non-trump legal, ablated"] = {
+        "rows": int(choice.sum()), **{r: {"base": float(base[r][choice].mean()), "Δ": clustered(rdn[j][r][choice] - base[r][choice], deal[choice], rng)}
+                                    for r in ("trump", "low double", "any double")}}
+    # up: k·σ and the on value where it is off on leads holding no trump; and the on value on the second-trump rows
+    on_val = int(np.median(a[fol & on]))
+    up_rows = {"leads, no trump, a low double and a single legal, off": lead & ~on & (n_trump == 0) & low_l & single_l,
+               "the player before me played the second trump, the trump double legal": cells[-1][2]}
+    def vs_layer(pk: dict) -> dict:
+        shp = {u: {r: v - base[r] for r, v in reads(pk[u]).items()} for u in pk}
+        return {m: {r: {"own": clustered(shp[j][r][v], deal[v], rng),
+                        "own-layer": clustered((shp[j][r] - np.mean([shp[u][r] for u in live], 0))[v], deal[v], rng)}
+                    for r in ("low double", "trump double", "trump", "take")} | {"rows": int(v.sum())}
+                for m, v in up_rows.items()}
+    out["steer"]["up"] = []
+    for kd in DOSES:
+        rec = vs_layer({u: picks(downstream(net, x, 1, u, None, add=int(round(kd * sig[u]))), actions, canon) for u in [j] + live})
+        rec["k"] = kd
+        out["steer"]["up"].append(rec)
+        log(f"up k={kd}: " + "  ".join(f"{m[:20]} low {v['low double']['own-layer'][0]:+.3f} 27 {v['trump double']['own-layer'][0]:+.3f}" for m, v in rec.items() if m != "k"))
+    out["on value, follows"] = on_val
+    out["steer"]["up, add the on value"] = vs_layer({u: picks(downstream(net, x, 1, u, None, add=on_val if u == j else int(np.median(acts.a1[acts.a1[:, u] > 0, u]))), actions, canon)
+                                                    for u in [j] + live})
+
+    # 4. formation: the gates, the second-trump weight, and the write through the net, per checkpoint
+    if formation_dir:
+        form = []
+        fr = [m for nm, _, m in cells if nm.startswith("F-R")][0]
+        i26 = fn.index(f"x:trick:{2 * N_TILES + SECOND_TRUMP}")
+        for ck in sorted(Path(formation_dir).glob("step_*.npz")):
+            fnet = load_net(ck)
+            fa = forward(fnet, x)
+            fz = fa.z1[:, j].astype(np.float64)
+            fon = fa.a1[:, j] > 0
+            tp_, tn_ = np.argsort(-fz, kind="stable")[:k], np.argsort(fz, kind="stable")[:k]
+            fw = {m: summ(canon_write(fnet, fa.out, msk & fon)) for m, msk in (("leads, on", lead), ("follows, on", fol))}
+            fb = canon[rows_i, np.maximum(picks(fa.out, actions, canon), 0)]
+            fd = canon[rows_i, np.maximum(picks(downstream(fnet, x, 1, j, 0), actions, canon), 0)]
+            use = {"trump led, final net's choice leads": float(np.isin(fb, TRUMPS)[choice].mean()),
+                   "Δ trump led, ablated": float(np.isin(fd, TRUMPS)[choice].mean() - np.isin(fb, TRUMPS)[choice].mean()),
+                   "Δ trump played, ablated, final net's F-R rows": float(np.isin(fd, TRUMPS)[fr].mean() - np.isin(fb, TRUMPS)[fr].mean())}
+            form.append({"step": int(ck.stem.split("_")[1]), "on": float(fon.mean()), **use,
+                         "off, leads 0 / 3+ trumps": [float((~fon[lead & (n_trump == 0)]).mean()), float((~fon[lead & (n_trump >= 3)]).mean())],
+                         "off, the second trump before me": float((~fon[rho26]).mean()), "w, the second trump before me": int(fnet.w1[i26, j]),
+                         "write": {m: {q: v[q] for q in ("low doubles", "slot 20", "trump double", "trumps 21-26", "off singles")} for m, v in fw.items()},
+                         "readers w2": [int(v) for v in fnet.w2[:, j]],
+                         "+": lab.best(tp_), "-": lab.best(tn_)})
+            f = form[-1]
+            log(f"  {ck.stem}: on {f['on']:.3f} off|lead0/3+ {[round(v, 3) for v in f['off, leads 0 / 3+ trumps']]} off|26 {f['off, the second trump before me']:.3f} Δtrump led {f['Δ trump led, ablated']:+.3f} Δtrump F-R {f['Δ trump played, ablated, final net\'s F-R rows']:+.3f} "
+                f"write follows low {f['write']['follows, on']['low doubles']:.0f} 27 {f['write']['follows, on']['trump double']:.0f} singles {f['write']['follows, on']['off singles']:.0f}")
+        out["formation"] = form
+    return out
