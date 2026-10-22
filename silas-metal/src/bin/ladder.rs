@@ -101,7 +101,7 @@ fn main() {
         // `--count-only` walks each piece keeping no leaves: its plays, the evidence for a play
         // budget, and no rung. A COUNT line per piece, then the rung's verdict on the budget.
         if args.iter().any(|a| a == "--count-only") {
-            let mut spent = 0u64;
+            let (mut spent, mut counted) = (0u64, 0usize);
             for (label, mask) in &pieces {
                 let t = Instant::now();
                 let (worlds, w) = problem.count(&mut gpu, k, *mask, u32::MAX, from..to, limits.table_bits).unwrap();
@@ -127,15 +127,24 @@ fn main() {
                     .unwrap();
                 }
                 spent += w.total();
+                counted += 1;
+                // Past the budget is all a refusal needs; the remaining pieces are not walked.
+                if spent > budget {
+                    break;
+                }
             }
-            let verdict = if spent > budget { "past" } else { "within" };
-            println!("  rung k {k}: {spent} plays, {verdict} the budget {budget}");
+            let (verdict, tally) = match (spent > budget, counted == pieces.len()) {
+                (false, _) => ("within", String::new()),
+                (true, true) => ("past", String::new()),
+                (true, false) => ("past", format!(" at least, {counted} of {} tiles counted", pieces.len())),
+            };
+            println!("  rung k {k}: {spent} plays{tally}, {verdict} the budget {budget}");
             if spent > budget
                 && whole
                 && let Some(path) = arg(&args, "--triples")
             {
                 let mut out = std::fs::OpenOptions::new().create(true).append(true).open(path).unwrap();
-                writeln!(out, "{key} REFUSED budget {budget} at k {k}, plays {spent} (counted)").unwrap();
+                writeln!(out, "{key} REFUSED budget {budget} at k {k}, plays {spent}{tally} (counted)").unwrap();
             }
             continue;
         }
