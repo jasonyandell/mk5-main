@@ -8,7 +8,7 @@ Entry prefix convention: `## [YYYY-MM-DD | shortsha | subject]` so `grep "^## \[
 
 **Stitching and rotation** happen on main after a merge, by script: `python -u scripts/wiki_log_rotate.py` first stitches the `log.d/` fragments in here, newest first, then keeps the newest 10 entries once there are more than 15, moves the rest verbatim into [[log-archive]] and sets the digest's count; whoever runs it folds their gist into the digest.
 
-## Digest (2026-04-09 → 2026-10-20, 487 archived entries)
+## Digest (2026-04-09 → 2026-10-20, 494 archived entries)
 
 What the log recorded, phase by phase. The story itself lives in the hubs and trails linked here; this is only a map of when the wiki ingested what.
 
@@ -58,8 +58,61 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **Gus confirmation and routing; the July shelf** (2026-10-19 → 10-20, 6 archived entries) — [[gus-sampled-confirmation-2026-10-19]] (the sampled-policy gain did not replicate), [[gus-unanchored-outcomes-2026-10-19]], [[gus-first-look-2026-10-19]], [[gus-route-rescue-2026-10-20]], [[gus-tiny-gpt]] canonical delivery; the sweep's [[branch-rescue-2026-10]] (the Walt/Hoyt stack in attic/ tags).
 - **Gus value numerics, #201's doubles cost, the first transformer audit** (2026-10-20, 6 archived entries) — [[gus-value-routing-2026-10-20]] (stopped before its primary), [[gus-value-numerics-2026-10-20]]; the Book desk's #201 (the doubles cost in thin top doubles) and `scenario.hf verify`; Lem's [[lem-gus-formation-2026-10-20]].
 - **Lem's conditioned reads, steering, words and pour A** (2026-10-20, 6 archived entries) — [[lem-conditioned-audit-2026-10-20]] and [[lem-squeeze-conditioned-2026-10-20]] (both later superseded by [[lem-fixed-conditioning-2026-10-20]]), [[lem-matched-steering-2026-10-20]], [[lem-overbake-units-2026-10-20]], [[lem-words-need-data-2026-10-20]], [[lem-squeeze-pour-a-2026-10-20]].
-- **Lem's raw re-read and unit papers; Gus's contingent teaching** (2026-10-20, 30 archived entries) — [[lem-family-statistic-2026-10-20]] (fails its calibration), [[lem-coarse-or-mixed-2026-10-20]] (void by its own rule), [[lem-unit-origin-2026-10-20]] (#231), the raw headline re-read (#233) and unit papers 1–4 (#235); the Book desk's #201 registration and confirmation; the Mayor's fresh-read-before-sealing rule and tidy; Gus's fixed-checkpoint transfer ([[gus-contingent-transfer-2026-10-20]]), [[gus-u65-formation-2026-10-20]], the contingent teacher, cost, breadth and practice runs ([[gus-contingent-teacher-2026-10-20]], [[gus-contingent-cost-2026-10-20]], [[gus-contingent-breadth-2026-10-20]], [[gus-contingent-practice-recovery-2026-10-20]]).
+- **Lem's raw re-read and unit papers; Gus's contingent teaching** (2026-10-20, 37 archived entries) — [[lem-family-statistic-2026-10-20]] (fails its calibration), [[lem-coarse-or-mixed-2026-10-20]] (void by its own rule), [[lem-unit-origin-2026-10-20]] (#231), the raw headline re-read (#233) and unit papers 1–4 (#235); the Book desk's #201 registration and confirmation; the Mayor's fresh-read-before-sealing rule and tidy; Gus's fixed-checkpoint transfer ([[gus-contingent-transfer-2026-10-20]]), [[gus-u65-formation-2026-10-20]], the contingent teacher, cost, breadth and practice runs ([[gus-contingent-teacher-2026-10-20]], [[gus-contingent-cost-2026-10-20]], [[gus-contingent-breadth-2026-10-20]], [[gus-contingent-practice-recovery-2026-10-20]]).
 ---
+
+## [2026-10-22 | mayor | Desks become agent files; The 42 Ladder page]
+
+- Four desks now (Mayor, Media, Book, Lem), each an agent file in `.claude/agents/` with its
+  model and effort, run as short sessions that start from the latest handoff in
+  `~/code/mk5-main/scratch/desks/<desk>/` and end by writing the next one. Archive and Sweep fold
+  into the Mayor as subagents; the Mayor's watch is a Haiku session (`mayor-loop`). Playbook:
+  [[standing-desks]].
+- The tournament ladder's loop moved from a job's temp folder to `scripts/ladder-loop` (180 s
+  chunk budget, so the last faceoff ends inside cpu-slot's 300 s cap), and its standings export to
+  `scripts/ladder_export.py`. The page: [The 42 Ladder](https://claude.ai/artifact/TJYRL2ac7afwMookxGPdhp),
+  18,247 faceoffs and 37,514 games as of 2026-10-22. Zeb 0.4.1 (contested) leads at 1812
+  [1797, 1826]; the Demon with the c102 straight bidder is next at 1787 [1773, 1802], intervals
+  overlapping. See [[tournament]].
+
+## [2026-10-21 | pending | Gus continuation teaching tools]
+
+**Added:** [[gus-continuation-teaching-tools]] — native solver, generation and pour inventory; Rust counted-belief extraction is the preferred bridge candidate, not an integrated G0/Zeb teacher.
+**Updated:** [[gus-tiny-gpt]], [[gus-book-silas-tools]] — stopped loop and current capability route; Silas constructors remain on open PR #166.
+**Questions opened:** whether richer four-tile lessons transfer; no new experiment or training launched.
+
+## [2026-10-21 | Gus | Broader contingent teaching result]
+<!-- SPDX-FileCopyrightText: Jason Yandell -->
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+
+**Updated:** [[gus-contingent-maskbreadth-2026-10-20]] completed; fresh narrow contrast favorable, parent uncertainty keeps combined gate failed. [[gus-tiny-gpt]] and training skill route to verified evidence; no full-hand test or promotion.
+
+## [2026-10-20 | f9d9fe1 | Gus historical choice teaching wish]
+
+**Touched pages:** [[topics/gus-historical-choice-wish|gus-historical-choice-wish]] [[topics/gus-continuation-teaching-tools|gus-continuation-teaching-tools]]
+**Added:** IDEATED history-conditioned choice-value and consequential-fork teaching wish; explicitly not built and no training restarted.
+**Updated:** [[topics/gus-continuation-teaching-tools|gus-continuation-teaching-tools]] routes to the wish.
+
+## [2026-10-20 | claude | lem: unit paper 7 graded: 16×8 s0 unit 8 is a dial on trump still out against me (#235, #202)]
+
+- Predictions 1, 3 and 5 held. Prediction 2 held on sign and missed on rank: unit 2 is the larger
+  brake on leading trump. Prediction 4 missed on followers: 4+ trumps in hand shut the unit
+  0.12–0.25 of the time.
+- Its graded variable is the trumps neither mine nor played: R² 0.525 on leads, and held + gone
+  0.793. The lead subtracts. Forced on, the net leads trump 0.330 less and leads off doubles and
+  count instead.
+- The #202 κ 0.02 gap is vocabulary: list v2 has no count of trumps out. The candidate is
+  `trumps-out-count`.
+- Evidence is on HF at `lem/unit-pull-trump-2026-10-20/`, in [[lem-unit-pull-trump-2026-10-20]].
+
+## [2026-10-20 | claude | lem: unit paper 7 registered: 16×8 s0 unit 8, the deepest list-v2 gap (#235, #202)]
+
+- [[lem-unit-pull-trump-2026-10-20]] is registered and sealed after a fresh-context Opus review of
+  the essay's full text. The review moved the label from trump length alone to two candidate verbs:
+  a brake on leading trump, or "trump is still contested".
+- The instrument is `run_lead` in `lem/probe/unit.py`, run with `python -m lem.probe unit … --lead`.
+- Disclosed on the page: a smoke test exposed seed 0's formation, so formation is read off, not
+  graded.
 
 ## [2026-10-20 | book | the book's surface count for doubles trump, encoded and unread (#230 A)]
 
@@ -96,58 +149,3 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
   - L1±014 `¬partner-winning` (0.831);
   - L1±007 `¬trump-led` (0.925), where list v2 lacks the true boundary (#202).
 - Reproduce with `python -u -m lem.probe audit SAMPLE LABELS OUT --net NET --baseline n_plays --shuffles 0`.
-
-## [2026-10-20 | claude | lem: the six unit papers, filed back to the card (#235)]
-
-- [[clean-neurons-42]] Status gains a table of the six unit papers on the 16×8 s0 net (L1 5, 13,
-  0, 7, 14; L2 3): each one's verb, use and score.
-- Also five lessons that carried across them: read steering by where play goes against the layer;
-  the pole is not the job; layer-1 units are graded sums; growth was never a merge; when
-  predictions contradict, suspect the shared premise.
-
-## [2026-10-20 | Gus | Known contingent corrections acquired]
-<!-- SPDX-FileCopyrightText: Jason Yandell -->
-<!-- SPDX-License-Identifier: CC0-1.0 -->
-
-[[gus-contingent-maskfit-2026-10-20]] completed and independently saved-data audited: masked final512 repairs71/72 known corrections with one new other-nonflat error; exact TRAIN43.0605%, teacher43.1126%. Occupancy locates both errors on reached paths. No new training or roots; prior held-out gate stays failed, no reselection/promotion. Verified compact evidence and owner-private report published.
-
-## [2026-10-20 | claude | lem: unit paper 6, keep your count off their trick (#235)]
-
-- [[lem-unit-theirs-2026-10-20]]: 16×8 s0 unit 14, #232's C1, read whole with `run_winner`.
-  Two additive terms: an opponent's off double on the trick (+15k) and partner winning (−21k).
-  Partner's term wins when both apply (mean z −2,475 when partner has trumped the double).
-- Its use: where an opponent's double wins and nothing of mine can, ablating it raises count given
-  away from 0.044 to 0.426, rank 1 of 16. In trumping in it ranks fourth; unit 7 leads there.
-- 3 of 5 held. The double term was in the random initial weights; the partner shut-off grew last
-  (epoch 10), the reverse of the registered order.
-
-## [2026-10-20 | Gus | Flat-row masking has favorable estimates but fails the improvement gate]
-
-<!-- SPDX-FileCopyrightText: Jason Yandell -->
-<!-- SPDX-License-Identifier: CC0-1.0 -->
-
-[[gus-contingent-flatmask-2026-10-20]] complete. Fresh64finite success masked42.3121%, ordinary CE40.3714%, parent39.5703%; both paired improvement intervals cross zero, registered gate failed, no full-hand test or promotion. Twelve closed segments and1,041,834saved-data audit checks; new evidence1630bd6b59ba6933d720b9c6fb1b8233b9fa7c8f freshly verified. All620747reserved deals excluded. Same owner-private First Look report updated; no next experiment selected.
-
-## [2026-10-20 | gus | Teach consequential preferences without flat-action targets]
-
-<!-- SPDX-FileCopyrightText: Jason Yandell -->
-<!-- SPDX-License-Identifier: CC0-1.0 -->
-**Created:** [[gus-contingent-flatmask-2026-10-20]] — Jason selected exact flat-row CE masking. Same TRAIN lessons and full512 batch stream; ordinary CE reused; fresh development/test; no outcome yet.
-**Updated:** [[gus-tiny-gpt]] and gus-training skill route the registered controller. Nine synthetic tests, exact public reuse and source review passed; original pre-registration helper failure retained. Lem/Book/Silas capability refresh found no changed prerequisite. Registration publicly verified before launch.
-
-## [2026-10-20 | claude | lem: unit paper 5, a trump counter that opens trumping in (#235)]
-
-- [[lem-unit-no-trump-yet-2026-10-20]]: 16×8 s0 unit 7, the doubles switch's largest input.
-  `run_trick` builds the concept list v2 lacks ("trumps on the open trick") from the record.
-- On-rate falls in a staircase: 0.954 with no trump on the trick, 0.361 with one partner trump,
-  0.231 with one opponent trump, ≤ 0.009 with two. Opponents' trumps weigh about twice as much.
-- Where I can trump in, ablating it cuts trumping in by 0.411 (base 0.797), the largest of the 16
-  units, each ablated on the same rows.
-- 1 of 5 held. The label predictions assumed a bit and missed narrowly. Read R's `trump-led` names
-  the deepest rows, not the none-vs-one boundary where the job lives (#236, #202).
-
-## [2026-10-20 | gus | Finish the registered longer-practice comparison]
-
-<!-- SPDX-FileCopyrightText: Jason Yandell -->
-<!-- SPDX-License-Identifier: CC0-1.0 -->
-**Updated:** [[gus-contingent-practice-recovery-2026-10-20]], [[gus-tiny-gpt]] — 448 new updates completed, long selected step0; no primary improvement or promotion. Short control secondary finite-model lead requires confirmation. Independent saved-data audit passed 1,249,974 checks; new evidence freshly verified; same owner-private report updated. Original failed attempt retained. Skill routes completed receipts and an unselected flat-mask candidate.

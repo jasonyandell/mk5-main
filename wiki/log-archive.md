@@ -5654,3 +5654,58 @@ The next selected preparation asks whether five fixed saved policies learned the
 <!-- SPDX-License-Identifier: CC0-1.0 -->
 **Created:** [[gus-contingent-practice-recovery-2026-10-20]] — exact saved collection reused; full serialized startup tested; failed attempt still consumes budget.
 **Updated:** [[gus-tiny-gpt]] — original failure preserved, separately registered continuation launched after independent review.
+
+## [2026-10-20 | gus | Finish the registered longer-practice comparison]
+
+<!-- SPDX-FileCopyrightText: Jason Yandell -->
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+**Updated:** [[gus-contingent-practice-recovery-2026-10-20]], [[gus-tiny-gpt]] — 448 new updates completed, long selected step0; no primary improvement or promotion. Short control secondary finite-model lead requires confirmation. Independent saved-data audit passed 1,249,974 checks; new evidence freshly verified; same owner-private report updated. Original failed attempt retained. Skill routes completed receipts and an unselected flat-mask candidate.
+
+## [2026-10-20 | claude | lem: unit paper 5, a trump counter that opens trumping in (#235)]
+
+- [[lem-unit-no-trump-yet-2026-10-20]]: 16×8 s0 unit 7, the doubles switch's largest input.
+  `run_trick` builds the concept list v2 lacks ("trumps on the open trick") from the record.
+- On-rate falls in a staircase: 0.954 with no trump on the trick, 0.361 with one partner trump,
+  0.231 with one opponent trump, ≤ 0.009 with two. Opponents' trumps weigh about twice as much.
+- Where I can trump in, ablating it cuts trumping in by 0.411 (base 0.797), the largest of the 16
+  units, each ablated on the same rows.
+- 1 of 5 held. The label predictions assumed a bit and missed narrowly. Read R's `trump-led` names
+  the deepest rows, not the none-vs-one boundary where the job lives (#236, #202).
+
+## [2026-10-20 | gus | Teach consequential preferences without flat-action targets]
+
+<!-- SPDX-FileCopyrightText: Jason Yandell -->
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+**Created:** [[gus-contingent-flatmask-2026-10-20]] — Jason selected exact flat-row CE masking. Same TRAIN lessons and full512 batch stream; ordinary CE reused; fresh development/test; no outcome yet.
+**Updated:** [[gus-tiny-gpt]] and gus-training skill route the registered controller. Nine synthetic tests, exact public reuse and source review passed; original pre-registration helper failure retained. Lem/Book/Silas capability refresh found no changed prerequisite. Registration publicly verified before launch.
+
+## [2026-10-20 | Gus | Flat-row masking has favorable estimates but fails the improvement gate]
+
+<!-- SPDX-FileCopyrightText: Jason Yandell -->
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+
+[[gus-contingent-flatmask-2026-10-20]] complete. Fresh64finite success masked42.3121%, ordinary CE40.3714%, parent39.5703%; both paired improvement intervals cross zero, registered gate failed, no full-hand test or promotion. Twelve closed segments and1,041,834saved-data audit checks; new evidence1630bd6b59ba6933d720b9c6fb1b8233b9fa7c8f freshly verified. All620747reserved deals excluded. Same owner-private First Look report updated; no next experiment selected.
+
+## [2026-10-20 | claude | lem: unit paper 6, keep your count off their trick (#235)]
+
+- [[lem-unit-theirs-2026-10-20]]: 16×8 s0 unit 14, #232's C1, read whole with `run_winner`.
+  Two additive terms: an opponent's off double on the trick (+15k) and partner winning (−21k).
+  Partner's term wins when both apply (mean z −2,475 when partner has trumped the double).
+- Its use: where an opponent's double wins and nothing of mine can, ablating it raises count given
+  away from 0.044 to 0.426, rank 1 of 16. In trumping in it ranks fourth; unit 7 leads there.
+- 3 of 5 held. The double term was in the random initial weights; the partner shut-off grew last
+  (epoch 10), the reverse of the registered order.
+
+## [2026-10-20 | Gus | Known contingent corrections acquired]
+<!-- SPDX-FileCopyrightText: Jason Yandell -->
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+
+[[gus-contingent-maskfit-2026-10-20]] completed and independently saved-data audited: masked final512 repairs71/72 known corrections with one new other-nonflat error; exact TRAIN43.0605%, teacher43.1126%. Occupancy locates both errors on reached paths. No new training or roots; prior held-out gate stays failed, no reselection/promotion. Verified compact evidence and owner-private report published.
+
+## [2026-10-20 | claude | lem: the six unit papers, filed back to the card (#235)]
+
+- [[clean-neurons-42]] Status gains a table of the six unit papers on the 16×8 s0 net (L1 5, 13,
+  0, 7, 14; L2 3): each one's verb, use and score.
+- Also five lessons that carried across them: read steering by where play goes against the layer;
+  the pole is not the job; layer-1 units are graded sums; growth was never a merge; when
+  predictions contradict, suspect the shared premise.
