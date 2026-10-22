@@ -2,7 +2,7 @@
 title: "Gus historical choice teaching wish"
 kind: topic
 first_seen: 2026-10-20
-last_updated: 2026-10-21
+last_updated: 2026-10-22
 status: active
 ---
 <!-- SPDX-FileCopyrightText: Jason Yandell -->
@@ -53,3 +53,5 @@ The first measurement of the adopted formulation on the existing course is
 [[gus-decision-quotient-2026-10-21]]: the coarsest decision-interface congruence
 over 256 saved roots, read from Jason's 2026-10-21 note on the minimal comparison
 algebra. It is a count on saved data; no training follows from it.
+The night that followed, seven pages from the note to Walt's endgame, is walked in
+[[comparison-algebra-night]].
