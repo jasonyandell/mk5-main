@@ -114,8 +114,9 @@ this as a scope finding:
   - two own tiles, undecided (n = 16): median 2.4×10⁷, max 6.7×10⁷;
   - three own tiles, undecided (n = 24): median 4.5×10⁸, 90th percentile 9.9×10⁹, max 5.0×10¹⁰;
   - about 1.8×10⁵ instructions per course choice, which is BigRational arithmetic.
-- **Per shard, including the recount and the controller.** A: 3.8×10⁹ ± 2.2×10⁹ per decision.
-  B: 1.13×10¹⁰ ± 0.05×10¹⁰.
+- **Per decision in the shards, including the recount and the controller.** Pooled (all
+  instructions over all decisions): A 2.31×10¹³ over 6,065 decisions, 3.8×10⁹ each. B 5.97×10¹³
+  over 5,271 decisions, 1.13×10¹⁰ each, replanning included.
 
 **The compiled controller** (undecided decisions; both pours alike):
 

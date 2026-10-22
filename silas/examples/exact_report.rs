@@ -74,8 +74,10 @@ fn bootstrap(groups: &[Vec<(f64, f64)>], stat: impl Fn(&[(f64, f64)]) -> f64) ->
     format!("{:.4} [{:.4}, {:.4}] (n {})", stat(&all), s[100], s[3899], all.len())
 }
 
+// Over the positions where Walt's recorded time is above its timer's resolution (1 ms); the
+// zeros are counted beside it.
 fn median_ratio(v: &[(f64, f64)]) -> f64 {
-    let mut r: Vec<f64> = v.iter().map(|(a, b)| a / b).collect();
+    let mut r: Vec<f64> = v.iter().filter(|(_, b)| *b > 0.0).map(|(a, b)| a / b).collect();
     r.sort_by(|a, b| a.partial_cmp(b).unwrap());
     if r.is_empty() { f64::NAN } else { r[(r.len() - 1) / 2] }
 }
@@ -107,7 +109,7 @@ fn main() {
     let mut cells: BTreeMap<String, Cell> = BTreeMap::new();
     let mut hands: BTreeMap<String, (usize, usize, usize, f64, f64, usize, usize)> = BTreeMap::new();
     let mut walt: BTreeMap<String, BTreeMap<String, Vec<(f64, f64)>>> = BTreeMap::new();
-    let mut shard_ins: Vec<f64> = Vec::new();
+    let mut shard_ins: Vec<(f64, usize)> = Vec::new();
     let mut walt_rows: BTreeMap<String, Value> = BTreeMap::new();
     for path in &args {
         if let Some(p) = path.strip_prefix("--walt=") {
@@ -191,9 +193,15 @@ fn main() {
             }
         }
         if let Ok(cost) = std::fs::read_to_string(format!("{path}.cost")) {
-            let ins = cost.split_whitespace().skip_while(|w| *w != "instructions").nth(1);
+            // `/usr/bin/time -l` counts the solver ("N instructions retired"); without it,
+            // cpu-slot's own count is the solver's, since cpu-slot then runs it directly.
+            let words: Vec<&str> = cost.split_whitespace().collect();
+            let ins = match words.windows(3).find(|w| w[1] == "instructions" && w[2] == "retired") {
+                Some(w) => Some(w[0]),
+                None => words.windows(2).find(|w| w[0] == "instructions").map(|w| w[1]),
+            };
             if let (Some(ins), true) = (ins, decisions_here > 0) {
-                shard_ins.push(ins.parse::<f64>().unwrap() / decisions_here as f64);
+                shard_ins.push((ins.parse::<f64>().unwrap(), decisions_here));
             }
         }
     }
@@ -229,21 +237,23 @@ fn main() {
         );
     }
     if !shard_ins.is_empty() {
-        let n = shard_ins.len() as f64;
-        let m = shard_ins.iter().sum::<f64>() / n;
-        let sd = (shard_ins.iter().map(|x| (x - m) * (x - m)).sum::<f64>() / (n - 1.0).max(1.0)).sqrt();
+        let (ins, dec) = shard_ins.iter().fold((0.0, 0usize), |(i, d), (x, n)| (i + x, d + n));
         println!(
-            "== instructions per decision over {} shards: mean {:.4e} ± {:.4e} (95%, t≈2)",
+            "== instructions over {} processes: {:.4e} for {dec} decisions, {:.4e} per decision (pooled)",
             shard_ins.len(),
-            m,
-            2.0 * sd / n.sqrt()
+            ins,
+            ins / dec as f64
         );
     }
     for (name, by) in &walt {
         for arm in ["live", "exact"] {
             let groups: Vec<Vec<(f64, f64)>> =
                 by.iter().filter(|(k, _)| k.starts_with(arm)).map(|(_, v)| v.clone()).collect();
-            println!("== {name} ours / Walt cpu_{arm}_s: median ratio {}", bootstrap(&groups, median_ratio));
+            let zeros = groups.iter().flatten().filter(|(_, b)| *b == 0.0).count();
+            println!(
+                "== {name} ours / Walt cpu_{arm}_s: median ratio {} ({zeros} positions where Walt's time reads 0 left out)",
+                bootstrap(&groups, median_ratio)
+            );
             println!("   total ratio {}", bootstrap(&groups, total_ratio));
         }
     }
