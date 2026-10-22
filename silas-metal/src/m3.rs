@@ -46,9 +46,18 @@ pub fn carrier() -> Carrier {
     let physics = Straight42::new("P5".parse().expect("a declaration")).physics();
     let auction = Auction::won_by(Seat::S1, Bid::number(30).expect("a bid")).expect("an auction");
     let history: Vec<(Seat, Domino)> = [
-        (Seat::S1, "52"), (Seat::S2, "63"), (Seat::S3, "51"), (Seat::S0, "65"),
-        (Seat::S0, "42"), (Seat::S1, "54"), (Seat::S2, "44"), (Seat::S3, "32"),
-        (Seat::S1, "11"), (Seat::S2, "22"), (Seat::S3, "10"), (Seat::S0, "61"),
+        (Seat::S1, "52"),
+        (Seat::S2, "63"),
+        (Seat::S3, "51"),
+        (Seat::S0, "65"),
+        (Seat::S0, "42"),
+        (Seat::S1, "54"),
+        (Seat::S2, "44"),
+        (Seat::S3, "32"),
+        (Seat::S1, "11"),
+        (Seat::S2, "22"),
+        (Seat::S3, "10"),
+        (Seat::S0, "61"),
     ]
     .iter()
     .map(|(s, t)| (*s, tile(t)))
@@ -71,12 +80,7 @@ impl Carrier {
             .worlds
             .iter()
             .enumerate()
-            .map(|(w, hands)| Particle {
-                hands: hands.map(|h| h.bits()),
-                kind: 0,
-                world: w as u32,
-                mass: U256::ONE,
-            })
+            .map(|(w, hands)| Particle { hands: hands.map(|h| h.bits()), kind: 0, world: w as u32, mass: U256::ONE })
             .collect();
         Root {
             physics: self.physics.clone(),
@@ -208,7 +212,12 @@ impl Oracle<'_> {
 
 /// The oracle's lawful value (or, `split`, the world-split control's) at one physical root.
 pub fn oracle(carrier: &Carrier, root: Domino, arm: Arm, split: bool) -> OracleAnswer {
-    let s = Pub { leader: carrier.frame.leader(), trick: carrier.frame.prefix().to_vec(), done: 3, tally: Tally::default() };
+    let s = Pub {
+        leader: carrier.frame.leader(),
+        trick: carrier.frame.prefix().to_vec(),
+        done: 3,
+        tally: Tally::default(),
+    };
     let lines: Vec<Line> = carrier.worlds.iter().map(|h| Line { hands: *h, p: 1 }).collect();
     let mut o = Oracle { physics: &carrier.physics, arm, nodes: 0 };
     let value = if split {

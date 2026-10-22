@@ -57,7 +57,8 @@ fn position(rng: &mut Rng, physics: &Physics, plays: usize) -> ([DominoSet; 4], 
 
 /// Other worlds with the same public state: the hidden tiles dealt again, sizes kept.
 fn reshuffle(rng: &mut Rng, hands: &[DominoSet; 4], focal: Seat) -> [u32; 4] {
-    let mut pool: Vec<Domino> = Seat::ALL.iter().filter(|s| **s != focal).flat_map(|s| hands[s.index()].iter()).collect();
+    let mut pool: Vec<Domino> =
+        Seat::ALL.iter().filter(|s| **s != focal).flat_map(|s| hands[s.index()].iter()).collect();
     for i in (1..pool.len()).rev() {
         pool.swap(i, rng.below(i + 1));
     }
@@ -167,7 +168,15 @@ fn an_illegal_action_refuses_the_batch() {
     let tables = Tables::new(&physics, &kinds);
     let hands = deal(&mut Rng(1));
     let off = Domino::ALL.iter().find(|d| !hands[0].contains(**d)).unwrap();
-    let seg = Segment { focal: 0, leader: 0, n: 0, trick: [0; 4], done: 0, focal_hand: hands[0].bits(), action: off.index() as u8 };
+    let seg = Segment {
+        focal: 0,
+        leader: 0,
+        n: 0,
+        trick: [0; 4],
+        done: 0,
+        focal_hand: hands[0].bits(),
+        action: off.index() as u8,
+    };
     let p = Particle { hands: hands.map(|h| h.bits()), kind: 0, world: 0, mass: U256::ONE };
     let batch = Batch { segments: &[seg], particles: &[p], items: &[(0, 0)] };
     assert!(Cpu { threads: 1 }.epoch(&tables, batch).is_err());

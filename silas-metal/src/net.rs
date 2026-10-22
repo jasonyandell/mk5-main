@@ -251,9 +251,8 @@ pub fn solve(
             }
             let mut g = 0;
             while g < run.len() {
-                let same = |c: &&Child| {
-                    c.obs == run[g].obs && (treatment == Treatment::Lawful || c.world == run[g].world)
-                };
+                let same =
+                    |c: &&Child| c.obs == run[g].obs && (treatment == Treatment::Lawful || c.world == run[g].world);
                 let h = g + run[g..].iter().take_while(|c| same(c)).count();
                 let state = advance(physics, focal, &level.keys[k].state, action, &obs_tiles(run[g].obs))?;
                 if state.done == 7 {

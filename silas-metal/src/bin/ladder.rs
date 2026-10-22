@@ -23,6 +23,7 @@ use silas::player::{Root, SeatLaw};
 use silas::reference::Straight42;
 use silas::{Auction, Bid, Domino, DominoSet, Frame, Seat};
 use silas_metal::Gpu;
+use silas_metal::epoch::EpochError;
 use silas_metal::ladder::{Gathered, Limits, Problem, Rung, Work, available_bytes};
 
 fn npy(path: &str) -> Vec<u8> {
@@ -98,90 +99,162 @@ fn main() {
         let mut actions = Vec::new();
         let mut mass = None;
         let mut spent = 0u64;
-        for (label, mask) in &pieces {
-            let free = available_bytes();
-            if free < min_free {
-                println!("deal {d} decl P{decl} k {k} root {label}: refused, {free} bytes available, under {min_free}");
-                ok = false;
-                continue;
-            }
-            let t = Instant::now();
-            let g = match problem.gather(&mut gpu, k, *mask, from, to, limits) {
-                Ok(g) => g,
-                Err(e) => {
-                    println!("deal {d} decl P{decl} k {k} root {label}: refused, {e:?}");
+        // `--per-reply` splits each root tile by the next seat's answer (that seat's node sums,
+        // so the pieces' (L, U, mass), leaves and plays add to the tile's); empty pieces are skipped.
+        let per_reply = args.iter().any(|a| a == "--per-reply");
+        for (tile_label, mask) in &pieces {
+            let replies: Vec<(String, u32)> = if per_reply {
+                assert_eq!(mask.count_ones(), 1, "--per-reply splits one root tile at a time");
+                let answers = (0..28).map(|b| (format!("{tile_label}/{}", Domino::from_index(b).unwrap()), 1u32 << b));
+                answers.chain([(format!("{tile_label}/-"), 1u32 << 31)]).collect()
+            } else {
+                vec![(tile_label.clone(), u32::MAX)]
+            };
+            // The tile's sums over its pieces: L, U, mass, leaves, work, pieces.
+            let mut sum = (0u64, 0u64, 0u64, 0usize, Work::default(), 0usize);
+            for (label, reply) in &replies {
+                let label = label.as_str();
+                let free = available_bytes();
+                if free < min_free {
+                    println!(
+                        "deal {d} decl P{decl} k {k} root {label}: refused, {free} bytes available, under {min_free}"
+                    );
                     ok = false;
                     continue;
                 }
-            };
-            let ms = t.elapsed().as_millis().max(1);
-            println!(
-                "deal {d} decl P{decl} viewer {} shards {} k {k} root {label} gathered {from}..{to} worlds {} leaves {} plays {} (tree {} tails {} god {}) metal wall {ms} ms ({} plays/s)",
-                viewer.index(),
-                problem.shards(),
-                g.worlds,
-                g.leaves.len(),
-                g.work.total(),
-                g.work.tree,
-                g.work.tails,
-                g.work.god,
-                u128::from(g.work.total()) * 1000 / ms,
-            );
-            // The bytes streamed once: to the file when saved, through SHA-256 (the receipt)
-            // and FNV-64 (Exact-T1's key).
-            let mut sha = Sha256::new();
-            let mut fnv = 0xcbf2_9ce4_8422_2325u64;
-            let mut file = arg(&args, "--save").map(|save| {
-                // `{d}` in the path names the deal, `{tile}` the piece's root tiles.
-                BufWriter::new(File::create(save.replace("{d}", &d.to_string()).replace("{tile}", label)).unwrap())
-            });
-            g.stream(|b| {
-                sha.update(b);
-                fnv = b.iter().fold(fnv, |h, x| (h ^ u64::from(*x)).wrapping_mul(0x0100_0000_01b3));
-                if let Some(f) = file.as_mut() {
-                    f.write_all(b).unwrap();
+                let t = Instant::now();
+                let g = match problem.gather(&mut gpu, k, *mask, *reply, from..to, limits) {
+                    Ok(g) => g,
+                    Err(e) => {
+                        println!("deal {d} decl P{decl} k {k} root {label}: refused, {e:?}");
+                        let why = match e {
+                            EpochError::Memory { leaves, budget, shard, plays } => {
+                                Some(format!("max-leaves {budget} at shard {shard}, leaves {leaves} plays {plays}"))
+                            }
+                            EpochError::Free { leaves, available, floor, shard, plays } => Some(format!(
+                                "free-memory {available} under {floor} at shard {shard}, leaves {leaves} plays {plays}"
+                            )),
+                            _ => None,
+                        };
+                        if let (Some(why), Some(path)) = (why, arg(&args, "--triples")) {
+                            let mut out = std::fs::OpenOptions::new().create(true).append(true).open(path).unwrap();
+                            writeln!(out, "{d} {label} REFUSED {why}").unwrap();
+                        }
+                        ok = false;
+                        continue;
+                    }
+                };
+                if per_reply && g.worlds == 0 {
+                    continue;
                 }
-            });
-            if let Some(mut f) = file {
-                f.flush().unwrap();
-            }
-            let sha: String = sha.finalize().iter().map(|b| format!("{b:02x}")).collect();
-            println!("  sha256 {sha} fnv64 {fnv:016x}");
-            if whole {
-                let r = problem.rung(&frame, &g).expect("the rung");
-                if let Some(path) = arg(&args, "--triples") {
-                    // One line per piece: deal tile L U mass leaves plays tree tails god fnv64 sha256 engine.
-                    let mut out = std::fs::OpenOptions::new().create(true).append(true).open(path).unwrap();
-                    for (a, lo, up) in &r.actions {
-                        writeln!(
-                            out,
-                            "{d} {a} {lo} {up} {} {} {} {} {} {} {fnv:016x} {sha} metal",
-                            r.mass,
-                            g.leaves.len(),
-                            g.work.total(),
-                            g.work.tree,
-                            g.work.tails,
-                            g.work.god
-                        )
-                        .unwrap();
+                let ms = t.elapsed().as_millis().max(1);
+                println!(
+                    "deal {d} decl P{decl} viewer {} shards {} k {k} root {label} gathered {from}..{to} worlds {} leaves {} plays {} (tree {} tails {} god {}) metal wall {ms} ms ({} plays/s)",
+                    viewer.index(),
+                    problem.shards(),
+                    g.worlds,
+                    g.leaves.len(),
+                    g.work.total(),
+                    g.work.tree,
+                    g.work.tails,
+                    g.work.god,
+                    u128::from(g.work.total()) * 1000 / ms,
+                );
+                // The bytes streamed once: to the file when saved, through SHA-256 (the receipt)
+                // and FNV-64 (Exact-T1's key).
+                let mut sha = Sha256::new();
+                let mut fnv = 0xcbf2_9ce4_8422_2325u64;
+                let mut file = arg(&args, "--save").map(|save| {
+                    // `{d}` in the path names the deal, `{tile}` the piece's root tiles.
+                    BufWriter::new(File::create(save.replace("{d}", &d.to_string()).replace("{tile}", label)).unwrap())
+                });
+                g.stream(|b| {
+                    sha.update(b);
+                    fnv = b.iter().fold(fnv, |h, x| (h ^ u64::from(*x)).wrapping_mul(0x0100_0000_01b3));
+                    if let Some(f) = file.as_mut() {
+                        f.write_all(b).unwrap();
+                    }
+                });
+                if let Some(mut f) = file {
+                    f.flush().unwrap();
+                }
+                let sha: String = sha.finalize().iter().map(|b| format!("{b:02x}")).collect();
+                println!("  sha256 {sha} fnv64 {fnv:016x}");
+                if whole {
+                    let r = problem.rung(&frame, &g).expect("the rung");
+                    if let Some(path) = arg(&args, "--triples") {
+                        // One line per piece: deal tile L U mass leaves plays tree tails god fnv64 sha256 engine.
+                        let mut out = std::fs::OpenOptions::new().create(true).append(true).open(path).unwrap();
+                        for (a, lo, up) in &r.actions {
+                            let name = if per_reply { label.to_string() } else { a.to_string() };
+                            writeln!(
+                                out,
+                                "{d} {name} {lo} {up} {} {} {} {} {} {} {fnv:016x} {sha} metal",
+                                r.mass,
+                                g.leaves.len(),
+                                g.work.total(),
+                                g.work.tree,
+                                g.work.tails,
+                                g.work.god
+                            )
+                            .unwrap();
+                        }
+                    }
+                    if per_reply {
+                        let (_, lo, up) = r.actions[0];
+                        let w = &mut sum.4;
+                        *w =
+                            Work { tree: w.tree + g.work.tree, tails: w.tails + g.work.tails, god: w.god + g.work.god };
+                        sum = (sum.0 + lo, sum.1 + up, sum.2 + r.mass, sum.3 + g.leaves.len(), sum.4, sum.5 + 1);
+                    } else {
+                        actions.extend(r.actions);
+                        mass = Some(r.mass);
+                    }
+                    spent += g.work.total();
+                }
+                if let Some(theirs) = arg(&args, "--compare") {
+                    let bytes = g.to_bytes();
+                    let other = std::fs::read(theirs).unwrap();
+                    let same = other == bytes;
+                    ok &= same;
+                    println!("  byte-equal to {theirs}: {same}");
+                    if !same {
+                        let o = Gathered::from_bytes(&other).unwrap();
+                        println!(
+                            "  theirs: worlds {} leaves {} work {:?}; ours work {:?}",
+                            o.worlds,
+                            o.leaves.len(),
+                            o.work,
+                            g.work
+                        );
+                        let diff = o
+                            .leaves
+                            .iter()
+                            .filter(|(p, l)| g.leaves.binary_search_by_key(p, |x| x.0).map(|i| &g.leaves[i].1) != Ok(l))
+                            .count();
+                        println!("  leaves differing or missing: {diff}");
                     }
                 }
-                actions.extend(r.actions);
-                mass = Some(r.mass);
-                spent += g.work.total();
             }
-            if let Some(theirs) = arg(&args, "--compare") {
-                let bytes = g.to_bytes();
-                let other = std::fs::read(theirs).unwrap();
-                let same = other == bytes;
-                ok &= same;
-                println!("  byte-equal to {theirs}: {same}");
-                if !same {
-                    let o = Gathered::from_bytes(&other).unwrap();
-                    println!("  theirs: worlds {} leaves {} work {:?}; ours work {:?}", o.worlds, o.leaves.len(), o.work, g.work);
-                    let diff = o.leaves.iter().filter(|(p, l)| g.leaves.binary_search_by_key(p, |x| x.0).map(|i| &g.leaves[i].1) != Ok(l)).count();
-                    println!("  leaves differing or missing: {diff}");
+            if per_reply && whole && ok {
+                let (lo, up, m, leaves, work, n) = sum;
+                let a: Domino = tile_label.parse().unwrap();
+                println!("  tile {a}: {n} pieces, L {lo} U {up} mass {m} leaves {leaves} plays {}", work.total());
+                if let Some(path) = arg(&args, "--triples") {
+                    // The tile's line: its pieces' sums, and how many pieces.
+                    let mut out = std::fs::OpenOptions::new().create(true).append(true).open(path).unwrap();
+                    writeln!(
+                        out,
+                        "{d} {a} {lo} {up} {m} {leaves} {} {} {} {} split {n} metal",
+                        work.total(),
+                        work.tree,
+                        work.tails,
+                        work.god
+                    )
+                    .unwrap();
                 }
+                actions.push((a, lo, up));
+                mass = Some(m);
             }
         }
         if spent > budget {

@@ -38,7 +38,8 @@ fn h8_root_31_passes() {
     assert_eq!(cv, BigUint::from(oracle(&c, tile("31"), arm, true).value) * &lift);
 
     let den = BigUint::from(1200u32) * BigUint::from(840u32).pow(12);
-    let diff = |v: &BigUint| BigRational::new((v * 2u32).into(), den.clone().into()) - BigRational::from_integer(4.into());
+    let diff =
+        |v: &BigUint| BigRational::new((v * 2u32).into(), den.clone().into()) - BigRational::from_integer(4.into());
     assert_eq!(diff(&h.value().to_biguint()), BigRational::new(490_069.into(), 276_480.into()));
     assert_eq!(diff(&cv), BigRational::new(424_483.into(), 230_400.into()));
     assert!(cv > h.value().to_biguint());

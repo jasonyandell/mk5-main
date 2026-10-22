@@ -52,8 +52,14 @@ fn main() {
     let only = flag("--root");
     let c = carrier();
     println!("carrier h8 before trick 4: P5, S1 declared 30 and leads; hand {:?}", c.frame.kernel().viewer_hand());
-    println!("  worlds {}; banked {:?}; voids S2 {:?} S3 {:?} S0 {:?}", c.worlds.len(), c.frame.banked(),
-        c.voids(Seat::S2), c.voids(Seat::S3), c.voids(Seat::S0));
+    println!(
+        "  worlds {}; banked {:?}; voids S2 {:?} S3 {:?} S0 {:?}",
+        c.worlds.len(),
+        c.frame.banked(),
+        c.voids(Seat::S2),
+        c.voids(Seat::S3),
+        c.voids(Seat::S0)
+    );
     let mut gpu = Gpu::new().expect("a Metal device");
     println!("  device {}", gpu.device_name());
     let worlds = BigUint::from(c.worlds.len());
@@ -99,7 +105,12 @@ fn main() {
             };
             println!(
                 "{arm:?} root {r}: H {shown_h} C {shown_c} C-H {}  | states {} (levels {:?}) arrivals {} terminals {} items {}",
-                &shown_c - &shown_h, states, h.states, h.arrivals, h.terminals, h.items
+                &shown_c - &shown_h,
+                states,
+                h.states,
+                h.arrivals,
+                h.terminals,
+                h.items
             );
             println!(
                 "    parity: metal=oracle {h_ok}  cpu=metal {cpu_ok}  C metal=oracle {c_ok}  states=oracle {states_ok} ({})  strict C>H {strict}",

@@ -47,8 +47,7 @@ impl U256 {
     }
 
     pub fn checked_mul_u64(self, f: u64) -> Option<U256> {
-        self.checked_mul_small(f as u32)?
-            .checked_add(self.checked_mul_small((f >> 32) as u32)?.checked_shl32()?)
+        self.checked_mul_small(f as u32)?.checked_add(self.checked_mul_small((f >> 32) as u32)?.checked_shl32()?)
     }
 
     /// Times 2^32.

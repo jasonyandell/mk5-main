@@ -62,11 +62,35 @@ impl Law {
             .iter()
             .map(|d| {
                 let p = match self {
-                    Law::Lowest => if Some(d) == lo { q(1, 1) } else { q(0, 1) },
-                    Law::Highest => if Some(d) == hi { q(1, 1) } else { q(0, 1) },
+                    Law::Lowest => {
+                        if Some(d) == lo {
+                            q(1, 1)
+                        } else {
+                            q(0, 1)
+                        }
+                    }
+                    Law::Highest => {
+                        if Some(d) == hi {
+                            q(1, 1)
+                        } else {
+                            q(0, 1)
+                        }
+                    }
                     Law::Uniform => q(1, n),
-                    Law::LeanLow => if Some(d) == lo { q(n + 1, 2 * n) } else { q(1, 2 * n) },
-                    Law::LeanHigh => if Some(d) == hi { q(n + 1, 2 * n) } else { q(1, 2 * n) },
+                    Law::LeanLow => {
+                        if Some(d) == lo {
+                            q(n + 1, 2 * n)
+                        } else {
+                            q(1, 2 * n)
+                        }
+                    }
+                    Law::LeanHigh => {
+                        if Some(d) == hi {
+                            q(n + 1, 2 * n)
+                        } else {
+                            q(1, 2 * n)
+                        }
+                    }
                 };
                 (d, p)
             })
@@ -189,9 +213,21 @@ pub enum EpochError {
     Law,
     Device(String),
     /// The host would hold more than its leaf budget: a memory refusal, reported, not a crash.
-    Memory { leaves: usize, budget: usize },
+    /// `shard` is the first shard not yet gathered, `plays` the work laid until then.
+    Memory {
+        leaves: usize,
+        budget: usize,
+        shard: usize,
+        plays: u64,
+    },
     /// The machine had less memory to hand out than the floor, with this many leaves held.
-    Free { leaves: usize, available: u64, floor: u64 },
+    Free {
+        leaves: usize,
+        available: u64,
+        floor: u64,
+        shard: usize,
+        plays: u64,
+    },
 }
 
 impl EpochError {
@@ -276,11 +312,35 @@ fn weight(law: u32, legal: u32, tile: u32) -> Result<u32, EpochError> {
     let n = legal.count_ones();
     let (lo, hi) = (legal.trailing_zeros(), 31 - legal.leading_zeros());
     Ok(match law {
-        0 => if tile == lo { 840 } else { 0 },
-        1 => if tile == hi { 840 } else { 0 },
+        0 => {
+            if tile == lo {
+                840
+            } else {
+                0
+            }
+        }
+        1 => {
+            if tile == hi {
+                840
+            } else {
+                0
+            }
+        }
         2 => 840 / n,
-        3 => if tile == lo { 420 * (n + 1) / n } else { 420 / n },
-        4 => if tile == hi { 420 * (n + 1) / n } else { 420 / n },
+        3 => {
+            if tile == lo {
+                420 * (n + 1) / n
+            } else {
+                420 / n
+            }
+        }
+        4 => {
+            if tile == hi {
+                420 * (n + 1) / n
+            } else {
+                420 / n
+            }
+        }
         _ => return Err(EpochError::Law),
     })
 }
@@ -483,8 +543,10 @@ impl Backend for Reference {
             let leader = Seat::from_index(usize::from(g.leader)).ok_or(EpochError::Illegal)?;
             let mut hands = p.hands.map(|h| DominoSet::from_bits(h).expect("a hand"));
             hands[focal.index()] = DominoSet::from_bits(g.focal_hand).ok_or(EpochError::Illegal)?;
-            let trick: Vec<Domino> =
-                g.trick[..usize::from(g.n)].iter().map(|t| Domino::from_index(usize::from(*t)).expect("a tile")).collect();
+            let trick: Vec<Domino> = g.trick[..usize::from(g.n)]
+                .iter()
+                .map(|t| Domino::from_index(usize::from(*t)).expect("a tile"))
+                .collect();
             let action = Domino::from_index(usize::from(g.action)).ok_or(EpochError::Illegal)?;
             if leader.plus(trick.len()) != focal
                 || !self.physics.legal_plays(hands[focal.index()], trick.first().copied()).contains(action)

@@ -38,7 +38,9 @@ fn deal0_probes_equal_exact_t1() {
         (1, 509_459, Work { tree: 393_476_864, tails: 1_216_747_116, god: 2_317_763_457 }, 0x284b_3c22_c2f2_6d6f),
     ];
     for (k, leaves, work, sum) in pins {
-        let g: Gathered = problem.gather(&mut gpu, k, u32::MAX, 0, 1000, Limits { table_bits: 22, ..Limits::default() }).unwrap();
+        let g: Gathered = problem
+            .gather(&mut gpu, k, u32::MAX, u32::MAX, 0..1000, Limits { table_bits: 22, ..Limits::default() })
+            .unwrap();
         assert_eq!(g.worlds, 3_432_000);
         assert_eq!(g.leaves.len(), leaves, "k {k}");
         assert_eq!(g.work, work, "k {k}");
@@ -55,14 +57,14 @@ fn per_root_gathers_partition_the_whole() {
     let (_, problem) = deal0();
     let mut gpu = Gpu::new().expect("a Metal device");
     let limits = Limits { table_bits: 20, ..Limits::default() };
-    let whole = problem.gather(&mut gpu, 2, u32::MAX, 0, 20, limits).unwrap();
+    let whole = problem.gather(&mut gpu, 2, u32::MAX, u32::MAX, 0..20, limits).unwrap();
     let mut joined = Vec::new();
     let mut work = Work::default();
     for tile in 0..28 {
         if 67_732_752u32 >> tile & 1 == 0 {
             continue;
         }
-        let g = problem.gather(&mut gpu, 2, 1 << tile, 0, 20, limits).unwrap();
+        let g = problem.gather(&mut gpu, 2, 1 << tile, u32::MAX, 0..20, limits).unwrap();
         assert_eq!(g.worlds, whole.worlds);
         assert!(g.leaves.iter().all(|(bits, _)| (bits >> 120) as u32 == tile + 1));
         joined.extend(g.leaves);
@@ -74,12 +76,39 @@ fn per_root_gathers_partition_the_whole() {
 }
 
 #[test]
+fn reply_pieces_partition_a_root_tile() {
+    // Below one root tile (the hand's highest), the pieces by the next seat's reply hold the
+    // tile's leaves, plays and worlds exactly, each world in one piece.
+    let (_, problem) = deal0();
+    let mut gpu = Gpu::new().expect("a Metal device");
+    let limits = Limits { table_bits: 20, ..Limits::default() };
+    let root = 1 << (31 - 67_732_752u32.leading_zeros());
+    let tile = problem.gather(&mut gpu, 2, root, u32::MAX, 0..20, limits).unwrap();
+    let mut joined = Vec::new();
+    let (mut work, mut worlds, mut pieces) = (Work::default(), 0, 0);
+    for bit in (0..28).chain([31]) {
+        let g = problem.gather(&mut gpu, 2, root, 1 << bit, 0..20, limits).unwrap();
+        pieces += usize::from(g.worlds > 0);
+        assert_eq!(g.worlds == 0, g.leaves.is_empty());
+        joined.extend(g.leaves);
+        worlds += g.worlds;
+        work = Work { tree: work.tree + g.work.tree, tails: work.tails + g.work.tails, god: work.god + g.work.god };
+    }
+    assert!(pieces > 1, "the tile splits");
+    joined.sort_by_key(|x: &(u128, _)| x.0);
+    assert_eq!(joined, tile.leaves);
+    assert_eq!((worlds, work), (tile.worlds, tile.work));
+}
+
+#[test]
 fn a_tiny_table_drains_and_still_agrees() {
     // Shards 0..40 through a leaf table of 2^15 slots (drained many times) equal the same
     // shards through 2^20 slots.
     let (_, problem) = deal0();
     let mut gpu = Gpu::new().expect("a Metal device");
-    let big = problem.gather(&mut gpu, 1, u32::MAX, 0, 40, Limits { table_bits: 20, ..Limits::default() }).unwrap();
-    let small = problem.gather(&mut gpu, 1, u32::MAX, 0, 40, Limits { table_bits: 15, ..Limits::default() }).unwrap();
+    let big =
+        problem.gather(&mut gpu, 1, u32::MAX, u32::MAX, 0..40, Limits { table_bits: 20, ..Limits::default() }).unwrap();
+    let small =
+        problem.gather(&mut gpu, 1, u32::MAX, u32::MAX, 0..40, Limits { table_bits: 15, ..Limits::default() }).unwrap();
     assert_eq!(big, small);
 }

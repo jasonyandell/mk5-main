@@ -14,14 +14,13 @@
 //! bound, the fence page's first sanctioned use (a bound that refutes); nothing here
 //! chooses by it.
 
-
 use silas::player::{Root, SeatLaw};
 use silas::{Context, Domino, Frame, HIDDEN_SEATS, Seat};
 
 use crate::epoch::EpochError;
 use crate::metal::Gpu;
 
-const L_WORDS: usize = 353 + 29 * 8 + 1;
+const L_WORDS: usize = 353 + 29 * 8 + 2;
 const EMPTY: u32 = u32::MAX;
 /// Worlds per command, at most; also at most a quarter of the leaf table's slots, the
 /// table being drained once a quarter full. A command that fills it anyway refuses the gather.
@@ -332,7 +331,8 @@ impl Problem {
             return Err(format!("the gather covers {covered} of {} shards", self.shards.len()));
         }
         let leaves = &g.leaves[..];
-        let at = |bits: u128, i: u8| Domino::from_index((((bits >> (5 * (24 - i))) & 31) - 1) as usize).expect("a tile");
+        let at =
+            |bits: u128, i: u8| Domino::from_index((((bits >> (5 * (24 - i))) & 31) - 1) as usize).expect("a tile");
         let start = Public { leader: frame.leader(), trick: frame.prefix().to_vec() };
         let viewer = frame.viewer();
         let physics = frame.physics();
@@ -404,19 +404,25 @@ impl Problem {
         binomial(u64::from((rest & self.allowed[1]).count_ones()), self.capacity[1] as u64)
     }
 
-    /// The leaves of horizon `k` over shards `from..to` whose root tile is in `roots` (tile
+    /// The leaves of horizon `k` over `shards` whose root tile is in `roots` (tile
     /// bits; `u32::MAX` for every one), on the GPU. A gather of some root tiles is exactly
     /// the leaves of the whole gather whose first symbol is one of them (Exact-T1's
     /// `Ladder::gather(k, roots_bits, ..)`), so per-tile gathers join in `rung`.
+    ///
+    /// `replies` keeps, below each root tile, only the worlds whose next seat answers with a
+    /// tile in it (bit 31: no answer, the hand decided at the root). The next seat's node
+    /// sums, so a root tile's pieces by reply partition its leaves, plays and worlds, and
+    /// their (L, U, mass) add to the tile's. `u32::MAX` keeps every reply.
     pub fn gather(
         &self,
         gpu: &mut Gpu,
         k: usize,
         roots: u32,
-        from: usize,
-        to: usize,
+        replies: u32,
+        shards: std::ops::Range<usize>,
         limits: Limits,
     ) -> Result<Gathered, EpochError> {
+        let (from, to) = (shards.start, shards.end);
         let Limits { table_bits, max_leaves, min_free } = limits;
         assert!(from <= to && to <= self.shards.len(), "shards {from}..{to} of {}", self.shards.len());
         if k >= 6 {
@@ -425,6 +431,7 @@ impl Problem {
         let mut words = self.words.clone();
         words[296] = k as u32;
         words[585] = roots;
+        words[586] = replies;
         let p = gpu.upload(&words)?;
         let slots = 1usize << table_bits;
         let keys = gpu.zeroed(slots * 4)?;
@@ -441,7 +448,10 @@ impl Problem {
             let mut fresh: Vec<(u128, Leaf)> = (0..slots)
                 .filter(|s| !kw[4 * s..4 * s + 4].contains(&EMPTY))
                 .map(|s| {
-                    let bits = kw[4 * s..4 * s + 4].iter().enumerate().fold(0u128, |a, (i, x)| a | (u128::from(*x) << (32 * i)));
+                    let bits = kw[4 * s..4 * s + 4]
+                        .iter()
+                        .enumerate()
+                        .fold(0u128, |a, (i, x)| a | (u128::from(*x) << (32 * i)));
                     let v = &vw[4 * s..4 * s + 4];
                     (bits, Leaf { mass: v[0].into(), tails: [v[1].into(), v[2].into()], god: v[3].into() })
                 })
@@ -484,24 +494,40 @@ impl Problem {
                 e => return Err(EpochError::Device(format!("the ladder kernel refused with code {e}"))),
             }
             let claimed = Gpu::read(&out, 9)[8];
+            let plays = || {
+                let o = Gpu::read(&out, 8);
+                (1..4).map(|j| u64::from(o[2 * j]) | (u64::from(o[2 * j + 1]) << 32)).sum::<u64>()
+            };
             if (claimed - claimed_at_drain) as usize > slots / 4 {
                 drain(&mut leaves);
                 claimed_at_drain = claimed;
                 if leaves.len() > max_leaves {
-                    return Err(EpochError::Memory { leaves: leaves.len(), budget: max_leaves });
+                    return Err(EpochError::Memory {
+                        leaves: leaves.len(),
+                        budget: max_leaves,
+                        shard: i,
+                        plays: plays(),
+                    });
                 }
                 let available = if min_free > 0 { available_bytes() } else { u64::MAX };
                 if available < min_free {
-                    return Err(EpochError::Free { leaves: leaves.len(), available, floor: min_free });
+                    return Err(EpochError::Free {
+                        leaves: leaves.len(),
+                        available,
+                        floor: min_free,
+                        shard: i,
+                        plays: plays(),
+                    });
                 }
             }
         }
         drain(&mut leaves);
-        if leaves.len() > max_leaves {
-            return Err(EpochError::Memory { leaves: leaves.len(), budget: max_leaves });
-        }
         let o = Gpu::read(&out, 8);
         let pair = |i: usize| u64::from(o[i]) | (u64::from(o[i + 1]) << 32);
+        if leaves.len() > max_leaves {
+            let plays = pair(2) + pair(4) + pair(6);
+            return Err(EpochError::Memory { leaves: leaves.len(), budget: max_leaves, shard: to, plays });
+        }
         Ok(Gathered {
             k,
             ranges: vec![(from, to)],

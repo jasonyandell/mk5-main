@@ -48,6 +48,7 @@ constant uint L_RECLEN = 324;
 constant uint L_RECORD = 325;     // 28: seat * 32 + tile
 constant uint L_BINOM = 353;      // 29 * 8: C(n, r), r < 8
 constant uint L_ROOTS = 585;      // the root tiles gathered (the rest of the root's legal tiles skipped)
+constant uint L_REPLY = 586;      // the replies gathered at depth 1 (the next seat's play after a root tile)
 
 // The chunk: [threads, shards, table mask].
 constant uint EMPTY = 0xffffffffu;
@@ -289,6 +290,7 @@ kernel void ladder_gather(device const uint* p [[buffer(0)]],
 
     uint err = 0;
     uint tree = 0, tails = 0, gwork = 0;
+    bool counted = false;
     uint mask = chunk[2];
     uint k = p[L_K];
     if (k >= MAXK) { atomic_fetch_max_explicit(errw, ERR_DEPTH, memory_order_relaxed); return; }
@@ -318,9 +320,21 @@ kernel void ladder_gather(device const uint* p [[buffer(0)]],
         rem[sp] &= rem[sp] - 1;
         St nx = st[sp];
         Path px = path[sp];
+        uint tree0 = tree;
         play(p, nx, tile, tree);
         push(px, tile, err);
         advance(p, nx, px, true, tree, err);
+        if (sp == 0) {
+            // A reply outside the piece: this root's work and leaves belong to another piece.
+            uint reply = (px.w[3] >> 19) & 31u;
+            // (No reply, the hand decided at the root play: bit 31.)
+            uint bit = reply == 0 ? 31u : reply - 1;
+            if (((p[L_REPLY] >> bit) & 1u) == 0) {
+                tree = tree0;
+                continue;
+            }
+            counted = true;
+        }
         uint depth = sp + 1;
         int d = decided(p, nx);
         if (d >= 0) {
@@ -343,7 +357,7 @@ kernel void ladder_gather(device const uint* p [[buffer(0)]],
         atomic_fetch_max_explicit(errw, err, memory_order_relaxed);
         return;
     }
-    add64(&out[0], 1u);
+    if (counted) add64(&out[0], 1u);
     add64(&out[2], tree);
     add64(&out[4], tails);
     add64(&out[6], gwork);
