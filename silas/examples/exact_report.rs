@@ -105,7 +105,7 @@ fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let files: Vec<&String> = args.iter().filter(|a| a.ends_with(".jsonl")).collect();
     let mut cells: BTreeMap<String, Cell> = BTreeMap::new();
-    let mut hands: BTreeMap<String, (usize, usize, usize, f64, f64, usize)> = BTreeMap::new();
+    let mut hands: BTreeMap<String, (usize, usize, usize, f64, f64, usize, usize)> = BTreeMap::new();
     let mut walt: BTreeMap<String, BTreeMap<String, Vec<(f64, f64)>>> = BTreeMap::new();
     let mut shard_ins: Vec<f64> = Vec::new();
     let mut walt_rows: BTreeMap<String, Value> = BTreeMap::new();
@@ -130,10 +130,13 @@ fn main() {
                 let (dec, con) =
                     (v["decisions"].as_u64().unwrap() as usize, v["consistent"].as_u64().unwrap() as usize);
                 let s = v["success"].as_bool().unwrap();
-                let v1 = first.take().expect("a hand row follows its first decision");
+                // A hand with no decision was decided before the viewer's first turn: its value
+                // was its outcome, so it adds nothing to the calibration's sums.
+                let v1 = first.take().unwrap_or(s as u8 as f64);
                 h.0 += 1;
                 h.1 += s as usize;
-                h.2 += (con + 1 == dec) as usize;
+                h.2 += (dec == 0 || con + 1 == dec) as usize;
+                h.6 += (dec == 0) as usize;
                 h.3 += s as u8 as f64 - v1;
                 h.4 += v1 * (1.0 - v1);
                 h.5 += dec;
@@ -217,9 +220,9 @@ fn main() {
             }
         }
     }
-    for (pour, (n, s, cons, diff, var, dec)) in &hands {
+    for (pour, (n, s, cons, diff, var, dec, settled)) in &hands {
         println!(
-            "== hands {pour}: {n} hands, {dec} decisions; G2 consistent on {cons}; success {}; G7 mean(success - v1) {:.4}, z {:.3}",
+            "== hands {pour}: {n} hands ({settled} decided before the first turn), {dec} decisions; G2 consistent on {cons}; success {}; G7 mean(success - v1) {:.4}, z {:.3}",
             wilson(*s, *n),
             diff / *n as f64,
             diff / var.sqrt()
