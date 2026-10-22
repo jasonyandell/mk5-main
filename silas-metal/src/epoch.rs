@@ -188,6 +188,8 @@ pub enum EpochError {
     Illegal,
     Law,
     Device(String),
+    /// The host would hold more than its leaf budget: a memory refusal, reported, not a crash.
+    Memory { leaves: usize, budget: usize },
 }
 
 impl EpochError {

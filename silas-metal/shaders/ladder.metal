@@ -47,6 +47,7 @@ constant uint L_PLAYED = 320;     // 4: each seat's plays so far
 constant uint L_RECLEN = 324;
 constant uint L_RECORD = 325;     // 28: seat * 32 + tile
 constant uint L_BINOM = 353;      // 29 * 8: C(n, r), r < 8
+constant uint L_ROOTS = 585;      // the root tiles gathered (the rest of the root's legal tiles skipped)
 
 // The chunk: [threads, shards, table mask].
 constant uint EMPTY = 0xffffffffu;
@@ -306,7 +307,7 @@ kernel void ladder_gather(device const uint* p [[buffer(0)]],
     uint sp = 0;
     st[0] = start;
     path[0] = Path{{0, 0, 0, 0}, 0};
-    rem[0] = legal(p, start.hands[viewer], start);
+    rem[0] = legal(p, start.hands[viewer], start) & p[L_ROOTS];
     while (err == 0) {
         if (rem[sp] == 0) {
             if (sp == 0) break;

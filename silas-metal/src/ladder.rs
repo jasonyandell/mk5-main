@@ -22,7 +22,7 @@ use silas::{Context, Domino, Frame, HIDDEN_SEATS, Seat};
 use crate::epoch::EpochError;
 use crate::metal::Gpu;
 
-const L_WORDS: usize = 353 + 29 * 8;
+const L_WORDS: usize = 353 + 29 * 8 + 1;
 const EMPTY: u32 = u32::MAX;
 /// Worlds per command, at most; also at most a quarter of the leaf table's slots, the
 /// table being drained once a quarter full. A command that fills it anyway refuses the gather.
@@ -205,6 +205,20 @@ fn law_code(law: SeatLaw) -> Result<u32, String> {
     }
 }
 
+/// The gather's memory: a device leaf table of `2^table_bits` slots (drained to the host
+/// whenever it passes a quarter full), and at most `max_leaves` leaves held on the host.
+#[derive(Clone, Copy, Debug)]
+pub struct Limits {
+    pub table_bits: u32,
+    pub max_leaves: usize,
+}
+
+impl Default for Limits {
+    fn default() -> Limits {
+        Limits { table_bits: 23, max_leaves: usize::MAX }
+    }
+}
+
 /// One root of the ladder, as the kernel reads it.
 pub struct Problem {
     words: Vec<u32>,
@@ -376,15 +390,27 @@ impl Problem {
         binomial(u64::from((rest & self.allowed[1]).count_ones()), self.capacity[1] as u64)
     }
 
-    /// The leaves of horizon `k` over shards `from..to`, on the GPU, with a leaf table of
-    /// `2^table_bits` slots (drained to the host whenever it passes a quarter full).
-    pub fn gather(&self, gpu: &mut Gpu, k: usize, from: usize, to: usize, table_bits: u32) -> Result<Gathered, EpochError> {
+    /// The leaves of horizon `k` over shards `from..to` whose root tile is in `roots` (tile
+    /// bits; `u32::MAX` for every one), on the GPU. A gather of some root tiles is exactly
+    /// the leaves of the whole gather whose first symbol is one of them (Exact-T1's
+    /// `Ladder::gather(k, roots_bits, ..)`), so per-tile gathers join in `rung`.
+    pub fn gather(
+        &self,
+        gpu: &mut Gpu,
+        k: usize,
+        roots: u32,
+        from: usize,
+        to: usize,
+        limits: Limits,
+    ) -> Result<Gathered, EpochError> {
+        let Limits { table_bits, max_leaves } = limits;
         assert!(from <= to && to <= self.shards.len(), "shards {from}..{to} of {}", self.shards.len());
         if k >= 6 {
             return Err(EpochError::Depth);
         }
         let mut words = self.words.clone();
         words[296] = k as u32;
+        words[585] = roots;
         let p = gpu.upload(&words)?;
         let slots = 1usize << table_bits;
         let keys = gpu.zeroed(slots * 4)?;
@@ -436,9 +462,15 @@ impl Problem {
             if (claimed - claimed_at_drain) as usize > slots / 4 {
                 drain(&mut leaves);
                 claimed_at_drain = claimed;
+                if leaves.len() > max_leaves {
+                    return Err(EpochError::Memory { leaves: leaves.len(), budget: max_leaves });
+                }
             }
         }
         drain(&mut leaves);
+        if leaves.len() > max_leaves {
+            return Err(EpochError::Memory { leaves: leaves.len(), budget: max_leaves });
+        }
         let o = Gpu::read(&out, 8);
         let pair = |i: usize| u64::from(o[i]) | (u64::from(o[i + 1]) << 32);
         Ok(Gathered {

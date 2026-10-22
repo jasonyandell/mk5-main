@@ -13,7 +13,7 @@ use silas::player::{Root, SeatLaw};
 use silas::reference::Straight42;
 use silas::{Auction, Bid, DominoSet, Frame, Seat};
 use silas_metal::Gpu;
-use silas_metal::ladder::{Gathered, Problem, Work};
+use silas_metal::ladder::{Gathered, Limits, Problem, Work};
 
 fn fnv(bytes: &[u8]) -> u64 {
     bytes.iter().fold(0xcbf2_9ce4_8422_2325, |h, b| (h ^ u64::from(*b)).wrapping_mul(0x0100_0000_01b3))
@@ -38,7 +38,7 @@ fn deal0_probes_equal_exact_t1() {
         (1, 509_459, Work { tree: 393_476_864, tails: 1_216_747_116, god: 2_317_763_457 }, 0x284b_3c22_c2f2_6d6f),
     ];
     for (k, leaves, work, sum) in pins {
-        let g: Gathered = problem.gather(&mut gpu, k, 0, 1000, 22).unwrap();
+        let g: Gathered = problem.gather(&mut gpu, k, u32::MAX, 0, 1000, Limits { table_bits: 22, ..Limits::default() }).unwrap();
         assert_eq!(g.worlds, 3_432_000);
         assert_eq!(g.leaves.len(), leaves, "k {k}");
         assert_eq!(g.work, work, "k {k}");
@@ -49,12 +49,36 @@ fn deal0_probes_equal_exact_t1() {
 }
 
 #[test]
+fn per_root_gathers_partition_the_whole() {
+    // Each root tile's gather holds exactly the whole gather's leaves under that tile, with
+    // the whole's world count; their leaves and plays add up to the whole's.
+    let (_, problem) = deal0();
+    let mut gpu = Gpu::new().expect("a Metal device");
+    let limits = Limits { table_bits: 20, ..Limits::default() };
+    let whole = problem.gather(&mut gpu, 2, u32::MAX, 0, 20, limits).unwrap();
+    let mut joined = std::collections::BTreeMap::new();
+    let mut work = Work::default();
+    for tile in 0..28 {
+        if 67_732_752u32 >> tile & 1 == 0 {
+            continue;
+        }
+        let g = problem.gather(&mut gpu, 2, 1 << tile, 0, 20, limits).unwrap();
+        assert_eq!(g.worlds, whole.worlds);
+        assert!(g.leaves.keys().all(|(bits, _)| (bits >> 120) as u32 == tile + 1));
+        joined.extend(g.leaves);
+        work = Work { tree: work.tree + g.work.tree, tails: work.tails + g.work.tails, god: work.god + g.work.god };
+    }
+    assert_eq!(joined, whole.leaves);
+    assert_eq!(work, whole.work);
+}
+
+#[test]
 fn a_tiny_table_drains_and_still_agrees() {
     // Shards 0..40 through a leaf table of 2^15 slots (drained many times) equal the same
     // shards through 2^20 slots.
     let (_, problem) = deal0();
     let mut gpu = Gpu::new().expect("a Metal device");
-    let big = problem.gather(&mut gpu, 1, 0, 40, 20).unwrap();
-    let small = problem.gather(&mut gpu, 1, 0, 40, 15).unwrap();
+    let big = problem.gather(&mut gpu, 1, u32::MAX, 0, 40, Limits { table_bits: 20, ..Limits::default() }).unwrap();
+    let small = problem.gather(&mut gpu, 1, u32::MAX, 0, 40, Limits { table_bits: 15, ..Limits::default() }).unwrap();
     assert_eq!(big, small);
 }
