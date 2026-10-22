@@ -11,16 +11,22 @@
 - A leads-only look before sealing, with no outcomes read, showed the general book stack leaves
   the book's line on two of the three hands. So the line was scripted.
 
-**Failed.** Every primary missed, and calibration after the read found four faults in our
+**Failed.** Every primary missed, and calibration after the read found faults in our
 stand-ins, not in the book:
 - **The "no-help partner".** It was barred from count, so it hoarded count and lost it to the
   setters. That made it a harmful partner, not one who simply doesn't help.
 - **The named-run classifier.** It was narrower than the book's words: I required the declarer
   to lead the trick, where the book says "on one of your offs".
-- **Our declarer's follows.** They came from the stack, which ducks sure tricks.
-- **Our setters.** They throw count blind on trick one.
+- **Our declarer's follows.** They came from the stack, which is silent for a follower who is
+  not last and could take the trick (a silence `silas/GAPS.md` already records), so the
+  lowest-legal fallback ducks sure tricks.
 
-All four were visible on a dozen pilot deals read trick by trick. The skill's ladder puts tools
+A fourth "fault", setters throwing count "blind" on trick one, was the book's own pounce
+(`play-a-ten-now`, W42 p. 46). I named it a fault from its outcome before reading the deciding
+rule, and had to retract it the same day. **Read the rule that decided a play (the policy log)
+before you call the play a fault.**
+
+The real faults were visible on a dozen pilot deals read trick by trick. The skill's ladder puts tools
 and encoding first, but the seal step only checks framing. It never asks whether each
 stand-in does what its name says.
 

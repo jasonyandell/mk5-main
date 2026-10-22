@@ -18,8 +18,9 @@ our instrument at least in part.** Read with that scope, three things stand:
 - **Hand 23:** makes 0.571. The book's 11-point budget for trick one is exceeded mainly by a sound
   pounce of count onto the 5-5's trick. The book names that risk itself on Hand 25.
 
-Four instrument faults are measured below (a harmful no-help partner, a narrow classifier, our
-declarer's ducks, our setters' blind throws), and the encoding repairs are #245. Data:
+Two instrument faults (a harmful no-help partner, a narrow classifier) and one recorded silence
+(our declarer's ducks) are measured below. A suspected fourth fault turned out to be the book's
+own pounce (corrected the same day). The encoding questions are #245. Data:
 `book/book-line-230c/` on Hugging Face.
 
 Registered and sealed at bc68aa03. Issue #230 step C. Chapter 9 works three hands (W42 pp. 76–82):
@@ -208,7 +209,8 @@ The registered read (`read.txt` in the data):
 | 24 | **0.945 [0.938, 0.952] hit** | 0.757 [0.730, 0.783] miss | **+0.267 [+0.252, +0.282] hit** | **+0.172 [+0.156, +0.189] hit** (aces 0.738) | +0.035 [+0.026, +0.045] | 0.759 [0.746, 0.772] |
 | 25 | 0.799 [0.786, 0.811] miss | 0.804 [0.778, 0.827] miss | −0.028 [−0.040, −0.016] miss | **+0.178 [+0.160, +0.196] hit** (doubles trump 0.649) | −0.028 [−0.042, −0.013] | 0.644 [0.629, 0.658] |
 
-Calibration after the read (`diagnostics.txt`). Four instrument faults, each measured:
+Calibration after the read (`diagnostics.txt`). Two instrument faults and one recorded silence,
+each measured. A fourth suspected fault was the book's own rule; see the correction below:
 
 1. **The no-help partner (L0) is not "no help".** Barred from playing count while he holds
    another tile, he keeps his count to the end and loses it to the setters. That happens in 417
@@ -223,14 +225,23 @@ Calibration after the read (`diagnostics.txt`). Four instrument faults, each mea
      tolerance. All 60 lose exactly 15 count.
 
    That read is post hoc and is labelled so wherever it is cited.
-3. **Our declarer ducks on Hand 23.** The declarer's follows come from the book stack. In 429 of
-   4,000 deals, 0.107 [0.098, 0.117], he follows low under a setter's trump lead while holding a
-   tile sure to win, and he loses a second trick. That accounts for 412 of the 1,718 sets. The
-   book is explicit that after the planned loss the declarer cannot lose another trick. Hands 24
-   and 25 have no such duck.
-4. **Our setters throw count blind on Hand 23.** In 268 sets, 0.067 [0.060, 0.075], a setter
-   throws count onto trick one before the 5-5 is on it. That is a gamble on a partner he cannot
-   yet see winning. Which stack rule decides it is not yet read (#245).
+3. **Our declarer ducks on Hand 23, where the stack is silent.** In 429 of 4,000 deals, 0.107
+   [0.098, 0.117], the declarer follows low under a setter's trump lead while holding a tile sure
+   to win, and loses a second trick. That accounts for 412 of the 1,718 sets. Hands 24 and 25 have
+   no such duck.
+
+   No book rule fires there; the stack's lowest-legal fallback plays the low trump. "The follower
+   who is not last and can take the trick" is a silence already recorded in `silas/GAPS.md` (the
+   book's "win any trick you can" names no tile for him). The book's Hand 23 narrative does speak
+   for this seat: after the planned loss the declarer can lose no other trick. Whether that
+   sentence licenses a narrow rule is on #245.
+
+**Correction (2026-10-22, same day).** The first version of this section listed a fourth
+fault: setters throwing count "blind" on trick one, 268 sets, 0.067 [0.060, 0.075]. Reading the
+deciding rule showed it is `pounce`'s `play-a-ten-now`, the book's own play (W42 p. 46): a setter
+playing before his partner to a lead his partner may still beat plays count at once, a ten before
+a five. It is the book faithfully encoded, not a fault. So all count on Hand 23's trick one,
+469 + 268 sets, is the book's pounce.
 
 What the instrument still shows, scoped to it:
 
@@ -256,24 +267,33 @@ What the instrument still shows, scoped to it:
     a little better against these setters.
 - **Hand 23: the book's budget is exceeded by count on the first lost trick.**
   - Trick one is where the hand is lost. The book budgets 11 for it: the 5-5 and its trick.
-  - In 469 sets, 0.117 [0.108, 0.128], a setter who has already seen his partner's 5-5 win the
-    trick pounces count onto it. That is a sound play, and it is the book's own pounce.
+  - In 737 sets, 0.184, setters pounce count onto the trick the 5-5 takes, both plays of the
+    book's own `pounce`:
+    - 469, 0.117 [0.108, 0.128], by the setter after the 5-5, who has seen it win;
+    - 268, 0.067 [0.060, 0.075], by the setter before it, who plays count at once on a lead his
+      partner may still beat (W42 p. 46).
   - In 266 sets a setter wins trick one with a lower double and keeps the 5-5 back.
   - The book's named run sets only 33.
   - On Hand 25 the book itself names this risk: a void opponent may play count on a lost first
     trump trick, which it gives as about 80 percent likely. Its Hand 23 budget leaves that count
     out. What the book's 31 assumes about the setters there (that they don't see the pounce, or
     don't hold the count) is a reading for #230. Our setters, playing the book's rules, take it.
-  - With the ducks and blind throws removed the hand would still fall short of a cinch. Duck-free
-    deals make 0.634, an upper estimate, and selected.
+  - With the ducks removed the hand would still fall short of a cinch. Duck-free deals make
+    0.634, an upper estimate, and selected.
 
 **Our encoding.** The general stack leaves the book's line on all three hands. On Hand 23 that
 costs 0.177. On Hand 24 it costs 0.035. On Hand 25 the stack does slightly better than the
-script (−0.028), since its order of the first two doubles differs. The repairs, all in
-`silas/examples/book/`, are #245:
-- `first-lead` should open as the book does;
-- `bidders-plan` should not dump an off while trumps can be cashed toward a walker;
-- the bidder should take a trick he is sure to win.
+script (−0.028), since its order of the first two doubles differs.
+
+Of the departures, three are silences already recorded in `silas/GAPS.md`, where the arena's
+tie-break decides:
+- which sure trump leads (Hand 24 opens with the 5-5, not the 6-6);
+- which low trump leads (Hand 23's 0-0 against the book's 1-1);
+- the follower who is not last and can take the trick (the duck).
+
+One is an encoding question with the book's stated reasons behind it: `bidders-plan` dumps the
+6-1 early on Hand 23 and leads the 3-1 before the 5-1 on Hand 24. #245 carries both, and the
+narrow reading of Hand 23's "no other trick" for the duck.
 
 ## Data
 
