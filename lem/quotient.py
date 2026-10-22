@@ -196,15 +196,39 @@ INTERFACES = {"raw": (output_raw, successors_raw), "shape": (output_shape, succe
 
 # ---- tile-free observation labels -----------------------------------------
 #
-# Each observed play is described by facts that name no tile: how it stands in its trick and
-# against the focal seat's remaining tiles, which are named only by slot (rank by tile id among
-# them, as menu slots are).  A label keeps a subset of the facts; the block label is the action's
-# menu slot and the sequence of play labels.  A label routes when every (slot, label) out of a
-# state leads to one state.
+# Each observed play is described by facts that name no tile.  The hand-relative facts say how it
+# stands in its trick and against the focal seat's remaining tiles, which are named only by slot
+# (rank by tile id among them, as menu slots are).  The posterior facts are statistics of what the
+# focal seat can infer about the tiles it has not seen, once the play joins the record: unseen
+# trumps and count, per seat the suits it has shown void in and the suits of which it can hold no
+# unseen tile, how many unseen tiles outrank the play in its trick, and how many unseen tiles still
+# follow the trick's suit.  One block fact, the likelihood of the whole observation to within a
+# factor of two, reads the course's own masses.  A label keeps a subset of the facts; the block
+# label is the action's menu slot, the sequence of play labels and the kept block facts.  A label
+# routes when every (slot, label) out of a state leads to one state.
+#
+# The `next_*` block facts are not candidates.  They name the next decision's own answer, which
+# takes solving it: the ceiling, showing what a label would have to carry to route.
 
-FIELDS = ("seat", "trump", "follows", "count", "beats_all", "winning", "follow_slots", "beats_slots")
+HAND_FIELDS = ("seat", "trump", "follows", "count", "beats_all", "winning", "follow_slots", "beats_slots")
+POSTERIOR_FIELDS = ("unseen_trumps", "unseen_count", "voids", "exhausted", "outranked_by", "suit_left")
+FIELDS = HAND_FIELDS + POSTERIOR_FIELDS
+BLOCK_FIELDS = ("likelihood", "next_output", "next_fork")
+POSTERIOR = ("seat",) + POSTERIOR_FIELDS
+POSTERIOR_LABELS = {
+    "unseen": ("seat", "unseen_trumps", "unseen_count"),
+    "voids": ("seat", "voids"),
+    "exhausted": ("seat", "exhausted"),
+    "outrank": ("seat", "outranked_by", "suit_left"),
+    "likelihood": ("seat", "likelihood"),
+    "posterior": POSTERIOR,
+    "posterior_likelihood": POSTERIOR + ("likelihood",),
+    "everything": FIELDS + ("likelihood",),
+    "solved_next_output": ("next_output",),
+    "solved_next_fork": ("next_fork",),
+}
 LABELS = {
-    "hand_relative": FIELDS,
+    "hand_relative": HAND_FIELDS,
     "brief_follow_slots": ("seat", "trump", "follows", "count", "beats_all", "follow_slots"),
     "brief_winning": ("seat", "trump", "follows", "count", "beats_all", "winning"),
     "brief": ("seat", "trump", "follows", "count", "beats_all"),
@@ -228,7 +252,7 @@ def replay(tokens):
 
 
 def play_facts(rules, record, left, tile):
-    """The facts of one observed play, before it joins the record; `left` holds the focal seat's tiles."""
+    """The hand-relative facts of one observed play, before it joins the record; `left` holds the focal seat's tiles."""
     led = record.led
     suit = rules.led_suit[tile if led is None else led]
     rank = rules.rank[suit]
@@ -241,8 +265,34 @@ def play_facts(rules, record, left, tile):
             tuple(i for i, u in enumerate(mine) if rank[tile] > rank[u]))
 
 
-def block_facts(course):
-    """For every non-root node: its action's slot in the parent menu and the facts of each observed play."""
+def posterior_facts(rules, record, own, tile):
+    """What the focal seat can infer about the tiles it has not seen once `tile` joins the record;
+    `own` is its original hand.  Per-seat facts list the other seats in relative order 1, 2, 3."""
+    led = record.led
+    suit = rules.led_suit[tile if led is None else led]
+    after = record.advance(tile, rules)
+    unseen = [t for t in range(28) if not (after.played >> t) & 1 and t not in own]
+    held = sum(1 << t for t in unseen)
+    suits = [s for s in range(8) if rules.follow_bits[s]]
+    return (sum(1 for t in unseen if (rules.follow_bits[7] >> t) & 1), sum(rules.count[t] for t in unseen),
+            tuple(sum(1 for s in suits if not rules.follow_bits[s] & ~after.forbid[seat]) for seat in (1, 2, 3)),
+            tuple(sum(1 for s in suits if not rules.follow_bits[s] & held & ~after.forbid[seat]) for seat in (1, 2, 3)),
+            sum(1 for t in unseen if rules.rank[suit][t] > rules.rank[suit][tile]),
+            (rules.follow_bits[suit] & held).bit_count())
+
+
+def likelihood_bucket(p):
+    """The k with 2^-(k+1) < p <= 2^-k: an observation's probability to within a factor of two."""
+    k = 0
+    while p <= Fraction(1, 2 ** (k + 1)):
+        k += 1
+    return k
+
+
+def block_facts(course, fork=None):
+    """For every non-root node: its action's slot in the parent menu, the facts of each observed play
+    (hand-relative, then posterior) and the block facts.  `fork`, the fork classes, feeds the solved
+    ceiling `next_fork`; without it that fact is None."""
     facts = {}
     for key, node in course.items():
         if not node.children:
@@ -256,15 +306,21 @@ def block_facts(course):
             for seat, tile in observed:
                 if seat - YOU != record.seat or seat == YOU:
                     raise ValueError("observed play out of turn")
-                plays.append(play_facts(rules, record, left, tile))
+                plays.append(play_facts(rules, record, left, tile) + posterior_facts(rules, record, own, tile))
                 record = record.advance(tile, rules)
-            facts[child] = (slots[action], tuple(plays))
+            nxt = course[child]
+            block = (likelihood_bucket(nxt.mass / node.mass), output_shape(nxt), None if fork is None else fork[child])
+            facts[child] = (slots[action], tuple(plays), block)
     return facts
 
 
-def project(plays, fields):
-    at = [FIELDS.index(f) for f in fields]
-    return tuple(tuple(p[i] for i in at) for p in plays)
+def project(entry, fields):
+    """A block's label under `fields`: its slot, its play labels and its kept block facts.  A label
+    that keeps no play fact does not see how many plays there were either."""
+    slot, plays, block = entry
+    at = [FIELDS.index(f) for f in fields if f in FIELDS]
+    bt = [BLOCK_FIELDS.index(f) for f in fields if f in BLOCK_FIELDS]
+    return slot, tuple(tuple(p[i] for i in at) for p in plays) if at else (), tuple(block[i] for i in bt)
 
 
 def successors_labelled(facts, fields):
@@ -272,8 +328,7 @@ def successors_labelled(facts, fields):
     def succ(node, nodes, cls):
         per = defaultdict(set)
         for child in node.children.values():
-            slot, plays = facts[child]
-            per[(slot, project(plays, fields))].add(cls[child])
+            per[project(facts[child], fields)].add(cls[child])
         return tuple(sorted((k, tuple(sorted(v))) for k, v in per.items()))
     return succ
 
@@ -283,18 +338,23 @@ def routing(course, cls, succ, facts, fields):
     Each colliding group is a *decision* collision when the states it reaches answer differently
     (menu size or maximizing slots), a *domain* collision when they answer alike but accept
     different label sequences afterwards, else *deeper*.  For consecutive colliding blocks, the
-    facts outside the label that tell them apart; "nothing" means no field of the family does."""
-    groups_by_kind, nodes_by_kind, told_apart, examples = Counter(), defaultdict(set), Counter(), []
-    failing = set()
+    facts outside the label that tell them apart; "nothing" means no field of the family does.
+    The alphabet is the number of distinct observation labels (the label less its slot) read out
+    of nodes at each stage."""
+    groups_by_kind, nodes_by_kind, told_apart, examples = Counter(), defaultdict(set), defaultdict(Counter), []
+    failing, alphabet = set(), defaultdict(set)
+    for node in course.values():
+        for child in node.children.values():
+            alphabet[stage(node)].add(project(facts[child], fields)[1:])
 
     def keys(node):
-        return {(facts[c][0], project(facts[c][1], fields)) for c in node.children.values()}
+        return {project(facts[c], fields) for c in node.children.values()}
 
     for key in sorted(course):
         node = course[key]
         groups = defaultdict(list)
         for block, child in sorted(node.children.items()):
-            groups[(facts[child][0], project(facts[child][1], fields))].append((block, child))
+            groups[project(facts[child], fields)].append((block, child))
         for label, group in sorted(groups.items()):
             reps = {}
             for block, child in group:
@@ -310,19 +370,73 @@ def routing(course, cls, succ, facts, fields):
             nodes_by_kind[kind.split(":")[0]].add(key)
             failing.add(cls[key])
             for (b1, c1), (b2, c2) in zip(reps, reps[1:]):
-                f1, f2 = facts[c1][1], facts[c2][1]
+                (_, f1, g1), (_, f2, g2) = facts[c1], facts[c2]
                 differ = [f for i, f in enumerate(FIELDS) if any(x[i] != y[i] for x, y in zip(f1, f2))]
-                told_apart["+".join(differ) or "nothing"] += 1
+                differ += [f for f, x, y in zip(BLOCK_FIELDS[:1], g1, g2) if x != y]
+                told_apart[kind.split(":")[0]]["+".join(differ) or "nothing"] += 1
             if kind.startswith("decision") and len(examples) < 8:
                 examples.append({"root": node.root_id, "ply": node.ply, "kind": kind,
                                  "blocks": [[b[0], [list(o) for o in b[1]]] for b, _ in reps],
                                  "next_menus": [list(course[c].legal) for _, c in reps],
                                  "next_q": [{str(t): str(v) for t, v in course[c].q.items()} for _, c in reps]})
     return {"routes": not failing, "states_that_fail": len(failing), "of_states": len(set(cls.values())),
+            "alphabet_by_stage": {st: len(v) for st, v in sorted(alphabet.items())},
             "nodes_that_fail_by_stage": dict(Counter(stage(course[k]) for k in set().union(*nodes_by_kind.values()))),
             "colliding_groups_by_kind": dict(sorted(groups_by_kind.items())),
             "nodes_with_collision_by_kind": {k: len(v) for k, v in sorted(nodes_by_kind.items())},
-            "consecutive_colliding_blocks_told_apart_by": dict(told_apart.most_common()), "examples": examples}
+            "consecutive_colliding_blocks_told_apart_by": {k: dict(v.most_common()) for k, v in sorted(told_apart.items())},
+            "examples": examples}
+
+
+def decision_only(course, cls, facts, fields):
+    """The label read by a controller that answers decisions and checks no domain.  It is the subset
+    construction: the controller's state is the set of states its label history cannot tell apart,
+    and a label sequence one of them never meets constrains nothing.  A node *routes decision-only*
+    when, started there, every reachable set answers alike (menu size, maximizing slots).  A train
+    root *covers* a fresh root when every label sequence the fresh root accepts, the train root
+    accepts too, and the two sets reached answer alike: a controller built for the first is exact
+    wherever the second can go.  Dropping domains is not an equivalence, so no state count is given."""
+    rep = {}
+    for k in sorted(course):
+        rep.setdefault(cls[k], k)
+    groups = {}
+    for c, k in rep.items():
+        per = defaultdict(set)
+        for child in course[k].children.values():
+            per[project(facts[child], fields)].add(cls[child])
+        groups[c] = per
+    out = {c: output_shape(course[k]) for c, k in rep.items()}
+
+    def step(states):
+        per = defaultdict(set)
+        for c in states:
+            for lab, nxt in groups[c].items():
+                per[lab] |= nxt
+        return {lab: frozenset(v) for lab, v in per.items()}
+
+    consistent_memo, cover_memo = {}, {}
+
+    def consistent(states):
+        if states not in consistent_memo:
+            consistent_memo[states] = len({out[c] for c in states}) == 1 and all(
+                consistent(v) for v in step(states).values())
+        return consistent_memo[states]
+
+    def covers(t, s):
+        if (t, s) not in cover_memo:
+            st = step(t)
+            cover_memo[(t, s)] = len({out[c] for c in t | s}) == 1 and all(
+                lab in st and covers(st[lab], v) for lab, v in step(s).items())
+        return cover_memo[(t, s)]
+
+    failing = {c for c in rep if not consistent(frozenset([c]))}
+    train = sorted({cls[k] for k, n in course.items() if stage(n) == "root" and n.split == "train"})
+    fresh = [cls[k] for k, n in course.items() if stage(n) == "root" and n.split == "test"]
+    return {"routes": not failing, "states_that_fail": len(failing),
+            "nodes_that_fail_by_stage": dict(Counter(stage(n) for k, n in course.items() if cls[k] in failing)),
+            "fresh_roots_covered_by_a_train_root": sum(
+                1 for s in fresh if any(covers(frozenset([t]), frozenset([s])) for t in train)),
+            "of": len(fresh)}
 
 
 def signatures(nodes, out, succ):
@@ -448,16 +562,19 @@ def analyse(study: Path, *, eligible_only=True, labels=False):
                          "weak_orders": {"".join(map(str, k)): v for k, v in sorted(orders.items())},
                          "tier_types": {"/".join(map(str, k)): v for k, v in sorted(types.items())}}
     report["decision_classes"] = classes
+    classes_of = {}
     for name, (out, succ) in INTERFACES.items():
-        report["interfaces"][name] = measure(course, per_root, name, out, succ)[0]
+        report["interfaces"][name], classes_of[name] = measure(course, per_root, name, out, succ)
     if labels:
-        facts = block_facts(course)
-        report["label_fields"] = {name: list(fields) for name, fields in LABELS.items()}
+        facts = block_facts(course, classes_of["fork"])
+        every = {**LABELS, **POSTERIOR_LABELS}
+        report["label_fields"] = {name: list(fields) for name, fields in every.items()}
         report["label_interfaces"] = {}
-        for name, fields in LABELS.items():
+        for name, fields in every.items():
             succ = successors_labelled(facts, fields)
             entry, cls = measure(course, per_root, name, output_shape, succ)
             entry["routing"] = routing(course, cls, succ, facts, fields)
+            entry["decision_only"] = decision_only(course, cls, facts, fields)
             report["label_interfaces"][name] = entry
     return report
 

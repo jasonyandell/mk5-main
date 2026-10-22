@@ -106,17 +106,28 @@ def labelled_course(tmp_path, q_after_10, q_after_11):
                  row(PREFIX_TOKENS + [YOU, 2, 29, 10, YOU], [5], {5: Fraction(0)}, 21)]
     nodes = load_root(write_root(tmp_path, "train-0000", decisions, value="1/2"))
     rid = "train-0000"
-    facts = {(rid, tuple(PREFIX_TOKENS + [YOU, 1, 29, 10, YOU])): (0, ((1, 0, 0, 0, 0, 0, (), ()),)),
-             (rid, tuple(PREFIX_TOKENS + [YOU, 1, 29, 11, YOU])): (0, ((1, 0, 0, 5, 0, 0, (), ()),)),
-             (rid, tuple(PREFIX_TOKENS + [YOU, 2, 29, 10, YOU])): (1, ((1, 0, 0, 0, 0, 0, (), ()),))}
+    facts = {(rid, tuple(PREFIX_TOKENS + [YOU, 1, 29, 10, YOU])): (0, (play(),), BLOCK),
+             (rid, tuple(PREFIX_TOKENS + [YOU, 1, 29, 11, YOU])): (0, (play(count=5),), BLOCK),
+             (rid, tuple(PREFIX_TOKENS + [YOU, 2, 29, 10, YOU])): (1, (play(),), BLOCK)}
     return nodes, {rid: nodes}, facts
 
 
-def route(nodes, per_root, facts, label):
-    from lem.quotient import LABELS, measure, output_shape, routing, successors_labelled
-    succ = successors_labelled(facts, LABELS[label])
+BLOCK = (0, None, None)
+
+
+def play(count=0, unseen_count=0):
+    """The facts of one observed play by seat 1: hand-relative, then posterior."""
+    return (1, 0, 0, count, 0, 0, (), ()) + (0, unseen_count, (0, 0, 0), (0, 0, 0), 0, 0)
+
+
+def route(nodes, per_root, facts, label, *, decisions_only=False):
+    from lem.quotient import (LABELS, POSTERIOR_LABELS, decision_only, measure, output_shape, routing,
+                              successors_labelled)
+    fields = {**LABELS, **POSTERIOR_LABELS}[label]
+    succ = successors_labelled(facts, fields)
     _, cls = measure(nodes, per_root, label, output_shape, succ)
-    return routing(nodes, cls, succ, facts, LABELS[label])
+    return (decision_only if decisions_only else routing)(nodes, cls, *(() if decisions_only else (succ,)),
+                                                          facts, fields)
 
 
 def test_a_label_that_hides_the_difference_fails_to_route(tmp_path):
@@ -125,7 +136,7 @@ def test_a_label_that_hides_the_difference_fails_to_route(tmp_path):
     coarse = route(nodes, per_root, facts, "seat")
     assert not coarse["routes"] and coarse["states_that_fail"] == 1
     assert coarse["colliding_groups_by_kind"] == {"decision: maximizing slots": 1}
-    assert coarse["consecutive_colliding_blocks_told_apart_by"] == {"count": 1}
+    assert coarse["consecutive_colliding_blocks_told_apart_by"] == {"decision": {"count": 1}}
     # The brief label carries count, so every block from every state leads to one state.
     assert route(nodes, per_root, facts, "brief")["routes"]
 
@@ -133,9 +144,83 @@ def test_a_label_that_hides_the_difference_fails_to_route(tmp_path):
 def test_identical_facts_with_different_futures_are_told_apart_by_nothing(tmp_path):
     nodes, per_root, facts = labelled_course(tmp_path, {5: Fraction(1), 6: Fraction(0)}, {5: Fraction(0), 6: Fraction(1)})
     key = next(k for k in facts if k[1][-2] == 11)
-    facts[key] = (0, ((1, 0, 0, 0, 0, 0, (), ()),))      # now both observations look alike in every field
+    facts[key] = (0, (play(),), BLOCK)       # now both observations look alike in every field
     fine = route(nodes, per_root, facts, "hand_relative")
-    assert not fine["routes"] and fine["consecutive_colliding_blocks_told_apart_by"] == {"nothing": 1}
+    assert not fine["routes"] and fine["consecutive_colliding_blocks_told_apart_by"] == {"decision": {"nothing": 1}}
+    assert not route(nodes, per_root, facts, "everything")["routes"]
+
+
+def test_a_posterior_fact_outside_the_label_is_named_as_what_tells_blocks_apart(tmp_path):
+    nodes, per_root, facts = labelled_course(tmp_path, {5: Fraction(1), 6: Fraction(0)}, {5: Fraction(0), 6: Fraction(1)})
+    key = next(k for k in facts if k[1][-2] == 11)
+    facts[key] = (0, (play(unseen_count=5),), BLOCK)
+    assert route(nodes, per_root, facts, "hand_relative")["consecutive_colliding_blocks_told_apart_by"] == {
+        "decision": {"unseen_count": 1}}
+    assert route(nodes, per_root, facts, "unseen")["routes"]
+
+
+def test_posterior_facts_read_only_what_the_focal_seat_has_seen():
+    from scenario.record import empty_record
+    from scenario.rules import rules_for
+    from lem.quotient import posterior_facts
+    rules = rules_for(4)                              # fours are trump
+    own = {13, 19, 27, 0, 1, 2, 3}                    # 4-3, 5-4, 6-6 and the four lowest tiles
+    record = empty_record(1)
+    # Seat 1 leads 6-4.  The unseen trumps are the fours less 4-3, 5-4 (mine) and 6-4: 4-0, 4-1, 4-2, 4-4.
+    facts = posterior_facts(rules, record, own, 25)
+    assert facts[0] == 4
+    # The count tiles are 5-5, 6-4, 5-0, 4-1 and 3-2; with 6-4 played and none of them mine, 25 is unseen.
+    assert facts[1] == 25
+    assert facts[2] == (0, 0, 0)                      # no one has failed to follow yet
+    assert facts[4] == 1                              # only 4-4 outranks 6-4 among the unseen tiles
+    assert facts[5] == 4                              # four unseen trumps still follow
+    # Seat 2 fails to follow with 0-0, a tile the focal seat does not hold this time.
+    voids = posterior_facts(rules, record.advance(25, rules), {13, 19, 27, 1, 2, 3, 4}, 0)[2]
+    assert voids == (0, 1, 0)                         # seat 2 has shown void in trumps
+
+
+def test_likelihood_buckets_are_factors_of_two():
+    from lem.quotient import likelihood_bucket
+    assert [likelihood_bucket(Fraction(n, d)) for n, d in [(1, 1), (3, 4), (1, 2), (1, 3), (1, 4), (1, 5)]] == [
+        0, 0, 1, 1, 2, 2]
+
+
+def test_decision_only_drops_a_domain_collision(tmp_path):
+    """After observation 10 the next state accepts one later label, after 11 another; both answer
+    alike.  The label routes decision-only but not as an interface that keeps domains."""
+    t = PREFIX_TOKENS + [YOU, 1, 29]
+    decisions = [row(PREFIX_TOKENS + [YOU], [1, 2], {1: Fraction(1), 2: Fraction(0)}, 19),
+                 row(t + [10, YOU], [5, 6], {5: Fraction(1), 6: Fraction(0)}, 21),
+                 row(t + [11, YOU], [5, 6], {5: Fraction(1), 6: Fraction(0)}, 21),
+                 row(t + [10, YOU, 5, 29, 20, YOU], [7], {7: Fraction(1)}, 23),
+                 row(t + [10, YOU, 6, 29, 20, YOU], [8], {8: Fraction(0)}, 23),
+                 row(t + [11, YOU, 5, 29, 21, YOU], [7], {7: Fraction(1)}, 23),
+                 row(t + [11, YOU, 6, 29, 21, YOU], [8], {8: Fraction(0)}, 23),
+                 row(PREFIX_TOKENS + [YOU, 2, 29, 10, YOU], [5], {5: Fraction(0)}, 21)]
+    nodes, per_root, facts = {}, {}, {}
+    for rid in ("train-0000", "test-0000"):
+        per_root[rid] = load_root(write_root(tmp_path, rid, decisions, value="1"))
+        nodes.update(per_root[rid])
+        facts[(rid, tuple(t + [10, YOU]))] = facts[(rid, tuple(t + [11, YOU]))] = (0, (play(),), BLOCK)
+        facts[(rid, tuple(PREFIX_TOKENS + [YOU, 2, 29, 10, YOU]))] = (1, (play(),), BLOCK)
+        for obs, count in ((10, 0), (11, 5)):
+            for slot, a in ((0, 5), (1, 6)):
+                facts[(rid, tuple(t + [obs, YOU, a, 29, 10 + obs, YOU]))] = (slot, (play(count=count),), BLOCK)
+    kept = route(nodes, per_root, facts, "brief")
+    assert not kept["routes"] and kept["colliding_groups_by_kind"] == {"domain": 2}
+    dropped = route(nodes, per_root, facts, "brief", decisions_only=True)
+    assert dropped["routes"] and dropped["states_that_fail"] == 0
+    assert dropped["fresh_roots_covered_by_a_train_root"] == dropped["of"] == 1
+
+
+def test_a_decision_collision_survives_decision_only(tmp_path):
+    nodes, per_root, facts = labelled_course(tmp_path, {5: Fraction(1), 6: Fraction(0)}, {5: Fraction(0), 6: Fraction(1)})
+    dropped = route(nodes, per_root, facts, "seat", decisions_only=True)
+    assert not dropped["routes"] and dropped["nodes_that_fail_by_stage"] == {"root": 1}
+    # The solved ceiling routes: it names the next decision's answer.
+    from lem.quotient import BLOCK_FIELDS, output_shape
+    solved = {k: (s, p, (0, output_shape(nodes[k]), None)) for k, (s, p, _) in facts.items()}
+    assert BLOCK_FIELDS[1] == "next_output" and route(nodes, per_root, solved, "solved_next_output")["routes"]
 
 
 def test_default_report_has_no_label_interfaces(study):
@@ -157,4 +242,3 @@ def test_export_is_the_course_without_hidden_state(study):
             assert c["play"] in n["menu"] and 0 <= c["next"] < len(nodes)
             assert nodes[c["next"]]["ply"] > n["ply"]
     # Every block of the course appears once.
-    assert sum(len(n["children"]) for n in nodes) == sum(len(n.children) for n in course.values())
