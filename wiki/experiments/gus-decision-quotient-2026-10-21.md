@@ -2,7 +2,7 @@
 title: "Gus decision quotient of the contingent course"
 kind: experiment
 first_seen: 2026-10-21
-last_updated: 2026-10-21
+last_updated: 2026-10-22
 status: complete
 ---
 <!-- SPDX-FileCopyrightText: Jason Yandell -->
@@ -34,13 +34,13 @@ The course has 50,754 information nodes: 256 root decisions, 10,302 second decis
 
 HALT and REJECT are additional in every row. Under raw, the per-root compression is 10/7 to 323/7 nodes per state, median 569/115; the sum of per-root states is 9,031 against 8,257 course-wide, and 55 raw classes appear in more than one root, 28 of them the forced final tiles.
 
-At the 223 three-way nodes all 13 realizable weak orders occur: 106 triple ties, 74 pair ties, 43 strict orders. At the 6,243 two-way discretionary nodes: 5,528 ties, 384 and 331 for the two strict orders.
+At the 223 three-way nodes all 13 weak orders of three values occur: 106 triple ties, 74 pair ties, 43 strict orders. At the 6,243 two-way discretionary nodes: 5,528 ties, 384 and 331 for the two strict orders.
 
 ## Reading
 
 - Per-root controllers are small, as in the note: a 90-world ending with at most 121 raw states, median about five nodes per state, and 50,754 nodes to 8,257 states across the course. This is the analog of the note's 24,089 nodes to 767 states.
 - The raw interface never repeats a root. No fresh root, and 14 of 3,338 fresh second decisions, land in a state the training course holds. A student that reads raw tiles cannot transfer by lookup; it must compute the class from the history. This is a statement about the interface, not a diagnosis of the failed transfer gates.
-- Every ladder stabilizes after one block. In this fixture the third tile is forced, so what a choice means for the choices ahead is revealed in full one own decision later; the root ladders 253, 256, 256 and 10, 139, 139 have the shape of the note's 1, 18, 31, 31.
+- The raw and fork ladders stabilize after one block; the shape ladder needs two (11, 462, 477, 477; at the roots 10, 237, 252, 252). A forced last tile does not by itself bound the ladder at one block: with at most n own tiles the bound is n − 1 blocks, here two, and a three-tile course can need both (proved in Lean, [[comparison-algebra-2026-10-21]]). The root ladders 253, 256, 256 and 10, 139, 139 have the shape of the note's 1, 18, 31, 31.
 - The course holds 139 distinct fork structures among 256 roots, and 56 of 128 fresh roots share one with training. Fork is tile-free and ignores routing, which observation leads to which next decision, so it bounds merging from above. It is not a controller.
 - All 13 weak orders are realized, and ties are the majority class: half the roots and nearly nine tenths of second decisions are flat. The flat row is a class of the hexagon, not an absence of information.
 
@@ -51,4 +51,4 @@ At the 223 three-way nodes all 13 realizable weak orders occur: 106 triple ties,
 
 ## Scope and verification
 
-One fixture (three own tiles, acting last in trick five, nine plays left), fixed G0 partner and pinned Zeb, uniform legal-consistent root prior carried through observations. The quotient depends on the kernel and the interface; the note says so for its own family. The tool rebuilds every tree from saved rows and audits them exactly: parent links, every legal action explored, children partitioning the cell mass, and Bellman consistency `q[a] * mass = sum over observations of child.mass * max child.q`. All 256 graphs pass. That re-verifies the saved DP from its rows; it does not replay the native field or any model. The note's realization hexagon and its mixing boundary are not exercised: nothing here mixes beliefs. Inputs are the per-root `teacher.json` files in the published maskbreadth [evidence](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/762b5a71a622a1ff6df8fed47e50ebe5b2a43e44/lem/gus-contingent-maskbreadth-2026-10-20/evidence); the report is reproduced by `python -u -m lem.quotient <study> --out report.json`. The note's own bundle (atlas, tables, runtime) was not in hand; its figures are cited, not reproduced. Tools for extending the course are inventoried in [[gus-continuation-teaching-tools]]; the first teacher is [[gus-contingent-teacher-2026-10-20]].
+One fixture (three own tiles, acting last in trick five, nine plays left), fixed G0 partner and pinned Zeb, uniform legal-consistent root prior carried through observations. The quotient depends on the kernel and the interface; the note says so for its own family. The tool rebuilds every tree from saved rows and audits them exactly: parent links, every legal action explored, children partitioning the cell mass, and Bellman consistency `q[a] * mass = sum over observations of child.mass * max child.q`. All 256 graphs pass. That re-verifies the saved DP from its rows; it does not replay the native field or any model. The note's realization hexagon and its mixing boundary are not exercised: nothing here mixes beliefs. Inputs are the per-root `teacher.json` files in the published maskbreadth [evidence](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/762b5a71a622a1ff6df8fed47e50ebe5b2a43e44/lem/gus-contingent-maskbreadth-2026-10-20/evidence); the report is reproduced by `python -u -m lem.quotient <study> --out report.json`. The note's own bundle (atlas, tables, runtime) was not in hand; its figures are cited, not reproduced. Tools for extending the course are inventoried in [[gus-continuation-teaching-tools]]; the first teacher is [[gus-contingent-teacher-2026-10-20]]. Silas reproduces every count of the report independently, exactly ([[comparison-algebra-2026-10-21]]).

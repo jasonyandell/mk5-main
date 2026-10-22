@@ -522,6 +522,16 @@ auction): `(rule priced (bid (- 42 (risk t))) (least t (risk t) (suit-at-least t
   (`(max 34 (least-raise))`) and stays two rules; `marginal-30` could read `(<= 13 (risk t)
   14)`, a re-pin for wording alone, not taken.
 
+## The decision quotient (2026-10-21)
+
+`silas/src/quotient.rs` reduces a solved course of a viewer's decisions to its coarsest
+output-keeping right congruence under the raw, shape and fork interfaces, exactly, and
+`silas quotient --course FILE` reads a course exported by `lem/quotient.py --export`. On
+the Gus maskbreadth course it reproduces the Python report in every count (8,257 raw, 477
+shape, 144 fork states). The theorems behind it, and the note's local algebra (two numbers
+per decision, the hexagon, 13 sequential classes), are in Lean in `scenario/lean/Stab/`
+([[comparison-algebra-2026-10-21]]).
+
 ## Where it sits
 
 - **Origin.** Moved from texas-42 `1c15cc51` (CC0), where it was written as the

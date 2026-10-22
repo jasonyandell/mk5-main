@@ -377,3 +377,50 @@ iterates alternate forever. Consequences:
 **Closed 2026-10-12 (#112):** both engines now seed an invocation by its coordinate alone
 (`_mix(config.seed, viewer, own, tape_key(rec), *forbid)`), so every rung with the same
 Rung config is the same operator and L1/L2 describe the sampled ladder.
+
+# The minimal comparison algebra (night 2026-10-21)
+
+Jason's note *A minimal comparison algebra for a declared 42 family* (2026-10-21), made
+the project's own. Same toolchain, no Mathlib; `lake build` 4.5 s clean; the 22 new
+headline theorems in `Axioms.lean` print only the standard three; no sorry. Wiki:
+`wiki/experiments/comparison-algebra-2026-10-21.md`.
+
+- **`Stab/Hexagon.lean`, the local algebra.** With `A, B, C` the indicator vectors the
+  six viewer orders of 3-1, 4-1, 5-1 collapse to, `x = E[A − B]`, `y = E[C − B]`, `β = E[B]`:
+  `Q_formulas` (Q31 = β + max(x, 0), Q41 = β + max(y, 0), Q51 = β + max(x, y)),
+  `next_comparison` (the second decisions compare x, y, x − y), `mixing_no_gain`
+  (randomizing the six programs never beats the best tile), `no_scalar_statistic`
+  (no linear scalar carries both x and y), `hexagon` (a six-type belief realizes (x, y)
+  iff |x|, |y|, |x − y| ≤ 1; `cone_of_belief` for any atoms), `thirteen_patterns`
+  (exactly 13 sign patterns of (x, y, x − y), all on the hexagon), `seq_classes`
+  (the sequential output is the pattern), `four_root_orders`, and the note's segment
+  (`segment_line` 19x − 23y = 4; `segment_classes`, five classes split at p = 1/5).
+- **`Stab/Residual.lean`, the residual congruence.** `Res` (equal outputs after every
+  block word) is an equivalence and a right congruence (`res_iff`), the coarsest one
+  that keeps outputs (`res_coarsest`); an exact realization never merges inequivalent
+  states (`realization_card`), and the quotient machine attains it (`quotient_realizes`,
+  `quotient_states`). Refinement round k is agreement on words of length ≤ k, and a stable
+  round is `Res` (`refine_stable`). With the HALT/REJECT totalization and at most n own
+  tiles, refinement is exact after n − 1 blocks (`ladder_42`).
+- **`Stab/Mixing.lean`, the mixing boundary.** For the threshold decision
+  sgn((5p − 1)/(1 + 18p)): `mass_injective` (the observation's mass (1 + 18p)/560 keeps p),
+  `mixing_forces_equality` (a relation that keeps the decision and every convex mixture
+  is equality on [0, 1]; witness λ = 1/5, q = (1 − m)/4), `note_example` (0.08, 0.12
+  mixed with 0.30 straddle 1/5).
+
+## Two findings against the night's brief
+
+1. **13 is not the count of weak orders of (Q31, Q41, Q51).** That triple takes exactly 4
+   (`four_root_orders`: Q51 is never the unique maximum). 13 is the count of weak orders of
+   (E[A], E[B], E[C]), the sign patterns of (x, y, x − y), which are the sequential classes
+   (`seq_classes`). The note says so; the brief's paraphrase did not.
+2. **"The last tile is forced, so refinement stabilizes after one block" is false.** The bound
+   is n − 1 blocks (`ladder_42`), and `Witness.one_block_not_enough` is a three-tile course
+   that needs two. The Gus course's shape ladder 11, 462, 477, 477 uses both.
+
+## What it does not prove
+
+The note's 767-state controller and its 1, 18, 31, 31 ladder (that needs the 560-deal
+fixture, not a theorem); that the segment formula (5p − 1)/(1 + 18p) is the fixture's gap
+(taken as the definition); that 0.08 and 0.12 share a cell of the atlas; anything about a
+learned net.
