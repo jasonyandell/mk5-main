@@ -3,7 +3,7 @@ title: "The exact player, S1: trick 4 and the probe's positions under a two-type
 kind: experiment
 first_seen: 2026-10-22
 last_updated: 2026-10-22
-status: active
+status: complete
 ---
 <!-- SPDX-FileCopyrightText: Jason Yandell -->
 <!-- SPDX-License-Identifier: CC0-1.0 -->
@@ -150,11 +150,68 @@ three-own-tile positions. The heavy tail (the total ratio) is where it costs mor
 - **Near:** the act at ½ differs from an endpoint's. Predicted 15%; measured 12–14% at three own
   tiles.
 
-## Results: batch T4 (147 trick-4 decisions, deals 0–24 of both pours)
+## Results: batch T4 (147 trick-4 decisions, deals 0–24 of both pours): PARTIAL
 
-Pending (running serially under the memory hold).
+**Stopped on Jason's instruction** (relayed by the orchestrator and the Mayor, about 11:00): T4 is
+written as it stands. It ran in pour order, so 76 positions were attempted: 76 of the zeb pour's
+77, and none of the champion pour's 70. The 71 not run are not refusals. They are outside every
+denominator below, and T4 says nothing about the champion pour.
+
+**Outcomes by cause** (76 attempted):
+
+| outcome | n | fiber: min / median / max | what decides it |
+|---|---|---|---|
+| solved exactly | 41 | 70 / 560 / 3,920 | |
+| read budget (1.2×10⁸ reads) | 23 | 3,360 / 11,550 / 34,650 | deterministic: a property of the position and the budget |
+| 300 s cap | 10 | 2,940 / 5,880 / 34,650 | wall, load-dependent (FAIR CLOCKS): **not** a property of the position |
+| memory refusal | 2 | 4,200 / – / 4,410 | the machine's free memory, set by other sessions |
+
+The two memory refusals were caused by external pressure, not by the solver:
+- **t-abs** (09:54): its RSS was not recorded.
+- **t-abx** (10:10): a sampled peak RSS of 21 MB.
+
+**Coverage.**
+- Of all 76 attempted: 41/76 = 53.9% [42.8, 64.7].
+- Against the deterministic budget alone (solved over solved plus read-budget refusals):
+  41/64 = 64.1% [51.8, 74.7].
+- Every solved fiber is at most 3,920 worlds. The read budget refused fibers as small as 3,360.
+
+**G1 holds** at three parameter classes of all 41 solved decisions. **G6 on T4 was not run**
+(the stop came first): a gap, not a pass.
+
+**The solved positions** (zeb only; median / max):
+- course choices 2.7×10⁵ / 5.0×10⁶;
+- instructions retired (`time -l`, recount and controller included) 5.2×10¹¹ / 5.1×10¹²;
+- peak RSS 0.72 GB / 5.4 GB;
+- process wall 27 s / 292 s (descriptive);
+- decided at the root 7/41.
+
+**The family's shape at trick 4** (34 undecided):
+- course thresholds: median 50, p90 554, max 1,963;
+- root set constant in p: 28/34 = 82% [66, 92];
+- act at ½ differs from an endpoint's: 5/34 = 15% [6, 30].
+
+**The controller**, where computed (15 of 34; 19 had more than 64 classes):
+- Reach Plan raw: median 498, max 2,137;
+- Reach Every raw: median 2,293, max 10,410;
+- fork: max 27 (Plan) and 84 (Every).
+
+**An infrastructure finding.** `scripts/cpu-slot`'s timeout terminates only its direct child.
+T4 ran the solver under `/usr/bin/time -l`, so at the cap `time` died and the solver was
+orphaned. It kept running past the cap, outside any slot. That was seen once, at t-acx, which
+was killed by PID at the stop. It applies to every T4 cap refusal, and the orphans' memory
+may have added to the pressure behind the memory refusals. The S0 and P shards ran the solver
+directly and are not affected (#253).
+
+**Against the predictions.**
+- **Coverage.** Predicted 45% ± 8; measured 54% [43, 65] of the attempted, on the zeb pour only.
+  The predicted mechanism missed: refusals begin near 3,000 worlds, not 12,000.
+- **Among the solved.** Predicted median 5×10⁶ choices, 60 s and 6 GB; measured 2.7×10⁵, 27 s
+  and 0.7 GB. The solved set is the small fibers.
+- **Root set constant in p.** Predicted 70%; measured 82% [66, 92].
+- **G6.** Not run.
 
 ## Data
 
 [texas-42-zeb-research-2026-10](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10)
-at `exact/s1-2026-10-22/`: batch P, its G6 and the drivers (1,167 files, count and SHA verified); T4 is added when it completes.
+at `exact/s1-2026-10-22/`: batch P, its G6, T4 as it stands and the drivers (1,367 files, count and SHA verified).
