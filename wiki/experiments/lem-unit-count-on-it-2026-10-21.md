@@ -3,7 +3,7 @@ title: "Unit paper 8: the 16×8 seed-0 net's layer-2 unit 4, a dial on feeding t
 kind: experiment
 first_seen: 2026-10-21
 last_updated: 2026-10-21
-status: registered
+status: active
 ---
 
 The eighth **unit paper** of [[clean-neurons-42]]'s new mode (#235), on the 16×8 seed-0 field
