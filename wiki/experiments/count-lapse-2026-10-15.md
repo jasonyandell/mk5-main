@@ -2,7 +2,7 @@
 title: The field that loses the count — the book's play against opponents who forget which tiles have gone (#172, 2026-10-15)
 kind: experiment
 first_seen: 2026-10-15
-last_updated: 2026-10-16
+last_updated: 2026-10-22
 status: complete
 ---
 
@@ -132,3 +132,10 @@ forgetting is put where a person's is, in the seat's view of the game (`arena/co
 
 [[book-authority]] · [[book-assumptions]] · [[fallible-field-2026-10-15]] ·
 [[book-head-to-head-2026-10-13]] · [[strategy-fusion-fence]]
+
+## Stack version (#245)
+
+These numbers were played on the book stack as it stood before #245 (2026-10-22), which
+changed what the bidder counts as an off's guard (`bare-off`, `bidders-plan`; the double or
+the top tile left in the suit, W42 p. 77). They reproduce at commit `64ecc6cf`. Re-runs on
+the repaired stack are tracked on #245.

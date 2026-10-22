@@ -2,7 +2,7 @@
 title: Book partners read each other by the book — the receiving half of the conventions, seated; +0.10 [−0.06, +0.26] marks/game, a null at this power (2026-10-14)
 kind: experiment
 first_seen: 2026-10-14
-last_updated: 2026-10-14
+last_updated: 2026-10-22
 status: complete
 ---
 
@@ -281,3 +281,10 @@ shadow), `arena/book_read.py` (`seats`, `calls_weight`), `arena/test_book_read.p
 [[book-head-to-head-2026-10-13]] · [[book-investigation-2026-10-14]] ·
 [[reads-plays-soft-2026-10-14]] · [[book-study-2026-10-12]] · [[zeb-030-confirmation-2026-10-14]] ·
 [[silas]] · [[scenario-player]] · [[strategy-fusion-fence]]
+
+## Stack version (#245)
+
+These numbers were played on the book stack as it stood before #245 (2026-10-22), which
+changed what the bidder counts as an off's guard (`bare-off`, `bidders-plan`; the double or
+the top tile left in the suit, W42 p. 77). They reproduce at commit `64ecc6cf`. Re-runs on
+the repaired stack are tracked on #245.

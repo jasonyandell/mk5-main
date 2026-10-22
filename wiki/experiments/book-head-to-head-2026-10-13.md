@@ -2,7 +2,7 @@
 title: The book player against Zeb — Winning 42's rules as a Silas stack, head to head (2026-10-13)
 kind: experiment
 first_seen: 2026-10-13
-last_updated: 2026-10-14
+last_updated: 2026-10-22
 status: complete
 ---
 
@@ -305,3 +305,10 @@ scripts (`run.py`, `rollout.py`, `analyze.py`, `run_all.sh`) and logs. Code:
 ## Links
 
 [[book-study-2026-10-12]] · [[book-investigation-2026-10-14]] · [[silas]] · [[scenario-player]] · [[w42]] · [[arena]]
+
+## Stack version (#245)
+
+These numbers were played on the book stack as it stood before #245 (2026-10-22), which
+changed what the bidder counts as an off's guard (`bare-off`, `bidders-plan`; the double or
+the top tile left in the suit, W42 p. 77). They reproduce at commit `64ecc6cf`. Re-runs on
+the repaired stack are tracked on #245.
