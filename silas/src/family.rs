@@ -424,3 +424,144 @@ pub fn representatives(thresholds: &[Q]) -> Vec<Q> {
     }
     out
 }
+
+/// A family course read from JSON (schema `silas-family-course-v1`) and solved: the root's
+/// exact values and maximizing set in every parameter class, and the controller's
+/// quotient. The file carries no rules of 42 and no hidden state, only what the viewer
+/// sees: each choice's menu, mass and payoffs (a rational, or a pair `[at 0, at 1]` when
+/// it moves with `p`), and its blocks, each an own play, the plays seen until the next
+/// own decision (`[seat, tile]` pairs), and that decision. `lem/endgame.py` writes one
+/// per Walt endgame decision, under Walt's own model of the other seats.
+#[cfg(feature = "course")]
+pub mod file {
+    use num_rational::BigRational;
+    use num_traits::Zero;
+    use serde_json::{Value, json};
+
+    use super::{Affine, Choice, Family, Reach, representatives};
+    use crate::quotient::{Block, Interface};
+    use crate::{Result, error};
+
+    /// A block label: the observed plays, each `(seat, tile)`.
+    pub type Seen = Vec<(u32, u32)>;
+
+    pub struct FamilyFile {
+        /// The file's `id`, passed through to the report.
+        pub id: Value,
+        pub root: usize,
+        pub family: Family<u32, Seen>,
+        /// Every mass and payoff is the same at both ends: one class, `p` immaterial.
+        pub constant: bool,
+    }
+
+    fn uint(v: &Value, what: &str) -> Result<u32> {
+        v.as_u64().and_then(|n| u32::try_from(n).ok()).ok_or_else(|| error(format!("{what}: not a small integer")))
+    }
+
+    fn rational(v: &Value, what: &str) -> Result<BigRational> {
+        v.as_str()
+            .ok_or_else(|| error(format!("{what}: not a string")))?
+            .parse()
+            .map_err(|_| error(format!("{what}: not a rational")))
+    }
+
+    fn affine(v: &Value, what: &str) -> Result<Affine> {
+        match v.as_array().map(Vec::as_slice) {
+            Some([a, b]) => Ok(Affine::new(rational(a, what)?, rational(b, what)?)),
+            Some(_) => Err(error(format!("{what}: a pair is two rationals"))),
+            None => {
+                let x = rational(v, what)?;
+                Ok(Affine::new(x.clone(), x))
+            }
+        }
+    }
+
+    fn list<'a>(v: &'a Value, k: &str, i: usize) -> Result<&'a Vec<Value>> {
+        v.get(k).and_then(Value::as_array).ok_or_else(|| error(format!("choice {i}: no list {k}")))
+    }
+
+    impl FamilyFile {
+        pub fn from_json(text_in: &str) -> Result<FamilyFile> {
+            let root: Value = serde_json::from_str(text_in).map_err(|e| error(format!("family: {e}")))?;
+            if root.get("schema").and_then(Value::as_str) != Some("silas-family-course-v1") {
+                return Err(error("family: schema is not silas-family-course-v1"));
+            }
+            let rows = root.get("choices").and_then(Value::as_array).ok_or_else(|| error("family: no choices"))?;
+            let mut choices = Vec::with_capacity(rows.len());
+            for (i, r) in rows.iter().enumerate() {
+                let menu = list(r, "menu", i)?.iter().map(|x| uint(x, "menu")).collect::<Result<Vec<_>>>()?;
+                let payoff = list(r, "payoff", i)?.iter().map(|x| affine(x, "payoff")).collect::<Result<Vec<_>>>()?;
+                let mass = affine(r.get("mass").unwrap_or(&Value::Null), "mass")?;
+                let mut blocks = Vec::new();
+                for b in list(r, "blocks", i)? {
+                    let seen = b
+                        .get("seen")
+                        .and_then(Value::as_array)
+                        .ok_or_else(|| error(format!("choice {i}: a block has no seen list")))?
+                        .iter()
+                        .map(|p| match p.as_array().map(Vec::as_slice) {
+                            Some([s, t]) => Ok((uint(s, "seen")?, uint(t, "seen")?)),
+                            _ => Err(error("seen: not a pair")),
+                        })
+                        .collect::<Result<Seen>>()?;
+                    let play = uint(b.get("play").unwrap_or(&Value::Null), "play")?;
+                    let next = uint(b.get("next").unwrap_or(&Value::Null), "next")? as usize;
+                    blocks.push(Block { play, seen, next });
+                }
+                choices.push(Choice { menu, mass, payoff, blocks });
+            }
+            let constant =
+                choices.iter().all(|c| c.mass.at0 == c.mass.at1 && c.payoff.iter().all(|x| x.at0 == x.at1));
+            let root_at = uint(root.get("root").unwrap_or(&Value::Null), "root")? as usize;
+            if root_at >= choices.len() {
+                return Err(error("family: the root is not a choice"));
+            }
+            let id = root.get("id").cloned().unwrap_or(Value::Null);
+            Ok(FamilyFile { id, root: root_at, family: Family::new(choices)?, constant })
+        }
+
+        /// The root in every parameter class (each play's value given the root's mass,
+        /// and the maximizing set), and the controller's states and root ladder for
+        /// every reach under the raw and fork interfaces. A constant family has one
+        /// class, at `p` = 0.
+        pub fn report(&self) -> Result<Value> {
+            let f = &self.family;
+            let every = f.reachable(&[self.root]);
+            let thresholds = if self.constant { Vec::new() } else { f.thresholds(&every) };
+            let reps = if self.constant { vec![BigRational::zero()] } else { representatives(&thresholds) };
+            let c = f.choice(self.root);
+            let classes: Vec<Value> = reps
+                .iter()
+                .map(|p| {
+                    let mass = c.mass.at(p);
+                    let value: Vec<Value> = if mass > BigRational::zero() {
+                        f.value(self.root).iter().map(|v| Value::from((v.at(p) / &mass).to_string())).collect()
+                    } else {
+                        Vec::new()
+                    };
+                    json!({"p": p.to_string(), "mass": mass.to_string(), "value": value, "best": f.best_at(self.root, p)})
+                })
+                .collect();
+            let mut quotient = serde_json::Map::new();
+            for (name, reach) in [("every", Reach::Every), ("path", Reach::Path), ("plan", Reach::Plan)] {
+                let (course, roots) = f.controller(self.root, &reps, reach)?;
+                let mut by = serde_json::Map::new();
+                by.insert("contexts".to_string(), Value::from(course.decisions().len()));
+                for iface in [Interface::Raw, Interface::Fork] {
+                    let q = course.quotient(iface)?;
+                    by.insert(iface.name().to_string(), json!({"states": q.states, "root_ladder": q.ladder_of(&roots)}));
+                }
+                quotient.insert(name.to_string(), Value::Object(by));
+            }
+            Ok(json!({
+                "id": self.id,
+                "choices": f.len(),
+                "reachable": every.len(),
+                "menu": c.menu,
+                "thresholds": thresholds.iter().map(|t| t.to_string()).collect::<Vec<_>>(),
+                "classes": classes,
+                "quotient": quotient,
+            }))
+        }
+    }
+}
