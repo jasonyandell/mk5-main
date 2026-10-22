@@ -3,12 +3,26 @@ title: The book's line played out — Hands 23 to 25 at the book's bids (#230 st
 kind: experiment
 first_seen: 2026-10-22
 last_updated: 2026-10-22
-status: active
+status: complete
 ---
 
 ## Summary
 
-Registered, not yet run. Issue #230 step C. Chapter 9 works three hands (W42 pp. 76–82):
+**Result (2026-10-22): every registered primary missed, and calibration shows each miss measures
+our instrument at least in part.** Read with that scope, three things stand:
+- **Hand 24:** the book's line makes 30 in 94.5% [93.8, 95.2] of deals with a helping partner, and
+  its key move, the 5-1 before the 6-4, is worth +0.27 of a make.
+- **Hand 25:** read in the book's words (post hoc), its named run is all but the only way to be
+  set. Other sets are 0.015 [0.012, 0.019] of deals. The run itself comes in 18.6% of deals
+  against setters who play the book's own defence.
+- **Hand 23:** makes 0.571. The book's 11-point budget for trick one is exceeded mainly by a sound
+  pounce of count onto the 5-5's trick. The book names that risk itself on Hand 25.
+
+Four instrument faults are measured below (a harmful no-help partner, a narrow classifier, our
+declarer's ducks, our setters' blind throws), and the encoding repairs are #245. Data:
+`book/book-line-230c/` on Hugging Face.
+
+Registered and sealed at bc68aa03. Issue #230 step C. Chapter 9 works three hands (W42 pp. 76–82):
 
 | hand | contract | the book's words for it (in our words) |
 |---|---|---|
@@ -173,6 +187,93 @@ Not changed:
   trick, and it applies to no trump as to an 84. The book's advice to set no trump like an 84
   otherwise falls to `setter-leads` and the follow rules. That is a scope note for misses on Hand
   25.
+
+## Results (2026-10-22)
+
+Every registered primary missed. Calibration after the read (rule 6) shows that each miss
+measures our instrument at least in part, so none of them reads as a verdict on the book.
+Read whole, though, the runs say something useful about all three hands.
+
+The registered read (`read.txt` in the data):
+
+| hand | primary | result | registered bar |
+|---|---|---|---|
+| 23 (L) | set outside the named run | 0.421 [0.406, 0.437] | upper ≤ 0.02: miss |
+| 24 (L0) | make share, no help | 0.855 [0.844, 0.866] | lower ≥ 0.90: miss |
+| 25 (L0) | set outside the named run | 0.278 [0.265, 0.292] | upper ≤ 0.02: miss |
+
+| hand | S1 L make | S2 B Zeb setters | S3 L − K | S4 A − D | L − A (encoding gap) | reaches 35 (L) |
+|---|---|---|---|---|---|---|
+| 23 | 0.571 [0.555, 0.586] miss | 0.522 [0.491, 0.553] miss | −0.042 [−0.057, −0.026] miss | −0.314 [−0.332, −0.296] miss (sixes 0.708) | +0.177 [+0.163, +0.190] | — |
+| 24 | **0.945 [0.938, 0.952] hit** | 0.757 [0.730, 0.783] miss | **+0.267 [+0.252, +0.282] hit** | **+0.172 [+0.156, +0.189] hit** (aces 0.738) | +0.035 [+0.026, +0.045] | 0.759 [0.746, 0.772] |
+| 25 | 0.799 [0.786, 0.811] miss | 0.804 [0.778, 0.827] miss | −0.028 [−0.040, −0.016] miss | **+0.178 [+0.160, +0.196] hit** (doubles trump 0.649) | −0.028 [−0.042, −0.013] | 0.644 [0.629, 0.658] |
+
+Calibration after the read (`diagnostics.txt`). Four instrument faults, each measured:
+
+1. **The no-help partner (L0) is not "no help".** Barred from playing count while he holds
+   another tile, he keeps his count to the end and loses it to the setters. That happens in 417
+   of Hand 24's 579 L0 sets and 980 of Hand 25's 1,511. Under L it happens in 29 of 219 and 0 of
+   804. L0 measures a harmful partner, so the primaries on Hands 24 and 25 do not test the book's
+   claim. Arm L, with a helping partner, is the clean read there.
+2. **The Hand 25 classifier was narrower than the book's words.** It required the declarer to
+   lead the trick the 6-4 falls on. The book says only that the 6-4 is played "on one of your
+   offs" and the other setter holds the winner. Read as the book words it, **post hoc**, under L:
+   - 744 of the 804 sets are the named run;
+   - sets by anything else are 60 of 4,000 deals, **0.015 [0.012, 0.019]**, inside the 0.02
+     tolerance. All 60 lose exactly 15 count.
+
+   That read is post hoc and is labelled so wherever it is cited.
+3. **Our declarer ducks on Hand 23.** The declarer's follows come from the book stack. In 429 of
+   4,000 deals, 0.107 [0.098, 0.117], he follows low under a setter's trump lead while holding a
+   tile sure to win, and he loses a second trick. That accounts for 412 of the 1,718 sets. The
+   book is explicit that after the planned loss the declarer cannot lose another trick. Hands 24
+   and 25 have no such duck.
+4. **Our setters throw count blind on Hand 23.** In 268 sets, 0.067 [0.060, 0.075], a setter
+   throws count onto trick one before the 5-5 is on it. That is a gamble on a partner he cannot
+   yet see winning. Which stack rule decides it is not yet read (#245).
+
+What the instrument still shows, scoped to it:
+
+- **Hand 24: the book's line holds, and its key move is the make.**
+  - With a helping partner the line makes 30 in 94.5% of deals.
+  - Without the 5-1 before the 6-4 it makes 67.8%, so drawing the 6-5 is worth 0.27 of a make.
+  - Our doubles trump makes 0.172 more often than the aces the book turns down.
+  - Against Zeb's setters the line makes 75.7%, short of the 0.85 bar. The cinch is scoped to
+    our book-playing setters.
+- **Hand 25: the book's structure holds; its likelihood is the open question.**
+  - Read in the book's words (post hoc), the named run is all but the only way to be set: 60
+    other sets in 4,000.
+  - The run itself happens in 744 deals, 0.186 [0.174, 0.198]. The book calls its odds low.
+  - Our setters play the book's own advice for setting a no-trump bid: save the pairs and the
+    count for the last tricks, as against an 84 (`defend-the-84`, `setter-leads`). The
+    named run is what that defence aims at.
+  - So the gap is between two of the book's own pages: its read of how often setters hold the
+    6-4 back, and its advice that they should. A setter who plays the book's defence reaches the
+    named run far more often than "low odds" suggests. Which page the book means a bidder to
+    plan against is a question about its readers (A-family assumptions, [[book-assumptions]]),
+    not a ruling.
+  - Removing the key move costs nothing here: L − K is −0.028. Leading the 5-5 and 2-2 first is
+    a little better against these setters.
+- **Hand 23: the book's budget is exceeded by count on the first lost trick.**
+  - Trick one is where the hand is lost. The book budgets 11 for it: the 5-5 and its trick.
+  - In 469 sets, 0.117 [0.108, 0.128], a setter who has already seen his partner's 5-5 win the
+    trick pounces count onto it. That is a sound play, and it is the book's own pounce.
+  - In 266 sets a setter wins trick one with a lower double and keeps the 5-5 back.
+  - The book's named run sets only 33.
+  - On Hand 25 the book itself names this risk: a void opponent may play count on a lost first
+    trump trick, which it gives as about 80 percent likely. Its Hand 23 budget leaves that count
+    out. What the book's 31 assumes about the setters there (that they don't see the pounce, or
+    don't hold the count) is a reading for #230. Our setters, playing the book's rules, take it.
+  - With the ducks and blind throws removed the hand would still fall short of a cinch. Duck-free
+    deals make 0.634, an upper estimate, and selected.
+
+**Our encoding.** The general stack leaves the book's line on all three hands. On Hand 23 that
+costs 0.177. On Hand 24 it costs 0.035. On Hand 25 the stack does slightly better than the
+script (−0.028), since its order of the first two doubles differs. The repairs, all in
+`silas/examples/book/`, are #245:
+- `first-lead` should open as the book does;
+- `bidders-plan` should not dump an off while trumps can be cashed toward a walker;
+- the bidder should take a trick he is sure to win.
 
 ## Data
 
