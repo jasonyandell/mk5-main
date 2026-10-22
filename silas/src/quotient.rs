@@ -196,6 +196,11 @@ impl<A: Clone + Ord + Hash, X: Clone + Ord + Hash> Course<A, X> {
         &self.decisions
     }
 
+    /// Every decision, each after all of its successors.
+    pub fn order(&self) -> &[usize] {
+        &self.order
+    }
+
     fn out(&self, i: usize, interface: Interface) -> Out<A> {
         let d = &self.decisions[i];
         match interface {

@@ -381,7 +381,7 @@ Rung config is the same operator and L1/L2 describe the sampled ladder.
 # The minimal comparison algebra (night 2026-10-21)
 
 Jason's note *A minimal comparison algebra for a declared 42 family* (2026-10-21), made
-the project's own. Same toolchain, no Mathlib; `lake build` 4.5 s clean; the 22 new
+the project's own. Same toolchain, no Mathlib; `lake build` 4.5 s clean; the 24 new
 headline theorems in `Axioms.lean` print only the standard three; no sorry. Wiki:
 `wiki/experiments/comparison-algebra-2026-10-21.md`.
 
@@ -407,6 +407,13 @@ headline theorems in `Axioms.lean` print only the standard three; no sorry. Wiki
   `mixing_forces_equality` (a relation that keeps the decision and every convex mixture
   is equality on [0, 1]; witness λ = 1/5, q = (1 − m)/4), `note_example` (0.08, 0.12
   mixed with 0.30 straddle 1/5).
+- **`Stab/Plans.lean`, fixed plans in a one-parameter family** (2026-10-22). A fixed plan's
+  value is a line in p and the optimum is their upper envelope: `optimal_between` (the
+  parameters where a plan is optimal form an interval) and `optimal_on_piece` (where one
+  plan is optimal across [u, w], any plan optimal at an interior point is too). So the
+  fewest fixed plans optimal at every p is the number of affine pieces of the optimum.
+  The note's ending has five (`silas/tests/controller.rs`), against 31 classes for the
+  complete maximizing sets.
 
 ## Two findings against the night's brief
 
@@ -420,7 +427,9 @@ headline theorems in `Axioms.lean` print only the standard three; no sorry. Wiki
 
 ## What it does not prove
 
-The note's 767-state controller and its 1, 18, 31, 31 ladder (that needs the 560-deal
-fixture, not a theorem); that the segment formula (5p − 1)/(1 + 18p) is the fixture's gap
-(taken as the definition); that 0.08 and 0.12 share a cell of the atlas; anything about a
-learned net.
+That the fewest-plans count equals the number of pieces is the two lemmas plus a two-line
+argument in the module docstring, not a theorem with a `pieces` definition. The fixture
+facts are computed, not proved: Silas rebuilds the 560-deal ending on its own rules and
+reproduces the 767-state controller and its 1, 18, 31, 31 ladder, derives the segment's
+gap (5p − 1)/(1 + 18p), and finds 0.08 and 0.12 in one cell (`silas/tests/controller.rs`).
+Nothing here is about a learned net.

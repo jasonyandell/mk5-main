@@ -532,6 +532,12 @@ shape, 144 fork states). The theorems behind it, and the note's local algebra (t
 per decision, the hexagon, 13 sequential classes), are in Lean in `scenario/lean/Stab/`
 ([[comparison-algebra-2026-10-21]]).
 
+`silas/src/family.rs` solves a course whose atoms are mixed by one probability exactly for
+every `p` (piecewise-linear values, thresholds, witnessed thresholds, the parameter-class
+controller), and `silas/src/comparison.rs` counts the linear coordinates each decision
+reads. `silas/tests/controller.rs` rebuilds the note's 560-deal no-trump ending on Silas's
+own frame and rules and reproduces its 767-state controller, ladder 1, 18, 31, 31.
+
 ## Where it sits
 
 - **Origin.** Moved from texas-42 `1c15cc51` (CC0), where it was written as the

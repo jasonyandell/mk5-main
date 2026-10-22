@@ -39,3 +39,5 @@ import Stab
 #print axioms Stab.Mixing.mass_injective
 #print axioms Stab.Mixing.mixing_forces_equality
 #print axioms Stab.Mixing.note_example
+#print axioms Stab.Plans.optimal_between
+#print axioms Stab.Plans.optimal_on_piece

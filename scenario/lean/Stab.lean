@@ -10,3 +10,4 @@ import Stab.Floor
 import Stab.Hexagon
 import Stab.Residual
 import Stab.Mixing
+import Stab.Plans

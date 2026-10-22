@@ -1465,6 +1465,52 @@ impl CourseFile { pub fn from_json(source: &str) -> Result<CourseFile>; pub fn r
   blocks; it carries no hidden hand. `from_json` audits it: the maximizing set
   is the argmax of `q`, the blocks under each play partition the mass, and
   Bellman holds exactly. `report` gives every count of the Python report.
+
+### A family in one parameter, and its controller
+
+A course whose atoms carry a type mixed by one probability `p` (a partner who
+plays High with probability `p`, Low otherwise) has values that are exact
+piecewise-linear functions of `p`. `src/family.rs` solves it once for every
+`p`, and `src/comparison.rs` counts how many numbers each decision reads
+(`tests/controller.rs` rebuilds the note's 560-deal no-trump ending on Silas's
+own frame, worlds and trick rules).
+
+```rust
+pub struct Affine { at0: Q, at1: Q }                     // (1 - p) at0 + p at1
+pub struct Piecewise { knots: Vec<(Q, Q)> }              // exact, on [0, 1]
+pub struct Choice<A, X> { menu: Vec<A>, mass: Affine, payoff: Vec<Affine>, blocks: Vec<Block<A, X>> }
+impl Family<A, X> { pub fn new(choices: Vec<Choice<A, X>>) -> Result<Family<A, X>>;
+                    pub fn thresholds(&self, which: &[usize]) -> Vec<Q>;
+                    pub fn witnessed(&self, which: &[usize], thresholds: &[Q]) -> Vec<Q>;
+                    pub fn plan_at(&self, i: usize, p: &Q) -> Affine;
+                    pub fn controller(&self, root: usize, reps: &[Q], reach: Reach) -> Result<(Course<A, X>, Vec<usize>)>;
+                    pub fn restricted(self, i: usize, keep: &[A]) -> Result<Family<A, X>>; }
+pub enum Reach { Every, Path, Plan }
+pub fn representatives(thresholds: &[Q]) -> Vec<Q>;      // 0, each cell's midpoint, each knot, 1
+pub fn dimensions(decisions: &[Vec<Play>], order: &[usize]) -> Vec<usize>;
+```
+
+- **Values.** A play's value is its terminal payoff plus the sum, over its
+  blocks, of each successor's upper envelope; a decision's value is the
+  envelope of its plays. `new` refuses blocks whose masses do not partition
+  their decision's mass.
+- **Thresholds** are the interior `p` where some decision's maximizing set
+  changes; `witnessed` keeps those with disjoint maximizing sets on the two
+  sides, each of which forces a different fixed policy on each side.
+- **The controller** is the course of (decision, parameter class) pairs at
+  one representative per class, blocks of zero mass dropped, ready for
+  `quotient`; its roots are the root in each class. `Reach::Every` keeps
+  every decision, `Path` only those the plan reaches (the least maximizing
+  play at each decision), and `Plan` outputs the plan's play there.
+- **Plans.** `plan_at` is that plan's value, a line in `p`; it meets the
+  envelope at `p`, and across the whole affine piece that holds `p`
+  (`scenario/lean/Stab/Plans.lean`).
+- **The comparison dimension** of a decision is the dimension of the span of
+  the differences between its programs' success vectors over the atoms: the
+  fewest linear coordinates that keep every comparison under every belief.
+  Programs that open with a play are sums of independent programs of its
+  blocks, so the span is the direct sum of the successors' spans plus one
+  difference per extra play.
   `silas quotient --course FILE` prints it; on the 256 roots of the Gus
   maskbreadth study it reproduces `lem/quotient.py`'s report in every count
   (`wiki/experiments/comparison-algebra-2026-10-21.md`).

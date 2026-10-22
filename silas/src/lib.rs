@@ -39,10 +39,12 @@ mod belief;
 // a value); exported only under the `clairvoyant` feature.
 #[cfg_attr(not(feature = "clairvoyant"), allow(dead_code))]
 mod clairvoyant;
+pub mod comparison;
 mod coverage;
 mod dominance;
 mod dynamics;
 mod eval;
+pub mod family;
 mod field;
 mod frame;
 mod ledger;
