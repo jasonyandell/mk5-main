@@ -5794,3 +5794,82 @@ The next selected preparation asks whether five fixed saved policies learned the
   declaration, and `can-take-it` separating "count welcome" (A) from "feed, don't take" (B).
 - Reviewed against the essay's full text by a fresh Opus, which found two row-set bugs and two
   predictions that couldn't lose, all fixed. [[lem-unit-count-on-it-2026-10-21]], `run_count`.
+
+## [2026-10-21 | claude | lem: unit paper 8 graded: 16×8 s0 layer-2 unit 4 is the net's "feed partner's trick" unit under ones–fours (#235, #202)]
+
+- Predictions 1, 2, 3 and 5 held. Under declarations 1–4, ablated where partner holds the trick,
+  count played falls 0.669 → 0.086 (−0.583 [−0.589, −0.575]), rank 1 of 8. L2 2 does the same job
+  under 5–6.
+- 4 missed narrowly: partner's trump lowers the dial 0.265 of an opponent's trump-lead dip, against
+  a bar of 0.25. 6 missed: verb B ("feed, don't take") lost to A. The dip holds where I cannot take
+  the trick back (0.894).
+- The #202 κ 0.00 is a 1.3% tail of a dial. The v3 word is `trick-holder-kind` × seat (R² 0.640).
+- The card's synthesis now has papers 7 and 8. Evidence is on HF at
+  `lem/unit-count-on-it-2026-10-21/`, in [[lem-unit-count-on-it-2026-10-21]].
+
+## [2026-10-21 | claude | lem: unit paper 9 registered and sealed: 16×8 s0 layer-2 unit 1, leading the top off double under fives and sixes (#235, #202)]
+
+- Raw read: on 0.201, at 0.96–0.99 of leads under fives and sixes and about 0.05 elsewhere. Its gate
+  is "slot 14 holds no ten" (L1 15, `x:count:14`). Its canonical push leads slot 20, the top off
+  double (the 6-6, or the 5-5 under sixes), over slot 14 and trump: the correction of paper 4's L2 3.
+- Graded: the joint ablation with L2 3 (composition), a causal A/B on sixes follows with the 5-5
+  legal (cash it vs lay it on partner's trick), and a formation order (the follow job as a later
+  branch).
+- Reviewed against the essay's full text by a fresh Opus. It found three of four first predictions
+  already settled by what was seen, and prediction 3 mixing feeding with taking. Both were fixed.
+  [[lem-unit-top-double-2026-10-21]], `run_double`.
+
+## [2026-10-21 | f811360 | Gus decision quotient of the contingent course]
+
+**Touched pages:** [[experiments/gus-decision-quotient-2026-10-21|gus-decision-quotient-2026-10-21]] [[gus-tiny-gpt]] [[gus-historical-choice-wish]]
+**Added:** exact decision quotient (coarsest right congruence of the menu/maximizing-set interface) over the 256 eligible maskbreadth roots: 8,257 raw states, fresh roots never repeat a raw state, 139 fork structures; `lem/quotient.py` with tests; a measurement on saved data, no training.
+**Updated:** [[gus-tiny-gpt]] routes to it; [[gus-historical-choice-wish]] names it as the first measurement of the adopted formulation.
+
+## [2026-10-21 | claude | lem: unit paper 9 graded: 16×8 s0 layer-2 unit 1 leads the top off double under fives and sixes (#235, #202)]
+
+- Ablated on leads where I hold the top double (the 6-6, or the 5-5 under sixes), that lead falls
+  0.633 → 0.197, rank 1 of 8. Its gate is "slot 14 holds no ten" (κ 0.786 against 0.437 for the
+  best v2 concept), so it corrects the layer's slot-14 vote: L2 0, 3 and 4 each zero slot 14 when
+  ablated.
+- Graded 3 of 3 held:
+  - with L2 3 jointly ablated, slot 14 falls 0.771 → 0.040;
+  - on sixes follows with the 5-5 legal, B beat A: laying it on partner's trick −0.571 against
+    following fives −0.279;
+  - the follow job grew after the lead job (step 152,700 against 30,540, after a death and rebirth).
+- One confirmatory missed: with both doubles in hand, the net leads the 4-4 first (0.447 against
+  0.244).
+- Evidence on HF `lem/unit-top-double-2026-10-21/`. [[lem-unit-top-double-2026-10-21]], card
+  synthesis updated.
+
+## [2026-10-21 | claude | lem: unit paper 10 graded: 16×8 s0 layer-1 unit 1 saves the doubles (#235, #202)]
+
+- L1 1 keeps the doubles back and spends singles and lesser trumps. Ablated on trump-led follows
+  with the trump double legal, the double played rises +0.427 [0.417, 0.436], rank 1 of 16. On
+  discards the low doubles rise +0.051 [0.047, 0.055].
+- Registered between verbs A ("take with trump") and B ("keep the doubles back"). Prediction 1
+  missed toward B, and that miss is the finding. The lead null the arithmetic implied before
+  sealing was a dose: forced on at a follow dose, it holds doubles back on no-trump leads too
+  (−0.154).
+- 4 of 5 graded held:
+  - rank 3 of the trump-in votes;
+  - L-27 +0.020;
+  - the trump-lead job before the kill (−0.193 at step 30,540);
+  - the kill's reason, "let the trump double cover": where the gate is missing, ablating raises
+    the double +0.242 [0.199, 0.285].
+- v3 boundary κ 0.554 vs 0.447 for v2. Evidence on HF `lem/unit-hold-trump-2026-10-21/`.
+  [[lem-unit-hold-trump-2026-10-21]], card synthesis updated. This was the last unit of the #202
+  queue.
+
+## [2026-10-22 | mayor | Desks become agent files; The 42 Ladder page]
+
+- Four desks now (Mayor, Media, Book, Lem), each an agent file in `.claude/agents/` with its
+  model and effort, run as short sessions that start from the latest handoff in
+  `~/code/mk5-main/scratch/desks/<desk>/` and end by writing the next one. Archive and Sweep fold
+  into the Mayor as subagents; the Mayor's watch is a Haiku session (`mayor-loop`). Playbook:
+  [[standing-desks]].
+- The tournament ladder's loop moved from a job's temp folder to `scripts/ladder-loop` (180 s
+  chunk budget, so the last faceoff ends inside cpu-slot's 300 s cap), and its standings export to
+  `scripts/ladder_export.py`. The page: [The 42 Ladder](https://claude.ai/artifact/TJYRL2ac7afwMookxGPdhp),
+  18,247 faceoffs and 37,514 games as of 2026-10-22. Zeb 0.4.1 (contested) leads at 1812
+  [1797, 1826]; the Demon with the c102 straight bidder is next at 1787 [1773, 1802], intervals
+  overlapping. See [[tournament]].
