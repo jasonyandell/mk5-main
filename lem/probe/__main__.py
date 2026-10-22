@@ -80,6 +80,7 @@ def main(argv=None) -> None:
     s.add_argument("--winner", action="store_true", help="a layer-1 unit read by who wins the open trick, and with what (paper 6)")
     s.add_argument("--lead", action="store_true", help="a layer-1 unit shut on leads from trump length (paper 7)")
     s.add_argument("--count", action="store_true", help="a layer-2 unit read as a dial on putting count on the trick (paper 8)")
+    s.add_argument("--double", action="store_true", help="a layer-2 unit read as leading the top off double under fives and sixes (paper 9)")
     s = sub.add_parser("route"); s.add_argument("sample"); s.add_argument("net"); s.add_argument("bit"); s.add_argument("tile", type=int); s.add_argument("out")
     s = sub.add_parser("gus-sample"); s.add_argument("sample"); s.add_argument("labels"); s.add_argument("out_dir")
     s = sub.add_parser("gus-audit"); s.add_argument("rows_dir"); s.add_argument("ckpt"); s.add_argument("out_dir")
@@ -216,7 +217,9 @@ def main(argv=None) -> None:
         with np.load(a.labels) as z:
             labels, names = z["labels"], [str(n) for n in z["names"]]
         audit = json.loads((Path(a.audit) / "audit.json").read_text())
-        if a.count:
+        if a.double:
+            result = unit.run_double(Sample(a.sample), labels, names, a.net, a.j, a.twin, audit, a.formation, log)
+        elif a.count:
             result = unit.run_count(Sample(a.sample), labels, names, a.net, a.j, a.twin, audit, a.formation, log)
         elif a.lead:
             result = unit.run_lead(Sample(a.sample), labels, names, a.net, a.j, a.twin, audit, a.formation, log)

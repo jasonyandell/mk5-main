@@ -24,7 +24,7 @@ from pathlib import Path
 import numpy as np
 
 from lem.probe.audit import BASE_CAP, BASELINE_MARGIN, expected_from_strata, feature_names, stratum_rates
-from lem.probe.causal import downstream
+from lem.probe.causal import CHUNK, downstream
 from lem.probe.net import forward, load_net, picks
 from lem.probe.squeeze import FAMILIES
 from scenario.field import CANON
@@ -1588,5 +1588,236 @@ def run_count(sample, labels: np.ndarray, names: list[str], net_path: str, j: in
             log(f"  {ck.stem}: on {f['on']:.3f} r2 winner {f['r2 winner on follows']:.3f} p-o {f['partner minus opponent']:.0f} "
                 f"trump {f['trump-lead subtraction']:.0f} on3R {f['on, third seat RHO holds a trump lead']:.3f} "
                 f"write {f['write count - non-count, d1-4']:.0f} + {f['+']} − {f['-']}")
+        out["formation"] = form
+    return out
+
+
+TOP_DOUBLE, SECOND_DOUBLE, BELOW_TOP = 20, 14, 19        # canonical slots: 5-5, 4-4 and 5-4 of the net's frame
+
+
+def run_double(sample, labels: np.ndarray, names: list[str], net_path: str, j: int, twin_path: str,
+               audit: dict, formation_dir: str | None, log=print) -> dict:
+    """A unit paper for a layer-2 unit on at leads under fives and sixes, read as "lead the top off
+    double" (#235, paper 9). In the net's canonical frame the top off double is slot 20: the 6-6
+    under every declaration but sixes, where it is the 5-5. Its use is read on leads against every
+    live layer-2 unit, beside paper 4's off-double switch (L2 3), and on sixes follows by who holds
+    the trick and what was led."""
+    x = sample.x
+    fn = feature_names(x.shape[1])
+    net = load_net(net_path)
+    acts = forward(net, x)
+    z, a = acts.z2[:, j].astype(np.float64), acts.a2[:, j]
+    on = a > 0
+    k = max(1, int(round(TOP * len(z))))
+    top_p, top_n = np.argsort(-z, kind="stable")[:k], np.argsort(z, kind="stable")[:k]
+    trick = Trick(sample)
+    lab = Labeller(labels, names, x, sample.n_plays.astype(np.int64))
+    decl, lead, fol = trick.decl, trick.seat == 0, trick.seat > 0
+    hand = x[:, [fn.index(f"x:hand:{t}") for t in range(N_TILES)]].astype(bool)
+    n_trump = hand[:, TRUMPS].sum(1)
+    high = np.isin(decl, (5, 6))
+    side = labels[:, names.index("bidding-side")].astype(bool)
+    tn = sample.n_plays.astype(np.int64) // 4
+    pw, opp = trick.winner == 1, fol & (trick.winner != 1)
+    top_suit = np.where(decl == 6, 5, 6)                 # the real suit of the top off double
+    top_led = fol & (trick.suit == top_suit)
+    out: dict = {"unit": j, "net": net_path, "rows total": len(z), "top_k": k, "on": float(on.mean()),
+                 "max_z": float(z.max()), "min_z": float(z.min())}
+
+    # 1. label
+    cell = lambda m: {"rows": int(m.sum()), "on": float(on[m].mean()), "mean_z": float(z[m].mean()),
+                      "mean_a": float(a[m].mean())} if m.sum() >= 200 else None
+    out["by declaration and seat"] = {int(d): {SEATS[s]: cell((decl == d) & (trick.seat == s)) for s in range(4)} for d in range(7)}
+    out["leads"] = {}
+    for g, gm in (("d5", decl == 5), ("d6", decl == 6), ("d0-4", decl <= 4)):
+        m = lead & gm
+        out["leads"][g] = {
+            "by holds top double × holds slot 19": {f"top {h20} slot19 {h19}": cell(m & (hand[:, TOP_DOUBLE] == h20) & (hand[:, BELOW_TOP] == h19))
+                                                     for h20 in (0, 1) for h19 in (0, 1)},
+            "by trumps held": {int(n): cell(m & (n_trump == n)) for n in range(8)},
+            "by holds boss trump": {int(h): cell(m & (hand[:, 27] == h)) for h in (0, 1)},
+            "on-set make-up": {"rows": int((m & on).sum()), **{nm: float(v[m & on].mean()) for nm, v in
+                               (("holds top double", hand[:, TOP_DOUBLE]), ("holds slot 14", hand[:, SECOND_DOUBLE]),
+                                ("holds slot 19", hand[:, BELOW_TOP]), ("trumps held", n_trump), ("bidding side", side))}}
+                               if (m & on).sum() else None}
+    # prediction 3: on sixes follows, which moves the unit more, the top double's suit led (A) or partner holding (B)?
+    m6 = fol & (decl == 6)
+    X6 = np.c_[np.eye(4)[trick.seat[m6]][:, 2:], np.eye(7)[tn[m6]][:, 1:], side[m6], top_led[m6], pw[m6]].astype(np.float64)
+    b6 = np.linalg.lstsq(np.c_[np.ones(m6.sum()), X6], z[m6], rcond=None)[0]
+    out["sixes follows"] = {"adjusted": {"top double's suit led (A)": float(b6[-2]), "partner holds (B)": float(b6[-1])},
+                            "cells": {f"{'fives led' if tl else 'other led'}, {'partner' if p else 'opponent'} holds":
+                                      cell(m6 & (top_led == tl) & (pw == p)) for tl in (True, False) for p in (True, False)},
+                            "by seat": {SEATS[s]: cell(m6 & (trick.seat == s)) for s in (1, 2, 3)}}
+    def kappas(c: np.ndarray) -> dict:
+        po = float((c == on).mean())
+        pe = c.mean() * on.mean() + (1 - c.mean()) * (1 - on.mean())
+        ch = max(on.mean(), 1 - on.mean())
+        return {"rate": float(c.mean()), "agree": po, "cohen": float((po - pe) / (1 - pe)), "vs constant": float((po - ch) / (1 - ch))}
+    no_ten14 = ~x[:, fn.index("x:count:14")].astype(bool)      # slot 14 holds no ten: the gate's own input (L1 15)
+    out["boundary"] = {"lead (best v2 for on, seen)": kappas(lead), "lead, slot 14 holds no ten (v3 candidate)": kappas(lead & no_ten14),
+                       "lead, slot 14 holds no ten, or any sixes follow": kappas((lead & no_ten14) | (fol & (decl == 6)))}
+    zl = z[lead]
+    G = np.eye(3)[np.where(decl[lead] <= 4, 0, decl[lead] - 4)]
+    out["r2 on leads"] = {"declaration group (0-4, 5, 6)": r2(zl, G),
+                          "+ holds slot 19": r2(zl, np.c_[G, G * hand[lead, BELOW_TOP][:, None]]),
+                          "+ trumps held, by group": r2(zl, np.c_[G, G * hand[lead, BELOW_TOP][:, None],
+                                                                   (G[:, :, None] * np.eye(8)[n_trump[lead]][:, None, :]).reshape(len(zl), -1)])}
+    out["poles"] = {"+": lab.best(top_p), "-": lab.best(top_n), "+ lead": float(lead[top_p].mean()),
+                    "+ decl": np.bincount(decl[top_p], minlength=7).tolist(), "- decl": np.bincount(decl[top_n], minlength=7).tolist(),
+                    "- seat": [float((trick.seat[top_n] == s).mean()) for s in range(4)]}
+    log(f"label: on {out['on']:.3f} boundary {out['boundary']} sixes follows {out['sixes follows']['adjusted']}")
+
+    # 2. circuit in: layer-1 contributions, leads by declaration group and sixes follows
+    w2 = net.w2[j].astype(np.float64)
+    contrib = acts.a1.astype(np.float64) * w2
+    kinds_in = {"lead d0-4": lead & (decl <= 4), "lead d5": lead & (decl == 5), "lead d6": lead & (decl == 6),
+                "lead d5, holds slot 19": lead & (decl == 5) & hand[:, BELOW_TOP], "lead d5, not slot 19": lead & (decl == 5) & ~hand[:, BELOW_TOP],
+                "follow d6": m6, "follow d5": fol & (decl == 5), "follow d0-4": fol & (decl <= 4)}
+    out["inputs"] = [{"unit": int(u), "w2": int(w2[u]), **{kd: float(contrib[m, u].mean()) for kd, m in kinds_in.items()}}
+                     for u in np.argsort(-np.abs(w2))]
+    out["bias"] = int(net.b2[j])
+
+    # 3. circuit out: every layer-2 unit's write, in canonical slots and in real tiles per declaration
+    dom = [(p, q) for p in range(7) for q in range(p + 1)]
+    def write(col: np.ndarray) -> dict:
+        rec = {"slot 20": int(col[TOP_DOUBLE]), "slot 14": int(col[SECOND_DOUBLE]), "slot 19": int(col[BELOW_TOP]),
+               "trumps mean": float(col[TRUMPS].mean()), "off doubles mean": float(col[OFF_DOUBLES].mean())}
+        for d in (0, 4, 5, 6):
+            cn = CANON[d]
+            wv = np.array([col[cn[t]] for t in range(N_TILES)], np.float64)
+            order = np.argsort(-wv)
+            rec[f"d{d} top"] = [f"{dom[t][0]}-{dom[t][1]}:{int(wv[t])}" for t in order[:4]]
+            rec[f"d{d} bottom"] = [f"{dom[t][0]}-{dom[t][1]}:{int(wv[t])}" for t in order[-4:]]
+        return rec
+    h2 = net.b2.shape[0]
+    out["write"] = {int(u): write(net.w3[:, u]) for u in range(h2)}
+    tw = load_net(twin_path)
+    tz = forward(tw, x).z2[:, j].astype(np.float64)
+    out["twin"] = {"on": float((tz > 0).mean()), "on, leads by group": [float((tz[lead & gm] > 0).mean()) for gm in (decl <= 4, decl == 5, decl == 6)],
+                   "r2 on leads, declaration group": r2(tz[lead], G), "write": write(tw.w3[:, j])}
+
+    # 5. steering
+    actions, deal = sample.actions, sample.deal
+    canon = sample.canon()
+    rows_i = np.arange(len(z))
+    acts_ = actions.astype(np.int64)
+    legal = np.zeros((len(z), N_TILES), bool)
+    for c in range(acts_.shape[1]):
+        ok = acts_[:, c] >= 0
+        legal[rows_i[ok], canon[rows_i[ok], acts_[ok, c]]] = True
+    n_legal = legal.sum(1)
+    base_pick = picks(acts.out, actions, canon)
+    def reads(pick: np.ndarray) -> dict[str, np.ndarray]:
+        sl = canon[rows_i, np.maximum(pick, 0)]
+        return {"top double": (sl == TOP_DOUBLE).astype(float), "slot 14": (sl == SECOND_DOUBLE).astype(float),
+                "off double": np.isin(sl, OFF_DOUBLES).astype(float), "trump": np.isin(sl, TRUMPS).astype(float),
+                "count": trick.count(pick).astype(float), "take": trick.beats(pick).astype(float),
+                "count, not taking": (trick.count(pick) & ~trick.beats(pick)).astype(float),
+                "top double, taking": ((sl == TOP_DOUBLE) & trick.beats(pick)).astype(float),
+                "top double, not taking": ((sl == TOP_DOUBLE) & ~trick.beats(pick)).astype(float)}
+    base = reads(base_pick)
+    live = [u for u in range(h2) if u != j and (acts.a2[:, u] > 0).sum() >= 200]
+    sig = {u: float(acts.a2[:, u][acts.a2[:, u] > 0].std()) for u in [j] + live}
+    hold_top = lead & high & legal[:, TOP_DOUBLE] & (n_legal > 1)
+    on_val = {u: int(np.median(acts.a2[hold_top & (acts.a2[:, u] > 0), u])) if (hold_top & (acts.a2[:, u] > 0)).sum() >= 200
+              else int(np.median(acts.a2[acts.a2[:, u] > 0, u])) for u in [j] + live}
+    out["null_units"], out["sigma"], out["on value, top-double leads under fives and sixes"] = live, sig[j], on_val[j]
+    rng = np.random.default_rng(SEED)
+    pdn = {u: picks(downstream(net, x, 2, u, 0), actions, canon) for u in [j] + live}
+    rdn = {u: reads(pdn[u]) for u in [j] + live}
+    def down_on(m: np.ndarray, focus: str) -> dict:
+        sh = {u: rdn[u][focus] - base[focus] for u in [j] + live}
+        return {"rows": int(m.sum()), "base": {r: float(base[r][m].mean()) for r in base},
+                "units": {int(u): {f"Δ {focus}": clustered(sh[u][m], deal[m], rng), "on there": float((acts.a2[m, u] > 0).mean())}
+                          for u in [j] + live},
+                "own Δ, every read": {r: clustered(rdn[j][r][m] - base[r][m], deal[m], rng) for r in base},
+                f"rank of own Δ {focus}, most negative first": 1 + int(sum(sh[u][m].mean() < sh[j][m].mean() for u in live))}
+    down = {}
+    for g, gm in (("d5-6", high), ("d5", decl == 5), ("d6", decl == 6)):
+        down[f"leads holding the top double, {g}, unit on"] = down_on(hold_top & gm & on, "top double")
+        log(f"down top double {g}: " + "  ".join(f"{u} {v['Δ top double'][0]:+.3f}" for u, v in down[f'leads holding the top double, {g}, unit on']['units'].items()))
+    # prediction 2: the top double against slot 14's double, both legal
+    both = lead & high & legal[:, TOP_DOUBLE] & legal[:, SECOND_DOUBLE] & on
+    out["both doubles legal"] = {"rows": int(both.sum()), "base": {"top double": float(base["top double"][both].mean()), "slot 14": float(base["slot 14"][both].mean())},
+                                 **{f"ablate L2 {u}": {"top double": float(rdn[u]["top double"][both].mean()), "slot 14": float(rdn[u]["slot 14"][both].mean()),
+                                                       "Δ top double": clustered(rdn[u]["top double"][both] - base["top double"][both], deal[both], rng),
+                                                       "Δ slot 14": clustered(rdn[u]["slot 14"][both] - base["slot 14"][both], deal[both], rng)}
+                                    for u in [j] + live}}
+    def joint(units: list[int]) -> np.ndarray:
+        outs = []
+        for at in range(0, len(x), CHUNK):
+            xi = x[at:at + CHUNK].astype(np.int64)
+            a1 = np.maximum((xi @ net.w1 + net.b1) >> net.s1, 0)
+            a2 = np.maximum((a1 @ net.w2.T + net.b2) >> net.s2, 0)
+            a2[:, units] = 0
+            outs.append(a2 @ net.w3.T + net.b3)
+        return picks(np.concatenate(outs), actions, canon)
+    rj = reads(joint([j, 3]))
+    out["both doubles legal"][f"ablate L2 {j} and L2 3"] = {
+        "top double": float(rj["top double"][both].mean()), "slot 14": float(rj["slot 14"][both].mean()),
+        "Δ slot 14 against L2 {j} alone".replace("{j}", str(j)): clustered(rj["slot 14"][both] - rdn[j]["slot 14"][both], deal[both], rng)}
+    log(f"both doubles: {out['both doubles legal']['base']} → ablate own {out['both doubles legal'][f'ablate L2 {j}']['top double']:.3f} / {out['both doubles legal'][f'ablate L2 {j}']['slot 14']:.3f}")
+    # sixes follows with a count tile and a non-count tile legal, the unit on
+    cnt_l = np.stack([trick.count(acts_[:, c]) & (acts_[:, c] >= 0) for c in range(acts_.shape[1])], 1)
+    choice = fol & cnt_l.any(1) & ((acts_ >= 0) & ~cnt_l).any(1)
+    for who, wm in (("partner holds", pw), ("opponent holds", opp)):
+        down[f"sixes choice follows, {who}, unit on"] = down_on(choice & (decl == 6) & wm & on, "count")
+    # prediction 3: sixes follows with the top double (the 5-5) legal and the unit on, by cell:
+    # A, fives led (the 5-5 follows suit and can take); B, void in the led suit and partner holds
+    # (the 5-5 is laid on partner's trick); and void with an opponent holding
+    f55 = fol & (decl == 6) & legal[:, TOP_DOUBLE] & (n_legal > 1) & on
+    cells55 = {"A: fives led": f55 & top_led, "B: void, partner holds": f55 & ~top_led & pw,
+               "void, opponent holds": f55 & ~top_led & opp}
+    ab = {}
+    for cn_, m in cells55.items():
+        sh = {u: rdn[u]["top double"] - base["top double"] for u in [j] + live}
+        ab[cn_] = {"rows": int(m.sum()), "base": {r: float(base[r][m].mean()) for r in ("top double", "top double, taking", "top double, not taking")},
+                   "own Δ": {r: clustered(rdn[j][r][m] - base[r][m], deal[m], rng) for r in ("top double", "top double, taking", "top double, not taking", "count, not taking")},
+                   "units Δ top double": {int(u): float(sh[u][m].mean()) for u in [j] + live},
+                   "rank of own Δ top double, most negative first": 1 + int(sum(sh[u][m].mean() < sh[j][m].mean() for u in live))}
+        log(f"sixes follows {cn_}: rows {m.sum()} base {base['top double'][m].mean():.3f} own Δ {ab[cn_]['own Δ']['top double'][0]:+.3f}")
+    out["sixes follows, the 5-5 legal, ablated"] = ab
+    out["steer"] = {"down, every unit on the same rows": down}
+    # up: k·σ doses and the on value where the unit is off: leads under 0-4 with the top double legal
+    # (the 6-6), and the fives leads it dims (holding the 6-4, slot 19)
+    up_rows = {"d0-4 leads, top double legal, off": lead & (decl <= 4) & legal[:, TOP_DOUBLE] & (n_legal > 1) & ~on,
+               "d5 leads, holding the top double and slot 19": lead & (decl == 5) & legal[:, TOP_DOUBLE] & hand[:, BELOW_TOP] & (n_legal > 1)}
+    def vs_layer(pk: dict) -> dict:
+        sh = {u: {r: v - base[r] for r, v in reads(pk[u]).items()} for u in pk}
+        return {m: {r: {"own": clustered(sh[j][r][v], deal[v], rng),
+                        "own-layer": clustered((sh[j][r] - np.mean([sh[u][r] for u in live], 0))[v], deal[v], rng)}
+                    for r in ("top double", "slot 14", "trump")} | {"rows": int(v.sum()), "base top double": float(base["top double"][v].mean())}
+                for m, v in up_rows.items()}
+    out["steer"]["up"] = []
+    for kd in DOSES:
+        rec = vs_layer({u: picks(downstream(net, x, 2, u, None, add=int(round(kd * sig[u]))), actions, canon) for u in [j] + live})
+        rec["k"] = kd
+        out["steer"]["up"].append(rec)
+        log(f"up k={kd}: " + "  ".join(f"{m} top {v['top double']['own-layer'][0]:+.3f}" for m, v in rec.items() if m != "k"))
+    out["steer"]["up, add the on value"] = vs_layer({u: picks(downstream(net, x, 2, u, None, add=on_val[u]), actions, canon) for u in [j] + live})
+
+    # 4. formation: the declaration gate, the top-double write and its use, per checkpoint
+    if formation_dir:
+        form = []
+        ht = hold_top & on
+        for ck in sorted(Path(formation_dir).glob("step_*.npz")):
+            fnet = load_net(ck)
+            fa = forward(fnet, x)
+            fz = fa.z2[:, j].astype(np.float64)
+            fon = fa.a2[:, j] > 0
+            tp_, tn_ = np.argsort(-fz, kind="stable")[:k], np.argsort(fz, kind="stable")[:k]
+            fb = canon[rows_i, np.maximum(picks(fa.out, actions, canon), 0)] == TOP_DOUBLE
+            fd = canon[rows_i, np.maximum(picks(downstream(fnet, x, 2, j, 0), actions, canon), 0)] == TOP_DOUBLE
+            col = fnet.w3[:, j]
+            form.append({"step": int(ck.stem.split("_")[1]), "on": float(fon.mean()),
+                         "on, leads d0-4 / d5 / d6": [float(fon[lead & gm].mean()) for gm in (decl <= 4, decl == 5, decl == 6)],
+                         "on, leads d5-6": float(fon[lead & high].mean()),
+                         "on, sixes follows": float(fon[m6].mean()), "on, sixes follows with the 5-5 legal": float(fon[fol & (decl == 6) & legal[:, TOP_DOUBLE]].mean()),
+                         "write slot 20 / slot 14 / trumps": [int(col[TOP_DOUBLE]), int(col[SECOND_DOUBLE]), float(col[TRUMPS].mean())],
+                         "top double led, final net's rows": float(fb[ht].mean()), "Δ ablated": float(fd[ht].mean() - fb[ht].mean()),
+                         "+": lab.best(tp_), "-": lab.best(tn_)})
+            f = form[-1]
+            log(f"  {ck.stem}: on {f['on']:.3f} leads {[round(v, 3) for v in f['on, leads d0-4 / d5 / d6']]} write {f['write slot 20 / slot 14 / trumps']} "
+                f"top {f['top double led, final net\'s rows']:.3f} Δ {f['Δ ablated']:+.3f} + {f['+']} − {f['-']}")
         out["formation"] = form
     return out
