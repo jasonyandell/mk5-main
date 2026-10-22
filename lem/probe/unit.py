@@ -27,6 +27,7 @@ from lem.probe.audit import BASE_CAP, BASELINE_MARGIN, expected_from_strata, fea
 from lem.probe.causal import downstream
 from lem.probe.net import forward, load_net, picks
 from lem.probe.squeeze import FAMILIES
+from scenario.field import CANON
 from scenario.rules import N_LED_SUITS, N_TILES, rules_for
 
 SEED = 20261020
@@ -1370,5 +1371,222 @@ def run_lead(sample, labels: np.ndarray, names: list[str], net_path: str, j: int
             f = form[-1]
             log(f"  {ck.stem}: on {f['on']:.3f} lead {f['lead term']:.0f} trump {f['trump term']:.0f} "
                 f"off|lead {f['off on lead']:.3f} r2 held {f['r2 trumps held on lead']:.3f} out {f['r2 trumps out on lead']:.3f} + {f['+']} − {f['-']}")
+        out["formation"] = form
+    return out
+
+
+def run_count(sample, labels: np.ndarray, names: list[str], net_path: str, j: int, twin_path: str,
+              audit: dict, formation_dir: str | None, log=print) -> dict:
+    """A unit paper for a layer-2 unit on almost everywhere, read as a dial on putting count on the
+    trick (#235, paper 8). Its write lands on count tiles only under some declarations, so its use
+    is read by declaration group; its off-set is the dial's tail, read against trump on the trick."""
+    x = sample.x
+    net = load_net(net_path)
+    acts = forward(net, x)
+    z, a = acts.z2[:, j].astype(np.float64), acts.a2[:, j]
+    k = max(1, int(round(TOP * len(z))))
+    top_p, top_n = np.argsort(-z, kind="stable")[:k], np.argsort(z, kind="stable")[:k]
+    trick = Trick(sample)
+    lab = Labeller(labels, names, x, sample.n_plays.astype(np.int64))
+    fol, off = trick.seat > 0, a <= 0
+    tled = fol & (trick.suit == TRUMP_SUIT)
+    win = winning_tile(sample, trick)
+    win_trump = fol & trick.trump(win)
+    pw, opp = trick.winner == 1, fol & (trick.winner != 1)
+    ruffed = fol & ~tled & win_trump                      # a non-trump lead held by a trump
+    side = labels[:, names.index("bidding-side")].astype(bool)
+    tn = sample.n_plays.astype(np.int64) // 4
+    decl = trick.decl
+    groups = {"d1-4": np.isin(decl, (1, 2, 3, 4)), "d5-6": np.isin(decl, (5, 6)), "d0": decl == 0,
+              "d4": decl == 4, "d1-3": np.isin(decl, (1, 2, 3))}
+    take_ok = labels[:, names.index("can-take-it")].astype(bool)
+    out: dict = {"unit": j, "net": net_path, "rows total": len(z), "top_k": k, "on": float((a > 0).mean()),
+                 "max_z": float(z.max()), "min_z": float(z.min())}
+
+    # 1. label: the dial in mean z, and its tail
+    cell = lambda m: {"rows": int(m.sum()), "off": float(off[m].mean()), "mean_z": float(z[m].mean()),
+                      "mean_a": float(a[m].mean())} if m.sum() >= 200 else None
+    kinds = {"not trump led, winner not trump": fol & ~tled & ~win_trump, "not trump led, held by a trump": ruffed,
+             "trump led": tled}
+    out["cells"] = {f"{SEATS[s]}, {WINNERS[w]} winning, {kd}": cell(fol & (trick.seat == s) & (trick.winner == w) & km)
+                    for s in (1, 2, 3) for w in range(3 - s, 3) for kd, km in kinds.items()}
+    out["off by seat"] = [float(off[trick.seat == s].mean()) for s in range(4)]
+    out["by declaration"] = {int(d): {"all": cell(decl == d), "partner winning": cell(fol & pw & (decl == d)),
+                                      "opponent winning, trump led": cell(opp & tled & (decl == d))} for d in range(7)}
+    third_r = tled & (trick.seat == 2) & (trick.winner == 2)
+    hb = labels[:, names.index("holds-boss-of-led")].astype(bool)
+    out["third seat, RHO holds a trump lead"] = {"by trick": {int(n): cell(third_r & (tn == n)) for n in range(7)},
+                                                 "by side": {"bidding side": cell(third_r & side), "defenders": cell(third_r & ~side)},
+                                                 "by holds-boss-of-led": {"yes": cell(third_r & hb), "no": cell(third_r & ~hb)}}
+    out["off-set"] = {"rows": int(off.sum()), "trump led": float(tled[off].mean()), "held by an opponent's trump": float((opp & win_trump)[off].mean()),
+                      "lead": float((trick.seat == 0)[off].mean())}
+    # near misses (predictions 3, 4, 6), graded in mean z, the dial; mean a reported beside it.
+    # The opponent holding is RHO in both seats: at third seat RHO is the only opponent who has
+    # played, and at last seat only RHO can have trumped in on LHO's non-trump lead.
+    rho = fol & (trick.winner == 2)
+    mz = lambda m: float(z[m].mean()) if m.sum() >= 200 else float("nan")
+    nm = {}
+    for s_ in (2, 3):
+        ms = rho & (trick.seat == s_)
+        N, T, R = (mz(ms & m) for m in (~tled & ~win_trump, tled, ruffed))
+        nm[SEATS[s_]] = {"N, RHO holds, no trump": cell(ms & ~tled & ~win_trump), "T, RHO holds a trump lead": cell(ms & tled),
+                         "R, RHO trumped in": cell(ms & ruffed), "(N - R) / (N - T)": float((N - R) / (N - T))}
+        # prediction 6: the trump-lead dip where I cannot take the trick, against the dip overall
+        Nc, Tc = mz(ms & ~tled & ~win_trump & ~take_ok), mz(ms & tled & ~take_ok)
+        Nt, Tt = mz(ms & ~tled & ~win_trump & take_ok), mz(ms & tled & take_ok)
+        nm[SEATS[s_]]["can-take-it"] = {"N, cannot": cell(ms & ~tled & ~win_trump & ~take_ok), "T, cannot": cell(ms & tled & ~take_ok),
+                                        "N, can": cell(ms & ~tled & ~win_trump & take_ok), "T, can": cell(ms & tled & take_ok),
+                                        "(N - T) cannot / (N - T) overall": float((Nc - Tc) / (N - T)),
+                                        "(N - T) can / (N - T) overall": float((Nt - Tt) / (N - T))}
+    # the same comparison adjusted: z on seat, trick, side and declaration, plus the trump-led and
+    # trumped-in indicators, over third- and last-seat follows held by RHO
+    ma = rho & (trick.seat >= 2)
+    Xa = np.c_[trick.seat[ma] == 3, np.eye(7)[tn[ma]][:, 1:], side[ma], np.eye(7)[decl[ma]][:, 1:], tled[ma], ruffed[ma]]
+    beta = np.linalg.lstsq(np.c_[np.ones(ma.sum()), Xa.astype(np.float64)], z[ma], rcond=None)[0]
+    nm["adjusted, third and last, RHO holds"] = {"trump led": float(beta[-2]), "trumped in": float(beta[-1]),
+                                                  "trumped in / trump led": float(beta[-1] / beta[-2])}
+    # prediction 4, last seat only (partner can hold with a trump on a non-trump lead only there)
+    last = fol & (trick.seat == 3)
+    pn, pt = last & pw & ~win_trump, last & pw & ~tled & win_trump
+    gap = mz(rho & last & ~tled & ~win_trump) - mz(rho & last & tled)
+    nm["partner holds, last seat"] = {"no trump": cell(pn), "with a trump on a non-trump lead": cell(pt),
+                                      "|difference| / (N - T), last seat": float(abs(mz(pn) - mz(pt)) / gap)}
+    out["near misses"] = nm
+    zf = z[fol]
+    W, S = np.eye(3)[np.maximum(trick.winner[fol], 0)], np.eye(4)[trick.seat[fol]][:, 1:]
+    T1, R1 = tled[fol][:, None].astype(float), win_trump[fol][:, None].astype(float)
+    kind = np.where(trick.winner[fol] == 1, 0, np.where(win_trump[fol], 2, 1))      # partner; opponent; opponent with a trump
+    KS = np.eye(12)[kind * 4 + trick.seat[fol]]
+    out["r2 on follows"] = {"winner": r2(zf, W), "winner + seat": r2(zf, np.c_[W, S]), "+ trump led": r2(zf, np.c_[W, S, T1]),
+                            "+ winner × trump led": r2(zf, np.c_[W, S, T1, W * T1]),
+                            "trick-holder-kind × seat (v3 candidate)": r2(zf, KS),
+                            "+ winner holds with a trump": r2(zf, np.c_[W, S, T1, R1]),
+                            "+ declaration": r2(zf, np.c_[W, S, T1, R1, np.eye(7)[decl[fol]]]),
+                            "+ trick number": r2(zf, np.c_[W, S, T1, R1, np.eye(7)[decl[fol]], np.eye(7)[tn[fol]]])}
+    # the boundary: Cohen's κ and the agreement κ (against a constant) of candidate concepts for off
+    def kappas(c: np.ndarray) -> dict:
+        po = float((c == off).mean())
+        pe = c.mean() * off.mean() + (1 - c.mean()) * (1 - off.mean())
+        ch = max(off.mean(), 1 - off.mean())
+        return {"rate": float(c.mean()), "agree": po, "cohen": float((po - pe) / (1 - pe)), "vs constant": float((po - ch) / (1 - ch))}
+    out["boundary"] = {"holds-boss-of-led (best v2, seen)": kappas(hb), "opponent holds with a trump (v3 candidate)": kappas(opp & win_trump),
+                       "opponent holds a trump lead": kappas(opp & tled),
+                       "opponent holds a trump lead, third seat": kappas(third_r)}
+    out["poles"] = {"+": lab.best(top_p), "-": lab.best(top_n), "+ partner winning": float(pw[top_p].mean()),
+                    "- trump led": float(tled[top_n].mean()), "- seat": [float((trick.seat[top_n] == s).mean()) for s in range(4)]}
+    log(f"label: on {out['on']:.3f} r2 {out['r2 on follows']} near misses {nm}")
+
+    # 2. circuit in: layer-1 contributions by kind of trick
+    w2 = net.w2[j].astype(np.float64)
+    contrib = acts.a1.astype(np.float64) * w2
+    kinds_in = {"partner holds": fol & pw, "opponent holds, no trump": opp & ~tled & ~win_trump,
+                "opponent holds a trump lead": opp & tled, "opponent trumped in": opp & ruffed, "lead": trick.seat == 0}
+    out["inputs"] = [{"unit": int(u), "w2": int(w2[u]), **{kd: float(contrib[m, u].mean()) for kd, m in kinds_in.items()}}
+                     for u in np.argsort(-np.abs(w2))]
+    out["bias"] = int(net.b2[j])
+
+    # 3. circuit out: the write per declaration, in real tiles, for this unit and every other layer-2 unit
+    dom = [(p, q) for p in range(7) for q in range(p + 1)]
+    def write_by_decl(col: np.ndarray) -> dict:
+        rec = {}
+        for d in range(7):
+            cn, r = CANON[d], rules_for(d)
+            cnt = np.array([r.count[t] > 0 for t in range(N_TILES)])
+            wv = np.array([col[cn[t]] for t in range(N_TILES)], np.float64)
+            order = np.argsort(-wv)
+            rec[int(d)] = {"count mean": float(wv[cnt].mean()), "non-count mean": float(wv[~cnt].mean()),
+                           "top": [f"{dom[t][0]}-{dom[t][1]}{'*' if cnt[t] else ''}:{int(wv[t])}" for t in order[:5]],
+                           "bottom": [f"{dom[t][0]}-{dom[t][1]}{'*' if cnt[t] else ''}:{int(wv[t])}" for t in order[-3:]]}
+        return rec
+    h2 = net.b2.shape[0]
+    out["write"] = {int(u): write_by_decl(net.w3[:, u].astype(np.float64)) for u in range(h2)}
+    tw = load_net(twin_path)
+    tz = forward(tw, x).z2[:, j].astype(np.float64)
+    out["twin"] = {"on": float((tz > 0).mean()), "r2 on follows, winner + seat": r2(tz[fol], np.c_[W, S]),
+                   "write": write_by_decl(tw.w3[:, j].astype(np.float64))}
+    log(f"write d1-4 vs d5-6: {[(d, round(out['write'][j][d]['count mean']), round(out['write'][j][d]['non-count mean'])) for d in range(7)]}")
+
+    # 5. steering on choice follows (a count tile and a non-count tile legal): count played, take,
+    # and the boss trump played; up by k·σ doses and the realistic on value, down on the same rows
+    actions, deal = sample.actions, sample.deal
+    canon = sample.canon()
+    acts_ = actions.astype(np.int64)
+    rows_i = np.arange(len(z))
+    legal = acts_ >= 0
+    cnt_l = np.stack([trick.count(acts_[:, c]) & legal[:, c] for c in range(acts_.shape[1])], 1)
+    choice = fol & (cnt_l.any(1)) & (legal & ~cnt_l).any(1)
+    base_pick = picks(acts.out, actions, canon)
+    def reads(pick: np.ndarray) -> dict[str, np.ndarray]:
+        return {"count": trick.count(pick).astype(float), "take": trick.beats(pick).astype(float),
+                "count, not taking": (trick.count(pick) & ~trick.beats(pick)).astype(float),
+                "boss trump": (canon[rows_i, np.maximum(pick, 0)] == 27).astype(float)}
+    base = reads(base_pick)
+    live = [u for u in range(h2) if u != j and (acts.a2[:, u] > 0).sum() >= 200]
+    sig = {u: float(acts.a2[:, u][acts.a2[:, u] > 0].std()) for u in [j] + live}
+    on_val = {u: int(np.median(acts.a2[choice & pw & (acts.a2[:, u] > 0), u])) if (choice & pw & (acts.a2[:, u] > 0)).sum() >= 200
+              else int(np.median(acts.a2[acts.a2[:, u] > 0, u])) for u in [j] + live}
+    out["null_units"], out["sigma"], out["on value, partner-winning choice follows"] = live, sig[j], on_val[j]
+    rows = {"partner holds": choice & pw, "opponent holds": choice & opp, "opponent holds a trump lead": choice & opp & tled,
+            "off": choice & off}
+    out["rows"] = {m: int(v.sum()) for m, v in rows.items()}
+    out["base"] = {m: {r: float(base[r][v].mean()) for r in base} for m, v in rows.items()}
+    rng = np.random.default_rng(SEED)
+    def vs_layer(pk: dict) -> dict:
+        sh = {u: {r: v - base[r] for r, v in reads(pk[u]).items()} for u in pk}
+        return {m: {r: {"own": clustered(sh[j][r][v], deal[v], rng),
+                        "own-layer": clustered((sh[j][r] - np.mean([sh[u][r] for u in live], 0))[v], deal[v], rng)}
+                    for r in base} | {"changed": float((pk[j] != base_pick)[v].mean())}
+                for m, v in rows.items()}
+    steer: dict = {"up": []}
+    for kd in DOSES:
+        rec = vs_layer({u: picks(downstream(net, x, 2, u, None, add=int(round(kd * sig[u]))), actions, canon) for u in [j] + live})
+        rec["k"] = kd
+        steer["up"].append(rec)
+        log(f"up k={kd}: " + "  ".join(f"{m} count {v['count']['own-layer'][0]:+.3f}" for m, v in rec.items() if m != "k"))
+    steer["up, add the on value"] = vs_layer({u: picks(downstream(net, x, 2, u, None, add=on_val[u]), actions, canon) for u in [j] + live})
+    log("up on value: " + "  ".join(f"{m} count {v['count']['own-layer'][0]:+.3f} boss {v['boss trump']['own-layer'][0]:+.3f}"
+                                     for m, v in steer["up, add the on value"].items()))
+    pdn = {u: picks(downstream(net, x, 2, u, 0), actions, canon) for u in [j] + live}
+    rdn = {u: reads(pdn[u]) for u in [j] + live}
+    shd = {u: rdn[u]["count"] - base["count"] for u in [j] + live}
+    down = {}
+    for g, gm in groups.items():
+        for who, wm in (("partner holds", pw), ("opponent holds", opp)):
+            m = choice & wm & gm & (a > 0)
+            down[f"{who}, {g}, unit on"] = {
+                "rows": int(m.sum()), "base count": float(base["count"][m].mean()),
+                "units": {int(u): {"Δ count": clustered(shd[u][m], deal[m], rng), "on there": float((acts.a2[m, u] > 0).mean())}
+                          for u in [j] + live},
+                "own Δ, every read": {r: clustered(rdn[j][r][m] - base[r][m], deal[m], rng) for r in base},
+                "rank of own Δ, most negative first": 1 + int(sum(shd[u][m].mean() < shd[j][m].mean() for u in live))}
+            log(f"down {who} {g}: " + "  ".join(f"{u} {v['Δ count'][0]:+.3f}" for u, v in down[f'{who}, {g}, unit on']['units'].items()))
+    steer["down, every unit on the same rows"] = down
+    ch = choice & pw & groups["d1-4"] & (a > 0) & (pdn[j] != base_pick) & trick.count(base_pick)
+    gone = canon[rows_i, np.maximum(base_pick, 0)][ch]
+    steer["down, count tiles withdrawn (canonical slot: share), partner holds, d1-4"] = {
+        int(sl): float((gone == sl).mean()) for sl in np.unique(gone)} if ch.any() else {}
+    out["steer"] = steer
+
+    # 4. formation: the partner/opponent dial and the trump-lead subtraction, in mean z
+    if formation_dir:
+        form = []
+        o_n, o_t = fol & opp & ~tled & ~win_trump & (trick.seat >= 2), fol & opp & tled & (trick.seat >= 2)
+        for ck in sorted(Path(formation_dir).glob("step_*.npz")):
+            fnet = load_net(ck)
+            fa = forward(fnet, x)
+            fz = fa.z2[:, j].astype(np.float64)
+            tp_, tn_ = np.argsort(-fz, kind="stable")[:k], np.argsort(fz, kind="stable")[:k]
+            wd = write_by_decl(fnet.w3[:, j].astype(np.float64))
+            form.append({"step": int(ck.stem.split("_")[1]), "on": float((fa.a2[:, j] > 0).mean()),
+                         "r2 winner on follows": r2(fz[fol], W),
+                         "partner minus opponent": float(fz[fol & pw].mean() - fz[opp].mean()),
+                         "trump-lead subtraction": float(fz[o_n].mean() - fz[o_t].mean()),
+                         "on, third seat RHO holds a trump lead": float((fa.a2[third_r, j] > 0).mean()),
+                         "write count - non-count, d1-4": float(np.mean([wd[d]["count mean"] - wd[d]["non-count mean"] for d in (1, 2, 3, 4)])),
+                         "+": lab.best(tp_), "-": lab.best(tn_)})
+            f = form[-1]
+            log(f"  {ck.stem}: on {f['on']:.3f} r2 winner {f['r2 winner on follows']:.3f} p-o {f['partner minus opponent']:.0f} "
+                f"trump {f['trump-lead subtraction']:.0f} on3R {f['on, third seat RHO holds a trump lead']:.3f} "
+                f"write {f['write count - non-count, d1-4']:.0f} + {f['+']} − {f['-']}")
         out["formation"] = form
     return out
