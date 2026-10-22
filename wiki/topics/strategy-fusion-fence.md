@@ -109,6 +109,7 @@ information-state solver, which is allowed. (C) is only a mention.
 | `silas/src/clairvoyant.rs` | `ClairvoyantSolver`, `clairvoyant_grade_line`, `OpenPosition` and friends: exact double-dummy alpha-beta | A | token, names, `clairvoyant` feature |
 | `silas/src/outcome.rs` | `(clairvoyant-dd-make)`: per-world double-dummy make | A | token, name, feature, `Access::Clairvoyant`, policy refusal |
 | `silas/src/outcome.rs` `refuted` | the solver inside `(certain-make)`: one world where double dummy fails refutes every viewer strategy | A, sanctioned (a bound, never a value) | token |
+| `silas/src/player/trick1.rs` `god`, `silas/tests/trick1.rs`, `silas/examples/trick1_roots.rs` (2026-10-22) | the focal-horizon ladder's upper tail: per world, the viewer sees ω and searches its own plays against the other seats' fixed laws (never a double dummy over four seats) | A, sanctioned (a bound that refutes: it only drops root tiles and sizes Γ; the act and the lower bound are lawful information-state objects) | token at the top, defining-module list ([[trick1-ladder-2026-10-22]]) |
 | `silas/src/outcome.rs` | `(lay-down)`, `(certain-make)`, `(certain-set)`, `forces`, `lay_down` | **B** | none needed |
 | `silas/examples/book/clairvoyant_grade.rs` | grades the book's narrated lines of Hands 28–35 | A, sanctioned showcase | token, `required-features` |
 | `silas/tests/{clairvoyant,outcome,book_leads,book_repaired,book_odds,cli}.rs`, `tests/common/leads.rs` | tests of the solver; bound and book checks | A, sanctioned | token |
