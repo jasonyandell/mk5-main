@@ -461,7 +461,17 @@ impl Ladder {
 
     /// One world's leaves: the viewer's next `k + 1` decisions branched (the root's
     /// included), each horizon state valued by every lawful tail and by the bound.
-    fn visit(&self, st: St, depth: usize, k: usize, path: Path, acc: &mut HashMap<Path, Leaf>, work: &mut Work) {
+    #[allow(clippy::too_many_arguments)]
+    fn visit(
+        &self,
+        st: St,
+        depth: usize,
+        k: usize,
+        roots: u32,
+        path: Path,
+        acc: &mut HashMap<Path, Leaf>,
+        work: &mut Work,
+    ) {
         let game = &self.game;
         // The root is branched even when the hand is already decided, so every root action
         // has its leaves.
@@ -479,7 +489,7 @@ impl Ladder {
             acc.entry(path).or_default().add(&leaf);
             return;
         }
-        let mut legal = game.rules.legal(st.hands[game.viewer], st.lead());
+        let mut legal = game.rules.legal(st.hands[game.viewer], st.lead()) & roots;
         while legal != 0 {
             let tile = legal.trailing_zeros() as u8;
             legal &= legal - 1;
@@ -488,14 +498,21 @@ impl Ladder {
             game.play(&mut next, tile, &mut work.tree);
             p.push(tile);
             game.advance(&mut next, &mut p, &mut work.tree);
-            self.visit(next, depth + 1, k, p, acc, work);
+            self.visit(next, depth + 1, k, u32::MAX, p, acc, work);
         }
     }
 
-    /// The leaves of horizon `k` over the shards `from..to`, on `threads` threads. Gathers
-    /// over disjoint ranges add ([`Gathered::merge`]), so a rung spans as many runs as its
-    /// cap needs; what a range costs does not depend on the threads or the machine.
-    pub fn gather(&self, k: usize, from: usize, to: usize, threads: usize) -> Gathered {
+    /// The viewer's legal tiles at the root, as bits.
+    pub fn menu(&self) -> u32 {
+        self.game.rules.legal(self.start.hands[self.game.viewer], self.start.lead())
+    }
+
+    /// The leaves of horizon `k` over the shards `from..to` for the root tiles in `roots`
+    /// (bits; [`Ladder::menu`] for all), on `threads` threads. Gathers over disjoint ranges
+    /// add ([`Gathered::merge`]), so a rung spans as many runs as its cap needs, and root
+    /// tiles never meet below the root's maximum, so each can be gathered alone; what a
+    /// gather costs does not depend on the threads or the machine.
+    pub fn gather(&self, k: usize, roots: u32, from: usize, to: usize, threads: usize) -> Gathered {
         assert!(from <= to && to <= self.shards.len(), "shards {from}..{to} of {}", self.shards.len());
         let next = AtomicUsize::new(from);
         let total = Mutex::new((HashMap::<Path, Leaf>::new(), 0u64, Work::default()));
@@ -513,7 +530,7 @@ impl Ladder {
                             worlds += 1;
                             let mut st = self.start;
                             st.hands = *hands;
-                            self.visit(st, 0, k, Path::default(), &mut acc, &mut work);
+                            self.visit(st, 0, k, roots, Path::default(), &mut acc, &mut work);
                         });
                     }
                     let mut t = total.lock().expect("the merge is unpoisoned");
@@ -529,37 +546,53 @@ impl Ladder {
         Gathered { k, ranges: vec![(from, to)], leaves, worlds, work }
     }
 
-    /// The rung of a gather that covers every shard, refused past `budget` plays.
-    pub fn rung(&self, g: &Gathered, budget: u64) -> Result<Rung> {
-        let covered: usize = g.ranges.iter().map(|(a, b)| b - a).sum();
-        if covered != self.shards.len() {
-            return Err(error(format!("the gather covers {covered} of {} shards", self.shards.len())));
+    /// The rung of gathers of one horizon, each over every shard, whose root tiles are
+    /// together the menu, each tile once; refused past `budget` plays in all.
+    pub fn rung(&self, gathers: &[Gathered], budget: u64) -> Result<Rung> {
+        let k = gathers.first().ok_or_else(|| error("a rung needs a gather"))?.k;
+        let (mut actions, mut leaves, mut work, mut mass) = (Vec::new(), 0, Work::default(), None);
+        for g in gathers {
+            let covered: usize = g.ranges.iter().map(|(a, b)| b - a).sum();
+            if covered != self.shards.len() {
+                return Err(error(format!("a gather covers {covered} of {} shards", self.shards.len())));
+            }
+            if g.k != k || mass.is_some_and(|m| m != g.worlds) {
+                return Err(error("the gathers are of different horizons or roots"));
+            }
+            mass = Some(g.worlds);
+            work.add(&g.work);
+            let mut sorted: Vec<(Path, Leaf)> = g.leaves.iter().map(|(p, l)| (*p, *l)).collect();
+            sorted.sort_unstable_by_key(|(p, _)| *p);
+            leaves += sorted.len();
+            let mut i = 0;
+            while i < sorted.len() {
+                let a = sorted[i].0.at(0);
+                let j = i + sorted[i..].iter().take_while(|(p, _)| p.at(0) == a).count();
+                let mut st = self.start;
+                st.hands = [u32::MAX; 4];
+                let mut sink = 0;
+                self.game.play(&mut st, a, &mut sink);
+                let (lo, up, m) = self.reduce(&sorted[i..j], 1, st);
+                assert_eq!(m, g.worlds, "every root action carries the root's whole mass");
+                actions.push((Domino::from_index(a as usize).expect("a tile"), lo, up));
+                i = j;
+            }
         }
-        if g.work.total() > budget {
-            return Err(error(format!("refused: horizon {} took {} plays, past {budget}", g.k, g.work.total())));
+        actions.sort_unstable_by_key(|a| a.0);
+        let tiles: Vec<Domino> = actions.iter().map(|a| a.0).collect();
+        let menu: Vec<Domino> = Domino::ALL.into_iter().filter(|d| self.menu() >> d.index() & 1 == 1).collect();
+        if tiles != menu {
+            return Err(error(format!("the gathers hold root tiles {tiles:?}, not the menu {menu:?} once each")));
         }
-        let mut leaves: Vec<(Path, Leaf)> = g.leaves.iter().map(|(p, l)| (*p, *l)).collect();
-        leaves.sort_unstable_by_key(|(p, _)| *p);
-        let mut actions = Vec::new();
-        let mut i = 0;
-        while i < leaves.len() {
-            let a = leaves[i].0.at(0);
-            let j = i + leaves[i..].iter().take_while(|(p, _)| p.at(0) == a).count();
-            let mut st = self.start;
-            st.hands = [u32::MAX; 4];
-            let mut sink = 0;
-            self.game.play(&mut st, a, &mut sink);
-            let (lo, up, m) = self.reduce(&leaves[i..j], 1, st);
-            assert_eq!(m, g.worlds, "every root action carries the root's whole mass");
-            actions.push((Domino::from_index(a as usize).expect("a tile"), lo, up));
-            i = j;
+        if work.total() > budget {
+            return Err(error(format!("refused: horizon {k} took {} plays, past {budget}", work.total())));
         }
-        Ok(Rung { k: g.k, actions, mass: g.worlds, leaves: leaves.len(), work: g.work })
+        Ok(Rung { k, actions, mass: mass.expect("a gather"), leaves, work })
     }
 
     /// The rung at horizon `k` in one run.
     pub fn solve(&self, k: usize, threads: usize, budget: u64) -> Result<Rung> {
-        self.rung(&self.gather(k, 0, self.shards.len(), threads), budget)
+        self.rung(&[self.gather(k, self.menu(), 0, self.shards.len(), threads)], budget)
     }
 
     /// Bellman over the sorted leaves sharing a prefix of length `at`, the public state
@@ -639,6 +672,9 @@ impl Gathered {
         if self.k != o.k {
             return Err(error(format!("horizons {} and {} do not merge", self.k, o.k)));
         }
+        if self.roots() != o.roots() && !self.leaves.is_empty() && !o.leaves.is_empty() {
+            return Err(error("gathers of different root tiles do not merge; a rung joins them"));
+        }
         for &(a, b) in &o.ranges {
             if self.ranges.iter().any(|&(c, d)| a < d && c < b) {
                 return Err(error(format!("shards {a}..{b} are gathered twice")));
@@ -666,6 +702,11 @@ impl Gathered {
     /// must meet. Work is left out; it follows the search order, so each engine reports its own.
     pub fn agrees(&self, o: &Gathered) -> bool {
         (self.k, &self.ranges, &self.leaves, self.worlds) == (o.k, &o.ranges, &o.leaves, o.worlds)
+    }
+
+    /// The root tiles gathered, as bits.
+    pub fn roots(&self) -> u32 {
+        self.leaves.keys().fold(0, |r, p| r | 1 << p.at(0))
     }
 
     /// Public histories gathered so far.

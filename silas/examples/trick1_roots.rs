@@ -12,7 +12,8 @@
 //! ```text
 //! # whole rungs, k = 0..=1, in one run
 //! cargo run --release --example trick1_roots -- DIR --deals 0,1 --viewer 0 --k 1 --threads 8
-//! # a rung in pieces across capped runs: gather shard ranges, then load them all
+//! # a rung in pieces across capped runs: gather shard ranges (and, with `--root 6-5`,
+//! # one root tile at a time), then load them all
 //! cargo run --release --example trick1_roots -- DIR --deals 0 --k 1 --from 0 --to 20000 --save a.bin
 //! cargo run --release --example trick1_roots -- DIR --deals 0 --load a.bin,b.bin,...
 //! ```
@@ -91,7 +92,11 @@ fn main() {
             let from: usize = arg(&args, "--from").unwrap_or("0").parse().unwrap();
             let to = arg(&args, "--to").map_or(ladder.shards(), |s| s.parse::<usize>().unwrap().min(ladder.shards()));
             let t = Instant::now();
-            let g = ladder.gather(kmax, from, to, threads);
+            let roots = match arg(&args, "--root") {
+                Some(t) => 1 << t.parse::<Domino>().unwrap().index(),
+                None => ladder.menu(),
+            };
+            let g = ladder.gather(kmax, roots, from, to, threads);
             std::fs::write(save, g.to_bytes()).unwrap();
             println!(
                 "{head} k {kmax} gathered {from}..{to} worlds {} leaves {} plays {} (tree {} tails {} god {}) wall {:.1}s -> {save}",
@@ -109,12 +114,16 @@ fn main() {
         let rungs: Vec<_> = match arg(&args, "--load") {
             Some(files) => {
                 let t = Instant::now();
-                let g = files
-                    .split(',')
-                    .map(|f| Gathered::from_bytes(&std::fs::read(f).unwrap()).unwrap())
-                    .reduce(|a, b| a.merge(b).unwrap())
-                    .unwrap();
-                vec![(g.k, ladder.rung(&g, budget), t.elapsed().as_secs_f64())]
+                // Pieces of one root-tile set merge; the sets join in the rung.
+                let mut sets: Vec<Gathered> = Vec::new();
+                for f in files.split(',') {
+                    let g = Gathered::from_bytes(&std::fs::read(f).unwrap()).unwrap();
+                    match sets.iter().position(|s| s.roots() == g.roots()) {
+                        Some(i) => sets[i] = sets[i].clone().merge(g).unwrap(),
+                        None => sets.push(g),
+                    }
+                }
+                vec![(sets[0].k, ladder.rung(&sets, budget), t.elapsed().as_secs_f64())]
             }
             None => (kmin..=kmax)
                 .map(|k| {
