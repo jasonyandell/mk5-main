@@ -47,6 +47,9 @@ fn deal0_probes_equal_exact_t1() {
         let bytes = g.to_bytes();
         assert_eq!(Gathered::from_bytes(&bytes).unwrap(), g);
         assert_eq!(fnv(&bytes), sum, "k {k}: the bytes of Exact-T1's probe file");
+        // The count walk keeps no leaves and counts the same worlds and plays, through a table
+        // small enough to drain many times.
+        assert_eq!(problem.count(&mut gpu, k, u32::MAX, u32::MAX, 0..1000, 15).unwrap(), (3_432_000, work));
     }
 }
 

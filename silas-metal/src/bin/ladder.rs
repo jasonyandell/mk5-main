@@ -82,8 +82,8 @@ fn main() {
         let auction = Auction::won_by(Seat::S0, Bid::Points(30)).unwrap();
         let frame = Frame::new(auction, physics.clone(), viewer, dealt(viewer.index()), prefix).unwrap();
         let root = if at == 0 { Root::Posterior } else { Root::FiberUniform };
-        // A triples line's key: the deal for a lead root, the deal and the viewer for a follow root.
-        let key = if at == 0 { d.to_string() } else { format!("{d} {}", viewer.index()) };
+        // A triples line's key: the deal for a lead root; the deal, the viewer and k for a follow root.
+        let key = if at == 0 { d.to_string() } else { format!("{d} {} {k}", viewer.index()) };
         let problem = Problem::new(&frame, [law; 4], root).unwrap();
         let from: usize = arg(&args, "--from").unwrap_or("0").parse().unwrap();
         let to = arg(&args, "--to").map_or(problem.shards(), |s| s.parse::<usize>().unwrap().min(problem.shards()));
@@ -98,6 +98,47 @@ fn main() {
         } else {
             vec![("all".to_string(), u32::MAX)]
         };
+        // `--count-only` walks each piece keeping no leaves: its plays, the evidence for a play
+        // budget, and no rung. A COUNT line per piece, then the rung's verdict on the budget.
+        if args.iter().any(|a| a == "--count-only") {
+            let mut spent = 0u64;
+            for (label, mask) in &pieces {
+                let t = Instant::now();
+                let (worlds, w) = problem.count(&mut gpu, k, *mask, u32::MAX, from..to, limits.table_bits).unwrap();
+                println!(
+                    "deal {d} decl P{decl} viewer {} k {k} root {label} counted {from}..{to} worlds {worlds} plays {} (tree {} tails {} god {}) metal wall {} ms",
+                    viewer.index(),
+                    w.total(),
+                    w.tree,
+                    w.tails,
+                    w.god,
+                    t.elapsed().as_millis()
+                );
+                if let Some(path) = arg(&args, "--triples") {
+                    let mut out = std::fs::OpenOptions::new().create(true).append(true).open(path).unwrap();
+                    writeln!(
+                        out,
+                        "{key} {label} COUNT worlds {worlds} plays {} {} {} {} metal",
+                        w.total(),
+                        w.tree,
+                        w.tails,
+                        w.god
+                    )
+                    .unwrap();
+                }
+                spent += w.total();
+            }
+            let verdict = if spent > budget { "past" } else { "within" };
+            println!("  rung k {k}: {spent} plays, {verdict} the budget {budget}");
+            if spent > budget
+                && whole
+                && let Some(path) = arg(&args, "--triples")
+            {
+                let mut out = std::fs::OpenOptions::new().create(true).append(true).open(path).unwrap();
+                writeln!(out, "{key} REFUSED budget {budget} at k {k}, plays {spent} (counted)").unwrap();
+            }
+            continue;
+        }
         let mut actions = Vec::new();
         let mut mass = None;
         let mut spent = 0u64;

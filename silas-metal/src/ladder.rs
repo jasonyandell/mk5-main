@@ -422,6 +422,35 @@ impl Problem {
         shards: std::ops::Range<usize>,
         limits: Limits,
     ) -> Result<Gathered, EpochError> {
+        self.walk(gpu, k, roots, replies, shards, limits, true)
+    }
+
+    /// The same walk as `gather`, keeping no leaves: its worlds and plays only, exactly as the
+    /// gather counts them. Evidence for a play budget; a rung needs the gather.
+    pub fn count(
+        &self,
+        gpu: &mut Gpu,
+        k: usize,
+        roots: u32,
+        replies: u32,
+        shards: std::ops::Range<usize>,
+        table_bits: u32,
+    ) -> Result<(u64, Work), EpochError> {
+        let limits = Limits { table_bits, ..Limits::default() };
+        self.walk(gpu, k, roots, replies, shards, limits, false).map(|g| (g.worlds, g.work))
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn walk(
+        &self,
+        gpu: &mut Gpu,
+        k: usize,
+        roots: u32,
+        replies: u32,
+        shards: std::ops::Range<usize>,
+        limits: Limits,
+        keep: bool,
+    ) -> Result<Gathered, EpochError> {
         let (from, to) = (shards.start, shards.end);
         let Limits { table_bits, max_leaves, min_free } = limits;
         assert!(from <= to && to <= self.shards.len(), "shards {from}..{to} of {}", self.shards.len());
@@ -443,6 +472,11 @@ impl Problem {
         // (a stable sort of two runs) and its equal paths summed, 48 bytes a leaf.
         let mut leaves: Vec<(u128, Leaf)> = Vec::new();
         let drain = |leaves: &mut Vec<(u128, Leaf)>| {
+            if !keep {
+                Gpu::fill(&keys, slots * 4, EMPTY);
+                Gpu::fill(&vals, slots * 4, 0);
+                return;
+            }
             let kw = Gpu::read(&keys, slots * 4);
             let vw = Gpu::read(&vals, slots * 4);
             let mut fresh: Vec<(u128, Leaf)> = (0..slots)
