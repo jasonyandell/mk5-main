@@ -546,6 +546,13 @@ reports the root in every parameter class and the controller's states for every 
 BigRational solve equals the Python Fraction reference at every one
 ([[walt-endgame-probe-2026-10-22]]).
 
+`silas::player` (`silas/src/player/`, `silas exact`) is the exact player of the exact-player
+track. It is one seat with a declared library of seat laws under a prior affine in p, and the
+exact counted posterior over (world, type). It builds its own family course from a frame and
+solves it for every p at once. Each decision is checked by `player::recount`, a second
+construction that shares only the rules and the laws. Through its own builder, the note's ending
+gives the same 767 states ([[exact-player-s0-2026-10-22]]).
+
 ## Where it sits
 
 - **Origin.** Moved from texas-42 `1c15cc51` (CC0), where it was written as the

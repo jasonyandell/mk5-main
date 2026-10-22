@@ -5,7 +5,7 @@
 //!
 //! ```text
 //! cargo run --release --example exact_positions -- DIR probe          # the probe's positions
-//! cargo run --release --example exact_positions -- DIR own N A:B      # every decision of deals A..B with N own tiles
+//! cargo run --release --example exact_positions -- DIR own N A:B NAME # decisions of deals A..B with N own tiles
 //! ```
 //!
 //! DIR holds the pour's `hands.npy`, `decl.npy`, `plays.npy` (as `unzip -p pour.npz` writes
@@ -86,9 +86,15 @@ fn main() {
             let (a, b) = args[3].split_once(':').unwrap();
             let (a, b): (usize, usize) = (a.parse().unwrap(), b.parse().unwrap());
             for deal in a..b.min(pour.hands.len()) {
-                // The plays of trick 8 - own: the actor holds `own` tiles.
+                // The plays of trick 8 - own: the actor holds `own` tiles. Kept when it has
+                // more than one legal tile.
                 for n in 4 * (7 - own)..4 * (8 - own) {
-                    println!("{}", position(&pour, format!("{deal}/{n}"), deal, n));
+                    let v = position(&pour, format!("{}/{deal}/{n}", args[4]), deal, n);
+                    let frame = silas::player::file::Position::from_json(&v.to_string()).unwrap().frame;
+                    let hand = frame.dealt().difference(frame.played());
+                    if frame.physics().legal_plays(hand, frame.lead()).len() > 1 {
+                        println!("{v}");
+                    }
                 }
             }
         }
