@@ -148,6 +148,12 @@ fn main() {
             match rung {
                 Ok(r) => {
                     let m = r.mass;
+                    // The exact counts, one line per root tile (`--counts`).
+                    if args.iter().any(|a| a == "--counts") {
+                        for (a, lo, up) in &r.actions {
+                            println!("{d} {a} {lo} {up} {m}");
+                        }
+                    }
                     let iv: Vec<String> = r
                         .actions
                         .iter()
