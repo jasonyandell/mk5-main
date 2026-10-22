@@ -553,6 +553,11 @@ solves it for every p at once. Each decision is checked by `player::recount`, a 
 construction that shares only the rules and the laws. Through its own builder, the note's ending
 gives the same 767 states ([[exact-player-s0-2026-10-22]]).
 
+`silas-metal/` is the track's Metal crate on Silas. It holds the field epoch, M3's h8 gate (H
+and C equal texas-42's audit) and the trick-1 ladder gather. Each is equal to its CPU twin bit
+for bit, and the gather's bytes are the ones Exact-T1's ladder loads. The seven trick-1 lead
+roots run at k = 1 in 27–110 s each ([[exact-gpu-2026-10-22]]).
+
 ## Where it sits
 
 - **Origin.** Moved from texas-42 `1c15cc51` (CC0), where it was written as the
