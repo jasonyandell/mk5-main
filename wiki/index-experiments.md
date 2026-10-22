@@ -331,3 +331,4 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 
 - [[experiments/gus-contingent-transfer-2026-10-20|Gus fixed-checkpoint contingent transfer]] — fixed final students on128 fresh finite roots; favorable means, both improvement intervals cross zero (complete)
 - [[experiments/gus-contingent-maskbreadth-2026-10-20|Gus masked teaching breadth]] — 64→128 masked TRAIN roots: favorable fresh narrow contrast, parent interval crosses zero; combined gate failed (complete)
+- [[experiments/gus-decision-quotient-2026-10-21|Gus decision quotient of the contingent course]] — coarsest decision-interface congruence over 256 saved roots: 8,257 raw states, fresh roots never repeat a raw state, 139 fork structures; saved-data measurement, no training (complete)

@@ -94,6 +94,8 @@ for this fixed-opponent series. Source: Jason's instruction in this session.
 
 ## Routes
 
+- [[gus-decision-quotient-2026-10-21]] — exact decision quotient of the 256-root contingent course: 8,257 raw states, no fresh root repeats a raw state, 139 fork structures revealed one block ahead; a saved-data measurement, no training.
+
 - [[gus-contingent-teacher-2026-10-20]] - exact two-decision teacher, useful later corrections, and a first action-distillation comparison with no selected student gain.
 
 - [[gus-u65-formation-2026-10-20]] — saved initialization-to-final history of one coordinate and its lead-attention sensitivity; both reused-panel endpoint tests pass.

@@ -2,7 +2,7 @@
 title: "Gus historical choice teaching wish"
 kind: topic
 first_seen: 2026-10-20
-last_updated: 2026-10-20
+last_updated: 2026-10-21
 status: active
 ---
 <!-- SPDX-FileCopyrightText: Jason Yandell -->
@@ -48,3 +48,8 @@ formulation adopted by Jason. A finite teacher already exists;
 the full history-informed course and its integration into Gus are not claimed
 to be implemented. See [[gus-continuation-teaching-tools]] for the inventory of
 current tools and the stopped-loop boundary.
+
+The first measurement of the adopted formulation on the existing course is
+[[gus-decision-quotient-2026-10-21]]: the coarsest decision-interface congruence
+over 256 saved roots, read from Jason's 2026-10-21 note on the minimal comparison
+algebra. It is a count on saved data; no training follows from it.
