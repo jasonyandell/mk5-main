@@ -553,6 +553,12 @@ solves it for every p at once. Each decision is checked by `player::recount`, a 
 construction that shares only the rules and the laws. Through its own builder, the note's ending
 gives the same 767 states ([[exact-player-s0-2026-10-22]]).
 
+`silas::player::trick1` is the same track's other end: the focal-horizon ladder at trick 1. It
+gives a lawful lower bound and a refuting clairvoyant upper bound on each root tile, over the
+exact counted belief. Gathers are bytes that merge by shard and join by root tile, and a budget
+in plays. At the bidder's lead, k = 2 leaves 75–295‰ unproved on five of seven leads
+([[trick1-ladder-2026-10-22]]).
+
 `silas-metal/` is the track's Metal crate on Silas. It holds the field epoch, M3's h8 gate (H
 and C equal texas-42's audit) and the trick-1 ladder gather. Each is equal to its CPU twin bit
 for bit, and the gather's bytes are the ones Exact-T1's ladder loads. The seven trick-1 lead
