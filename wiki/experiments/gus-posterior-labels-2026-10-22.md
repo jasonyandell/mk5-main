@@ -66,7 +66,7 @@ The root alphabet is the number of distinct observation labels read out of roots
 
 ## Scope
 
-One fixture: three own tiles, acting last in trick five, nine plays left. Fixed G0 partner, pinned Zeb, uniform legal-consistent root prior. The labels are hand-chosen families of six posterior facts and eight hand-relative facts, not every lawful label. A statistic of the joint posterior, such as the support pattern of the unseen tiles across seats up to relabeling, is untried. The decision-only audit counts failures and coverage but no states. The bound of 56 of 128 is on fresh roots *seen* with domains kept, for every label, because it is a statement about fork. Decision-only coverage is a different measure and is not bounded by it (95 under the solved label). Every count is exact and reproducible with `python -u -m lem.quotient <study> --labels`.
+One fixture: three own tiles, acting last in trick five, nine plays left. Fixed G0 partner, pinned Zeb, uniform legal-consistent root prior. The labels are hand-chosen families of six posterior facts and eight hand-relative facts, not every lawful label. A statistic of the joint posterior, such as the support pattern of the unseen tiles across seats up to relabeling, is measured in [[gus-joint-labels-2026-10-22]]. The decision-only audit counts failures and coverage but no states. The bound of 56 of 128 is on fresh roots *seen* with domains kept, for every label, because it is a statement about fork. Decision-only coverage is a different measure and is not bounded by it (95 under the solved label). Every count is exact and reproducible with `python -u -m lem.quotient <study> --labels`.
 
 ## Evidence
 

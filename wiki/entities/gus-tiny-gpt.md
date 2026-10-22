@@ -98,6 +98,7 @@ for this fixed-opponent series. Source: Jason's instruction in this session.
 - [[gus-decision-class-probe-2026-10-21]] — linear probes at the query token do not read the decision class or Q contrasts on fresh roots; pretraining put two-way flatness there (AUC 0.767 vs twins 0.610), the masked lessons wore it down and moved the three-way policy instead (+0.129).
 - [[gus-observation-labels-2026-10-21]] — no tile-free observation label in an eight-fact family routes the quotient; the breaking collision is a hidden tile's identity, which no fact relative to the viewer's hand sees (#239).
 - [[gus-posterior-labels-2026-10-22]] — posterior statistics of the unseen tiles (unseen trumps and count, voids, exhausted suits, rank among the unseen, a likelihood bucket) route better but see no fresh root; a routing label must carry the next decision's answer, four symbols at a root (#239).
+- [[gus-joint-labels-2026-10-22]] — the support of the unseen tiles up to pip relabeling, read after every play, routes every decision with the posterior facts (0 roots with a decision collision) but sees no fresh root; a seat-erased control does the same, so what routes is the observation up to relabeling, not the posterior (#241).
 
 - [[gus-contingent-teacher-2026-10-20]] - exact two-decision teacher, useful later corrections, and a first action-distillation comparison with no selected student gain.
 

@@ -49,6 +49,7 @@ At the 223 three-way nodes all 13 weak orders of three values occur: 106 triple 
 - [[gus-decision-class-probe-2026-10-21]]: does Gus's representation already carry the class? Not linearly at the query token on fresh roots; flatness yes, from pretraining (#240).
 - [[gus-observation-labels-2026-10-21]]: a tile-free label that routes? None in an eight-fact family; the collision is a hidden tile's identity (#239).
 - [[gus-posterior-labels-2026-10-22]]: posterior statistics of the unseen tiles route better (7 roots with a decision collision, not 47) but see 0 of 128 fresh roots; the only routing label that keeps 56 is the next decision's answer (#239).
+- [[gus-joint-labels-2026-10-22]]: the joint support up to pip relabeling, read after every play, routes every decision (0 roots with a decision collision, 13 with a domain collision) and sees 0 of 128 fresh roots, with more states (8,425) than the raw interface (#241).
 
 ## Scope and verification
 
