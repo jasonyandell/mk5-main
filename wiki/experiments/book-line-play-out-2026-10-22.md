@@ -291,9 +291,20 @@ tie-break decides:
 - which low trump leads (Hand 23's 0-0 against the book's 1-1);
 - the follower who is not last and can take the trick (the duck).
 
-One is an encoding question with the book's stated reasons behind it: `bidders-plan` dumps the
-6-1 early on Hand 23 and leads the 3-1 before the 5-1 on Hand 24. #245 carries both, and the
-narrow reading of Hand 23's "no other trick" for the duck.
+One was an encoding gap with the book's stated reason behind it: `bidders-plan` dumped the 6-1
+early on Hand 23. The book saves the 6-5 for next-to-last, treating it as the 6-1's double
+(p. 77, S-0105-d), but our `bare-off` counted only a literal double as an off's guard. Hand 24's
+3-1 before the 5-1 depends on the world, not on the encoding: `bidders-plan` picks by the count
+still out, by the book's rule.
+
+**The repair (#245, PR #247, 2026-10-22).** An off's guard is now the double or the top tile
+left in its suit (`stands-for-the-double`). On step C's same 4,000 deals, Hand 23's stack arm
+makes **0.575 [0.560, 0.591]**, up from 0.394 [0.379, 0.409]: a paired **+0.181 [+0.168,
++0.195]**, with plays changed on 2,915 deals. The line − stack gap closes from +0.177 to
+**−0.005 [−0.008, −0.001]**. The general stack now plays Hand 23 as well as the scripted line;
+the rest of the shortfall is the book's pounce and the duck above. On Hands 24 and 25 no play
+changed, and the line arms are unchanged. The duck stays a silence; whether Hand 23's "no
+other trick" licenses a narrow rule is still open on #245.
 
 ## Data
 
