@@ -226,11 +226,11 @@ fn family(args: &[String]) -> Result<bool> {
 /// one for the hand.
 fn exact(args: &[String]) -> Result<bool> {
     use silas::player::{self, Budget};
-    let named = ["positions", "library", "root", "settle", "p", "seed", "table", "reads"];
-    let options = Options::parse(args, &["play", "quotient", "recount"], &named)?;
+    let named = ["positions", "library", "root", "settle", "p", "seed", "table", "reads", "recount"];
+    let options = Options::parse(args, &["play", "quotient"], &named)?;
     if !options.words.is_empty() {
         return Err(fail(
-            "silas exact --positions FILE --library FILE [--root posterior|fiber] [--settle decided|hand] [--p P] [--play [--seed N] [--table K]] [--quotient] [--recount] [--reads N]",
+            "silas exact --positions FILE --library FILE [--root posterior|fiber] [--settle decided|hand] [--p P] [--play [--seed N] [--table K]] [--quotient] [--recount N] [--reads N]",
         ));
     }
     let spec: Json =
@@ -244,7 +244,7 @@ fn exact(args: &[String]) -> Result<bool> {
     let budget = Budget { reads: options.number("reads", 1_000_000_000)? as u64 };
     let (seed, table) = (options.number("seed", 0)? as u64, options.number("table", 0)?);
     let quotient = options.flags.iter().any(|f| f == "quotient");
-    let recount = options.flags.iter().any(|f| f == "recount");
+    let recount = options.number("recount", 0)?;
     let path = options.need("positions")?;
     let print = |v: &Json| -> Result<()> {
         println!("{}", serde_json::to_string(v).map_err(|e| fail(e.to_string()))?);

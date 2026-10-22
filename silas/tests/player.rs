@@ -48,14 +48,35 @@ fn uniform() -> Library {
     Library::one(TableType::all(SeatLaw::UniformLegal))
 }
 
+/// The table leans low (each other seat half the time its lowest legal tile, otherwise
+/// uniform) with probability 1 - p, high with p: every record is possible.
+fn lean() -> Library {
+    Library::new(
+        vec![TableType::all(SeatLaw::LeanLow), TableType::all(SeatLaw::LeanHigh)],
+        vec![Affine::new(Q::one(), Q::zero()), Affine::new(Q::zero(), Q::one())],
+    )
+    .unwrap()
+}
+
 /// The second construction agrees with the player in every class: the record's mass, each
 /// root tile's value, the maximizing set. Returns the classes checked.
 fn recounted(frame: &Frame, library: &Library, root: Root, solved: &Solved) -> usize {
+    recounted_at_most(frame, library, root, solved, usize::MAX)
+}
+
+/// As [`recounted`], at no more than `cap` classes: the first, the last, and every
+/// `len / cap`-th between.
+fn recounted_at_most(frame: &Frame, library: &Library, root: Root, solved: &Solved, cap: usize) -> usize {
     let f = &solved.family;
-    let reps =
+    let all =
         if library.constant() { vec![Q::zero()] } else { representatives(&f.thresholds(&f.reachable(&[solved.root]))) };
+    let step = all.len().div_ceil(cap).max(1);
+    let mut reps: Vec<&Q> = all.iter().step_by(step).collect();
+    if reps.last() != all.last().as_ref() {
+        reps.push(all.last().unwrap());
+    }
     let mut n = 0;
-    for r in &reps {
+    for r in reps {
         let mass = f.choice(solved.root).mass.at(r);
         if mass.is_zero() {
             continue;
@@ -214,12 +235,13 @@ fn a_budget_refuses() {
 
 /// Seeded deals played by every seat uniformly at random to two or three tricks left; at
 /// each, the player and the second construction agree: under the exact posterior of the
-/// uniform-legal kernel, and under the note's two-type family on the fiber, in every class.
+/// uniform-legal kernel and under the note's two-type family on the fiber in every class, and
+/// at a quarter of them under the leaning mixture's posterior at three classes or more.
 #[test]
 fn the_second_construction_agrees_on_random_endgames() {
     let decls = ["NT", "P5", "P0", "DT", "P3"];
     let mut rng = Rng(42);
-    let (mut positions, mut classes) = (0, 0);
+    let (mut positions, mut classes, mut mixed) = (0, 0, 0);
     for k in 0..20 {
         let deck = rng.shuffled();
         let hands: [DominoSet; 4] = std::array::from_fn(|s| deck[7 * s..7 * s + 7].iter().copied().collect());
@@ -242,8 +264,15 @@ fn the_second_construction_agrees_on_random_endgames() {
             let s = solve(&frame, &library, &b, Settle::Decided, BUDGET).unwrap();
             classes += recounted(&frame, &library, root, &s);
         }
+        if k % 4 == 1 {
+            let library = lean();
+            let b = Belief::new(&frame, &library, Root::Posterior).unwrap();
+            let s = solve(&frame, &library, &b, Settle::Decided, BUDGET).unwrap();
+            mixed += recounted_at_most(&frame, &library, Root::Posterior, &s, 3);
+        }
         positions += 1;
     }
     assert_eq!(positions, 20);
     assert!(classes >= 40, "{classes}");
+    assert!(mixed >= 10, "{mixed}");
 }

@@ -47,6 +47,11 @@ pub enum SeatLaw {
     Highest,
     /// Every legal tile with equal probability.
     UniformLegal,
+    /// Half the time its lowest legal tile, otherwise uniform: [`SeatLaw::Lowest`] with a
+    /// tremble, so every legal play has positive probability and no record is impossible.
+    LeanLow,
+    /// Half the time its highest legal tile, otherwise uniform.
+    LeanHigh,
 }
 
 impl SeatLaw {
@@ -55,6 +60,8 @@ impl SeatLaw {
             SeatLaw::Lowest => "lowest",
             SeatLaw::Highest => "highest",
             SeatLaw::UniformLegal => "uniform",
+            SeatLaw::LeanLow => "lean-low",
+            SeatLaw::LeanHigh => "lean-high",
         }
     }
 
@@ -67,6 +74,12 @@ impl SeatLaw {
             SeatLaw::UniformLegal => {
                 let share = Q::new(1.into(), (legal.len() as i64).into());
                 legal.iter().map(|d| (d, share.clone())).collect()
+            }
+            SeatLaw::LeanLow | SeatLaw::LeanHigh => {
+                let n = legal.len() as i64;
+                let lean = if self == SeatLaw::LeanLow { legal.iter().next() } else { legal.iter().last() };
+                let (rest, top) = (Q::new(1.into(), (2 * n).into()), Q::new((n + 1).into(), (2 * n).into()));
+                legal.iter().map(|d| (d, if Some(d) == lean { top.clone() } else { rest.clone() })).collect()
             }
         }
     }
@@ -595,7 +608,7 @@ pub mod file {
     use crate::{Result, error};
 
     fn law(name: &str) -> Result<SeatLaw> {
-        [SeatLaw::Lowest, SeatLaw::Highest, SeatLaw::UniformLegal]
+        [SeatLaw::Lowest, SeatLaw::Highest, SeatLaw::UniformLegal, SeatLaw::LeanLow, SeatLaw::LeanHigh]
             .into_iter()
             .find(|l| l.name() == name)
             .ok_or_else(|| error(format!("no seat law {name}")))
@@ -724,9 +737,10 @@ pub mod file {
     /// One decision's row: the position at this decision, the declared model, the root's
     /// exact values and maximizing set in every parameter class, the act at `p`, the counts
     /// and the wall time; with `quotient`, the controller's states (every, path, plan; raw
-    /// and fork) and root ladders. With `recount`, the second construction
-    /// ([`super::recount`]) is run in every class and must agree exactly in mass, value and
-    /// maximizing set, or the row is refused.
+    /// and fork) and root ladders. With `recount` n > 0, the second construction
+    /// ([`super::recount`]) is run at n parameter classes (all of them when there are at
+    /// most n, else n spaced evenly from the first to the last) and must agree exactly in
+    /// mass, value and maximizing set, or the row is refused.
     #[allow(clippy::too_many_arguments)]
     pub fn row(
         position: &Position,
@@ -740,34 +754,38 @@ pub mod file {
         p: &BigRational,
         wall_ns: u128,
         quotient: bool,
-        recount: bool,
+        recount: usize,
     ) -> Result<Value> {
         let f = &solved.family;
         let reach = f.reachable(&[solved.root]);
         let thresholds = if library.constant() { Vec::new() } else { f.thresholds(&reach) };
         let reps = if library.constant() { vec![BigRational::zero()] } else { representatives(&thresholds) };
         let mut recounted = 0usize;
-        if recount {
-            for r in &reps {
-                let mass = f.choice(solved.root).mass.at(r);
-                if mass.is_zero() {
-                    continue;
-                }
-                let (m, v) = super::recount::values(frame, library, root, r)?;
-                let best: Vec<Domino> = {
-                    let top = v.iter().map(|(_, x)| x).max().expect("a tile");
-                    v.iter().filter(|(_, x)| x == top).map(|(d, _)| *d).collect()
-                };
-                let mine = solved.values(r).expect("positive mass");
-                if m != mass
-                    || v.iter().map(|(d, _)| *d).collect::<Vec<_>>() != solved.menu()
-                    || v.iter().map(|(_, x)| x.clone()).collect::<Vec<_>>() != mine
-                    || best != solved.best(r)
-                {
-                    return Err(error(format!("the second construction disagrees at p = {r}")));
-                }
-                recounted += 1;
+        let checked: Vec<&BigRational> = match (recount, reps.len()) {
+            (0, _) => Vec::new(),
+            (n, k) if k <= n => reps.iter().collect(),
+            (1, _) => vec![&reps[0]],
+            (n, k) => (0..n).map(|i| &reps[i * (k - 1) / (n - 1)]).collect(),
+        };
+        for r in checked {
+            let mass = f.choice(solved.root).mass.at(r);
+            if mass.is_zero() {
+                continue;
             }
+            let (m, v) = super::recount::values(frame, library, root, r)?;
+            let best: Vec<Domino> = {
+                let top = v.iter().map(|(_, x)| x).max().expect("a tile");
+                v.iter().filter(|(_, x)| x == top).map(|(d, _)| *d).collect()
+            };
+            let mine = solved.values(r).expect("positive mass");
+            if m != mass
+                || v.iter().map(|(d, _)| *d).collect::<Vec<_>>() != solved.menu()
+                || v.iter().map(|(_, x)| x.clone()).collect::<Vec<_>>() != mine
+                || best != solved.best(r)
+            {
+                return Err(error(format!("the second construction disagrees at p = {r}")));
+            }
+            recounted += 1;
         }
         let ids = |v: &[Domino]| v.iter().map(|d| d.index()).collect::<Vec<_>>();
         let classes: Vec<Value> = reps
