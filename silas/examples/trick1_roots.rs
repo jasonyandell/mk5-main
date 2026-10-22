@@ -87,6 +87,23 @@ fn main() {
             _ => own.iter().last().unwrap(),
         };
         let head = format!("deal {d} decl P{decl} viewer {} shards {}", viewer.index(), ladder.shards());
+        // Pieces merged into one gather (one root-tile set), saved to `--save`.
+        if let (Some(files), Some(save)) = (arg(&args, "--load"), arg(&args, "--save")) {
+            let g = files
+                .split(',')
+                .map(|f| Gathered::from_bytes(&std::fs::read(f).unwrap()).unwrap())
+                .reduce(|a, b| a.merge(b).unwrap())
+                .unwrap();
+            std::fs::write(save, g.to_bytes()).unwrap();
+            println!(
+                "{head} k {} merged worlds {} leaves {} plays {} -> {save}",
+                g.k,
+                g.worlds,
+                g.leaves(),
+                g.work.total()
+            );
+            continue;
+        }
         // A piece of a rung: the shards `--from..--to` of horizon `--k`, saved to `--save`.
         if let Some(save) = arg(&args, "--save") {
             let from: usize = arg(&args, "--from").unwrap_or("0").parse().unwrap();
@@ -142,12 +159,13 @@ fn main() {
                         .map(|(a, lo, up)| format!("{a}[{},{}]", fixed(*lo, m, 4), fixed(*up, m, 4)))
                         .collect();
                     println!(
-                        "{head} k {k} worlds {} | {} | choice {} survivors {} gamma {}‰ settled {} | law {law_tile} walt {chosen} | leaves {} plays {} (tree {} tails {} god {}) wall {wall:.1}s",
+                        "{head} k {k} worlds {} | {} | choice {} survivors {} gamma {}‰ ({}) settled {} | law {law_tile} walt {chosen} | leaves {} plays {} (tree {} tails {} god {}) wall {wall:.1}s",
                         r.mass,
                         iv.join(" "),
                         r.choice(),
                         r.survivors().len(),
                         fixed(1000 * r.gamma(), m, 1),
+                        r.gamma(),
                         r.settled().map(|x| x.to_string()).unwrap_or("-".into()),
                         r.leaves,
                         r.work.total(),
