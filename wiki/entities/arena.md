@@ -2,7 +2,7 @@
 title: Arena — full-game harness
 kind: entity
 first_seen: 2026-06-12
-last_updated: 2026-07-13
+last_updated: 2026-11-02
 status: active
 phase: 2026-07-13 — landed; the measuring stick for the champion ladder. Runs on the repaired uniform-completion-dp-v1 sampler; measurement baseline reproduced at [[stage-0-closure]]; canonical decision provenance via [[partnership-decision-record-v1]].
 ---
@@ -47,7 +47,7 @@ play) live on [[champion-ladder]].
   bidder only), so auction-won contracts are in-distribution for the Q
   model; the bid feeds only the utility thresholds, which were already
   parameterized per game ([[gen-fleet]]'s `contract_threshold_bins`).
-- Shipped bidders: `heuristic` (static Roberson risk-budget — the wave-2.B
+- Shipped bidders (2026-11-02: also `waltbid`, Walt's own forecast, [[walt-bidder-2026-11-02]]; and `zeb`, [[match-aware-bidding-2026-10-14]]): `heuristic` (static Roberson risk-budget — the wave-2.B
   arithmetic from [[w42-bookval-v1-wave2-bid-aware-atlas]], ported to
   `arena/hand_metrics.py` with an equivalence test), `bid30`, `random`,
   `gus[:N[,wp]]` (`champion.GusBidder`, rung #21), `net[:wp]`

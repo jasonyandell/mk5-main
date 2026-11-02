@@ -2,7 +2,7 @@
 title: The scenario player — Walt, rebuilt here from the mathematics
 kind: entity
 first_seen: 2026-10-09
-last_updated: 2026-10-14
+last_updated: 2026-11-02
 status: active
 ---
 
@@ -48,6 +48,10 @@ of (rung, seat, remaining hand, record) and is cached as such.
   [[demon-vs-zeb-2026-10-15]]'s first corrected comparison fails the joint criterion.
   [[demon-overcalling-2026-10-15]] completes the objective against both pinned
   native Zeb 0.4.0 bidders on Apple M5 Max, with lower total seat runtime.
+- **Walt bids (2026-11-02).** `waltbid[:<walt play options>][,c<cutoff>]` in the arena
+  (`arena/walt_bid.py`): Zeb's bidder holding Walt's own planner, so the honest plan's root
+  splat is read as a bid curve (pmake at 30..42, the 0.8 rule, partner pass, no 84). Piloted
+  against the heuristic with Walt play both sides, clock-sized: [[walt-bidder-2026-11-02]].
 - **The champion is `walt:k1,n512,m8`** (two rungs, 512 root worlds, floor
   16). It stays champion until a field-net player beats it with an interval
   clear of zero; none has (best: +0.13 [−0.17, +0.44], the 250,000-deal net).

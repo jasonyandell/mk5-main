@@ -19,6 +19,8 @@ Player spec: <bidder>+<play>
             | zeb[:n<worlds>][,c<cutoff>][,s<seed>][,met|marks]   (Zeb's forecast +
               chooseBid, never above 42; met adds 84 when its match equity
               beats the hand-only call, marks the same by expected marks)
+            | waltbid[:<walt options>][,c<cutoff>]   (Zeb's bidder over Walt's planner,
+              default k1,n160,m8, pip trumps only; arena/walt_bid.py)
             | silas[:<policy>]   (a bid policy of silas/examples/book/bidding/:
               risk-budget, the default, or bid-only-enough, which is heuristic)
             | gus[:<samples>[,wp][,pass[<q>]][,max]]   (rung #21; wp = marks-to-7
@@ -106,6 +108,10 @@ def parse_bidder(
         # Zeb's forecast + chooseBid; met / marks add the mark-bid option (arena/zeb_bid.py).
         from arena.zeb_bid import parse_zeb_bidder
         return parse_zeb_bidder(arg)
+    if name == "waltbid":
+        # Zeb's bidder (hand-only) over Walt's planner, from a walt play spec (arena/walt_bid.py).
+        from arena.walt_bid import parse_walt_bidder
+        return parse_walt_bidder(arg)
     if name == "gus":
         from champion.bidder import GusBidder, GusPointsEvaluator
         from champion.utility import MarksToSeven
