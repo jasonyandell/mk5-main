@@ -51,7 +51,9 @@ of (rung, seat, remaining hand, record) and is cached as such.
 - **Walt bids (2026-11-02).** `waltbid[:<walt play options>][,c<cutoff>]` in the arena
   (`arena/walt_bid.py`): Zeb's bidder holding Walt's own planner, so the honest plan's root
   splat is read as a bid curve (pmake at 30..42, the 0.8 rule, partner pass, no 84). Piloted
-  against the heuristic with Walt play both sides, clock-sized: [[walt-bidder-2026-11-02]].
+  against the heuristic with Walt play both sides, clock-sized: +0.90 [+0.21, +1.56] marks/game
+  over 96 games in two blocks (the second shrank the first), forecast at the call 0.842 against
+  0.866 made ([[walt-bidder-2026-11-02]]).
 - **The champion is `walt:k1,n512,m8`** (two rungs, 512 root worlds, floor
   16). It stays champion until a field-net player beats it with an interval
   clear of zero; none has (best: +0.13 [−0.17, +0.44], the 250,000-deal net).
