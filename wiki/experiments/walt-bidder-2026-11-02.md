@@ -108,6 +108,11 @@ The caution of the 0.8 rule shows in the offense share: it passes three hands in
 caution is right is the cutoff question (#254), and whether the edge holds at the champion's size
 and against Zeb's bidder is the registered block (#254).
 
+**Data.** The pilot's outputs (the arena log and summary, per-game and per-hand CSVs, every hand's
+snapshot, the calibration join and the two scripts, with SHA256SUMS) are public, CC0, at
+[texas-42-zeb-research-2026-11](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-11)
+under `walt-bidder/` ([[publish-data-to-huggingface]]).
+
 ## Limits
 
 - One machine, one block, one spec (`k1,n160,m8`, the shipped two-response size, not the
