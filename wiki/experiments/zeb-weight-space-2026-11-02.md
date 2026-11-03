@@ -68,6 +68,46 @@ playing-strength improvement is not established. The candidate is archived,
 not promoted. Plunge and the shipped Zeb net remain unchanged. Whether repairing
 contract-conditioning improves full-player outcomes remains open.
 
+## Reading the original weights further
+
+A descriptive follow-up uses the original weights, the same held-out population
+and the same fixed subset. Units 8 and 32 were selected using the weights and
+the earlier field-net audit; these are corroborated labels, not blinded new
+discoveries or a new clean-neuron hypothesis test.
+
+- **No trump held, L1 unit 8.** Its seven most negative hand weights are exactly
+  the seven canonical trumps, from −5,492 to −3,796. All 4,345 highest-preactivation
+  rows hold no trump, against 189,999 / 434,535 (43.72%) overall. It activates on
+  every no-trump row but also 55.03% of other rows; the unit is not an exact
+  Boolean detector. Removing its 64 outgoing weights in memory changes 3,004 /
+  32,768 field choices, including 2,183 / 14,328 no-trump rows.
+- **Last seat with partner winning, L1 unit 32.** Its direct weights are +8,479
+  for last seat, +6,680 for partner winning, and −14,078 / −20,876 for the two
+  opponents winning. All top 4,345 rows satisfy the conjunction, against 21,110 /
+  434,535 (4.86%) overall. It also activates on 14.16% of other rows. Removing
+  its outgoing weights changes 466 / 1,539 (30.28%) last-seat/partner-winning
+  choices in the fixed subset. Count played on those rows falls from 4,290 to
+  2,980 points total (2.79 → 1.94 per move). The team already owns that last-seat
+  trick: this is evidence for a contribution to feeding count, not an exclusive
+  purpose or proof of stronger play.
+- **Twelve dormant L2 units.** Units 2, 7, 14, 17, 20, 28, 29, 33, 38, 50, 51 and
+  60 activate on none of the 434,535 rows, confirming the earlier audit. They
+  also stay off on all 393,216 higher-bid counterfactual probes. This does not
+  establish inactivity on every legal input or justify unconditional pruning.
+- **An input symmetry.** The count-location block has six distinct patterns for
+  the seven pip trumps: twos and threes coincide. Under the encoder's tile
+  relabeling, their tile counts, all follow-suit relations and all lead-conditioned
+  rank comparisons also match. This symmetry is supplied by the game and input
+  encoding, not independently discovered by the network.
+
+Ratios above describe this fixed population; rows share deals. In-memory
+ablations agree with scalar integer inference on 64 rows per unit. No saved
+weights or production artifacts change. Source commit:
+`1f3d88a9dd7ff2fa21dd339682e65512293c5629`.
+Follow-up [script, raw measurements and log](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/a915f3fc041bfb79e8eedd66c0542940557b7eb5/weight-space/2026-11-02/inside).
+The five remote filenames match the staged set, and a fresh download of the
+results matches the local bytes.
+
 ## Evidence
 
 Run at mk5-main `7fb5ef06b10392efe2bc3ef518c50008c8842f4b`. The held-out sample
