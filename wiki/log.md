@@ -64,6 +64,11 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **Comparison algebra, Gus routing probes and book lines** (2026-10-22, 9 archived entries) — [[comparison-algebra-night]], [[comparison-algebra-2026-10-21]], [[gus-decision-class-probe-2026-10-21]], [[gus-observation-labels-2026-10-21]], [[gus-posterior-labels-2026-10-22]], [[gus-joint-labels-2026-10-22]], [[book-line-play-out-2026-10-22]], [[walt-endgame-probe-2026-10-22]].
 ---
 
+## [2026-11-02 | codex | Zeb's trump and partner signals]
+
+**Updated:** [[zeb-weight-space-2026-11-02]] — raw weights and fresh activations support two earlier labels; ablations measure their contribution, twelve dormant units remain off, and twos/threes share canonical rules.
+**Evidence:** reproducible descriptive follow-up on Hugging Face; original weights unchanged.
+
 ## [2026-11-02 | claude | Walt bids: the honest plan's root splat as a live bidder, piloted]
 
 **Touched pages:** [[walt-bidder-2026-11-02]], [[scenario-player]], [[arena]]
