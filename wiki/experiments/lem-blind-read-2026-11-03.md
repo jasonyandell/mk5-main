@@ -3,7 +3,7 @@ title: "A blind weight read of the shipped field net, graded on real rows (Lem)"
 kind: experiment
 first_seen: 2026-11-03
 last_updated: 2026-11-03
-status: registered
+status: complete
 ---
 
 Jason's commission (2026-11-03, via session code-fa): a frontier model reads the shipped field net's raw
@@ -214,6 +214,107 @@ both tails, with no bar; L1+106 already reads 6-4 as count (precision 1.00). Not
   that should drive the unit, near misses and distant ones, scored by the net. That is the cell that
   bears on "one main job".
 - A seeded random sample of about 20 of the reader's 192 names, each graded on real rows.
+
+## Results (run 2026-11-03 as sealed, 52e25ebc)
+
+**The reader's 14 unseen predictions: 8 held, 3 in part, 3 missed.** Its five headline circuits all
+survived real rows in their main claim. The misses are a teacher-fidelity gap (P2c), a weak
+dependence claim (6.5) and a round-1 impression (P7). Intervals are 95% over deals; "twins" are the
+three untrained 128 × 64 nets under the same procedure.
+
+| | prediction | result | grade |
+|---|---|---|---|
+| P1b | follow units {53, 70} gate the lead heads | lead heads on 0.0002 → 0.071 of follow rows; 14.5% of moves change; L1 53 rank 1 of 128 | held |
+| P1c | L1 57 gates the follow heads | follow heads on 0.0014 → 0.185 of lead rows; 21.6% of moves change; rank 1 | held |
+| P2a | count scores high on partner's trick, low on theirs | +7.85M [7.72M, 7.98M] and −5.74M [−5.85M, −5.63M] (reader: +9.6M, −9.5M) | held |
+| P2b | count-play rate, partner minus opponent ≥ 0.40 | 0.645 [0.637, 0.653]; random 0.014; twins −0.03 to +0.02 | held |
+| P2c | the gap flattens once the contract is decided | it grows: 20% larger decided [16%, 24%] | missed |
+| P3a | L1 60 tracks trumps gone; 13 and 125 near-copies | r 0.866 (twins' best 0.56–0.70); r(60, 125) 0.84; r(60, 13) 0.60 | in part |
+| P3b | {13, 60, 125} hold trump leads back | ablated together, trump leads +0.137 [0.132, 0.141], above 99% of random triples (p95 +0.070); L1 60 alone +0.071, rank 2 | held |
+| P4a | L1 39 on with 6-5 held and 6-6 out, silenced once 6-6 falls | on 0.996 against 0.277 (bar ≤ 0.2); mean dose 711 against 38 | in part |
+| P4b | L1 39 moves the 6-5 | ablated, 6-5 play +0.121 [0.115, 0.128], rank 1 of 128; forced on after 6-6 falls, −0.033 [−0.037, −0.029] | held |
+| P5a | count is the block the play leans on most | count 36.3%, then gone 27.7%, winning 17.9%, need 13.3%, slack 11.9%, void 8.6%, side 3.2% | held |
+| P5b | the block ranking matches | Spearman ρ 0.964 | held |
+| 6.3 | L2 54 (off-double leads) after trumps are pulled | on 0.612 with ≥ 5 gone against 0.395 with ≤ 2 (1.55×, bar 2×); with no trump in hand 0.790 against 0.338 (2.34×); ablated, off-double leads −0.048, rank 4 of 64 | in part |
+| 6.5 | count-block swaps change moves through count slots | 0.651 of changed moves touch a count slot, against 0.563 by chance (+0.09, bar +0.20 and ≥ 0.8) | missed |
+| P7 | "the net is reluctant to play 6-6" | it plays 6-6 more than Walt: 0.447 against 0.370 where legal, 0.594 against 0.452 on leads | missed (reversed) |
+
+Settled before the run: P1a held (r +0.92, +0.89), P6.4 held (pruning the 13 changes 0.005% of
+moves), and P5c on void missed (8.6% against 4%). Of the other six blocks, five sit within a factor of
+2 of the reader's; side does not (3.2% against 1%). The twins rank the blocks differently, with
+winning last (4–5%), so the trained net's use of `winning` (17.9%) is learned.
+
+**Fidelity (the net against Walt, not the reader):**
+- **The net over-feeds count.** On partner's trick it plays count 0.851 of the time; Walt plays it
+  0.627. Net minus Walt on the P2b difference is +0.254 [0.243, 0.264], outside the 0.10 clause.
+- **Second hand low** (6.6). The net plays the lowest following tile 0.533, Walt 0.569, random 0.477.
+  It is within 0.05 of Walt (−0.036 [−0.044, −0.028]), but it is not 0.20 above random. Walt is not
+  either (+0.09).
+- **6-6** (P7). The net plays the trump double more often than Walt, most of all on leads (+0.142
+  [0.133, 0.151]). Its output bias for 6-6 is +9,440, 14th of 28. The reader's "reluctant in every
+  context" came from its simulator, not from real rows.
+
+**P2c, read post hoc** (`posthoc_p2c.py`, after grading). The reader's physics was right about the
+teacher and wrong about the net:
+
+| last seat, I hold count and non-count | net feeds count | Walt feeds count |
+|---|---:|---:|
+| partner's trick, contract undecided (7,849 rows) | 0.841 | 0.706 |
+| partner's trick, decided (2,355) | 0.887 | 0.360 |
+| opponent's trick, undecided (29,844) | 0.195 | 0.204 |
+| opponent's trick, decided (7,049) | 0.255 | 0.364 |
+
+Once the contract is decided, Walt is nearly indifferent where the count goes (0.36 on either trick).
+The net keeps smearing. The reader expected the net to have learned that gate; it has not. That is
+rung 3, learning: a gap to the teacher, not a fault in the reading.
+
+**P8: the reader's "units that pack two things," read with both poles.**
+- **L1 14:** a gate. "Leading with 3-3" is in its top 1% (0.469 against a base of 0.060). "Right
+  trumped in" is in its bottom 1% (0.151 against 0.040) and absent from the top (0.001). Held.
+- **L1 1:** a gate. Holding the 5-5 is in its top 1% (0.857 against 0.190). Trump on the trick is in
+  its bottom 1% (0.707 against 0.246); the top has 0.025. Held.
+- **L1 3:** "right trumped in" holds the bar (bottom 0.134 against 0.040; top 0.026). "5-5 gone"
+  reaches 1.91× in the bottom, short of 2×. Its + pole, two or more off doubles, is weak (0.41 against
+  0.28). In part. Not named well by the reader's words, nor by list v2 (the audit: partial).
+- **L1 5:** one pattern, not two. "Late in the hand" fills its top 1% (0.978), and every top row is
+  "not playing second" (1.00 against 0.78).
+- **L1 106:** the reader's own synthesis holds. 99.2% of its top 1% have the 6-4 out of the
+  opponents' reach (held or gone), against a base of 0.630, and its bottom 1% are nearly all 6-4
+  live elsewhere (0.011). One idea: "the opponents cannot hold the 6-4", the ten-count trump.
+
+So of the five, two read as gates with two poles, two as one shared pattern, and one (L1 3) is not yet
+named. None calls for the last rung.
+
+**What the reader saw that we had not named.**
+- **L1 39 is a hold-back unit.** While the 6-6 is out, it keeps the 6-5 in hand (ablated, +0.121 6-5
+  play, rank 1 of 128). Once the 6-6 falls, its dose drops 19×. Forced back on, it holds the 6-5 again.
+  The audit had read it as "holds 6-5", a noun. Its verb is "don't spend the second trump under a live
+  boss".
+- **Trump exhaustion is a three-unit gate.** Ablated together, {13, 60, 125} raise trump leads by
+  0.137, nearly double L1 60 alone. L1 60's + pole is trumps gone and partner void in trump (top 1%:
+  0.96 and 0.95). Its − pole is "I hold no trump" (bottom 1%: 0.998). This is composition: three units
+  with different on rates (0.18, 0.26, 0.90 in the cell) share one job.
+
+## Reading it
+
+This graded the reader and our instruments, not the thesis.
+- **A blind reader working from weights alone named the shipped net's circuits well enough to
+  predict behaviour on rows it never saw.** That includes two causal effects at rank 1 of 128
+  (P1, P4b) and a block ranking at ρ 0.96. Its words came from its own simulator and features, and
+  where the simulator's distribution was wrong (P7, the 6-6), its words were wrong.
+- **The two misses that matter point at the net, not the reader.** P2c is a gate Walt has and the net
+  lacks. 6.5 says the count block does more than mark count slots: about 35% of the moves it changes
+  touch no count slot.
+- **Against our audit.** The audit called L1 39 "holds 6-5" and L1 60 "partner-out-of-trump". The
+  reader's verbs (hold back the 6-5; shut trump leads when trumps are out) predicted use. Its labels
+  did not. That fits the 2026-11-02 calibration: the audit is a weak referee of what a unit does.
+
+Scope: this net, these inputs (one position, uniform beliefs, no history), the reader's vocabulary
+and list v2. Circuits 1–5 were the reader's own pick; transfer to the other 187 units is the parked
+random sample. What we learned from this model, not all of 42, yet.
+
+Evidence: [Hub, `lem/blind-read-2026-11-03/`](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-11/tree/37e3bacc76c6343d077922fb6f27dd1c4ddd3d1b/lem/blind-read-2026-11-03)
+(the reader's reports, `grade_*.json`, `posthoc_p2c.json`, every script).
 
 ## The scope clause
 

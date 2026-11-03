@@ -339,6 +339,15 @@ What carried across them:
   ablated).
 - None of the ten read as mixing. Scope: one net, one position, uniform beliefs, no history.
 
+**A blind weight read, 2026-11-03** ([[lem-blind-read-2026-11-03]]). A frontier model named the shipped
+128 × 64 net's 192 units from its raw weights and its own simulator, with no data. Of 14 unseen
+predictions, 8 held on real rows, 3 held in part and 3 missed. Its verbs predicted use where our audit's
+nouns did not: L1 39 holds the 6-5 back under a live 6-6 (rank 1 of 128), and three units together shut
+trump leads once trumps are out. Of its five "packs two things" units, two read as gates with two
+poles, two as one pattern, and one is not yet named. The test graded the reader and our instruments, not
+the thesis. Its biggest miss pointed at the net: Walt stops feeding count once the contract is decided,
+and the net does not.
+
 **The instrument, calibrated on a net we wrote (2026-11-02,
 [[lem-hand-written-field-net-2026-11-02]]).** A field net written by hand, every unit one named rule,
 reads 0.360 clean under read R. That is below a structure-matched random net (0.378) and just above an
