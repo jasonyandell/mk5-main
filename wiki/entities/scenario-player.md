@@ -1176,4 +1176,5 @@ forecast runs 3–8 points hot. Nothing ships; the option is proposed for the ne
 [[regulars-table-2026-10-14]] (a regular who remembers bidding across hands: the interaction with a varied bidder is null, +0.04 [−0.15, +0.22]) ·
 [[the-wall]] · [[the-wall-biography]] · [[belief-policy-value-algebra]] ·
 [[strategy-fusion]] · [[expected-q-value]] · [[arena]] · [[walt]] ·
-[[auction-decoder]] · [[gus]] · [[consumption-ledger]]
+[[auction-decoder]] · [[gus]] · [[consumption-ledger]] ·
+[[zeb-weight-space-2026-11-02]] (the shipped field net's untrained bid rows; direct tying changes decisions but establishes no strength gain)
