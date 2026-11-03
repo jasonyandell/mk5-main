@@ -5873,3 +5873,130 @@ The next selected preparation asks whether five fixed saved policies learned the
   18,247 faceoffs and 37,514 games as of 2026-10-22. Zeb 0.4.1 (contested) leads at 1812
   [1797, 1826]; the Demon with the c102 straight bidder is next at 1787 [1773, 1802], intervals
   overlapping. See [[tournament]].
+
+## [2026-10-22 | claude | night-math: the minimal comparison algebra in Lean, the decision quotient in Silas]
+
+- Lean (`scenario/lean/Stab/Hexagon.lean`, `Residual.lean`, `Mixing.lean`): 22 theorems on the
+  three standard axioms, no sorry. They cover:
+  - the note's two numbers per decision and the hexagon;
+  - the 13 sign patterns as the sequential classes;
+  - the coarsest output-keeping right congruence, attained by the quotient machine;
+  - refinement exact after n − 1 blocks;
+  - convex mixing forcing equality at the 1/5 boundary.
+- Two brief claims proved false. The root Q triple has 4 weak orders, not 13, and one block is
+  not enough (a three-tile witness needs two). [[gus-decision-quotient-2026-10-21]]'s "every
+  ladder stabilizes after one block" is corrected: shape needs two.
+- Silas `quotient.rs` and `silas quotient --course FILE` (fed by `lem/quotient.py --export`)
+  reproduce `gus-decision-quotient-v1/report.json` in every count: 8,257 raw, 477 shape and 144
+  fork states, 0 differences.
+- Gate call: these Lean files are additive proofs in `scenario/lean`, as the brief placed them,
+  with no Walt code touched, so they merged ungated (precedent cb95168e). Silas changes avoid
+  core pins, physics and frame. [[comparison-algebra-2026-10-21]].
+
+## [2026-10-22 | claude | night-math: the whole ending in Silas; good play meets only the knots]
+
+- Silas rebuilds the note's 560-deal no-trump ending on its own rules (`silas/src/family.rs`,
+  `silas/tests/controller.rs`) and reproduces every number:
+  - 14 thresholds and 31 classes;
+  - the 767-state controller, root ladder 1, 18, 31, 31;
+  - 302 states with 2-1 committed.
+- It derives the gap (5p − 1)/(1 + 18p) that Lean had taken as given.
+- New: the root optimum has five affine pieces, so five fixed plans suffice and are needed
+  (`scenario/lean/Stab/Plans.lean`, two lemmas).
+- Along good play only the four knots of the optimum move the best play. The path controller
+  has 132 states; the other ten thresholds are counterfactual.
+- The comparison dimension (`silas/src/comparison.rs`) is 2 at the note's local history and
+  168 at the root.
+- Page: [[comparison-algebra-2026-10-21]].
+
+## [2026-10-22 | claude | lem: Night-Probe — the decision class in Gus, and tile-free routing labels (#239, #240)]
+
+- Gus does not linearly carry the decision class or the Q contrasts at the query token on fresh
+  roots (three-way: 107 fitting rows for 13 classes, underpowered). Pretraining put two-way
+  flatness there: parent layer-2 AUC 0.767, +0.157 [+0.048, +0.281] over untrained twins. The
+  masked lessons wore it down (wide −0.085 [−0.156, −0.017]) and moved the net's own three-way
+  choice instead (+0.129 [+0.016, +0.258]). [[gus-decision-class-probe-2026-10-21]]
+- No label in an eight-fact tile-free family routes the decision quotient, and none sees more than
+  7 of 128 fresh roots (fork: 56). Under the finest label, 47 roots keep a decision collision whose
+  blocks agree in every fact: the identity of a hidden tile decides the next choice.
+  [[gus-observation-labels-2026-10-21]]
+- `lem/probe/decision.py`; `lem/quotient.py --labels`, default report byte-identical. Evidence on
+  HF `lem/gus-decision-class-probe-2026-10-21/`, `lem/gus-observation-labels-2026-10-21/`.
+
+## [2026-10-22 | claude | lem: Night-Probe-2 — posterior-statistic labels and the decision-only audit (#239)]
+
+- Six posterior facts per observed play (unseen trumps and count, voids and exhausted suits per
+  seat, unseen tiles outranking the play, unseen tiles still following) plus a likelihood bucket.
+  The finest lawful label leaves 7 roots with a decision collision (hand-relative: 47) but sees 0
+  of 128 fresh roots; no label routes better than `seat` without seeing fewer. The 11 surviving
+  groups differ in nothing the family states: the joint placement of hidden tiles decides them.
+  [[gus-posterior-labels-2026-10-22]]
+- Decision-only (the subset construction) fails at exactly the decision-collision roots in every
+  row. Every label's quotient refines fork, so 56 of 128 bounds fresh roots seen; the solved label,
+  the next decision's answer (four symbols at a root), reaches it and covers 95 decision-only.
+- `lem/quotient.py --labels`, default report byte-identical (14fde1ac…). Evidence on HF
+  `lem/gus-posterior-labels-2026-10-22/`; the research card now maps the night's three label dirs.
+
+## [2026-10-22 | book | the book's Ch. 9 lines played out on Hands 23–25 (#230 step C)]
+
+- Step B withdrawn: the book's surface count says pass on all three worked doubles hands, so a
+  chair bidding by it tests "never bid doubles", not the book's method.
+- Step C registered and sealed (bc68aa03) after a fresh Opus review of Ch. 9 read whole. The
+  primaries are the book's own claims. The general book stack leaves the book's line on Hands
+  23 and 24, so the line was scripted.
+- [[book-line-play-out-2026-10-22]]: every registered primary missed, and each miss is partly our
+  instrument. The faults: a no-help partner that hoards count, a classifier narrower than the
+  book's words, our declarer ducking sure tricks, setters' blind count throws.
+- Scoped reads:
+  - Hand 24's line makes 30 in 0.945 [0.938, 0.952]; its key move is worth +0.27.
+  - Hand 25's named run is all but the only way to be set (post hoc, 0.015 other), yet it comes
+    in 0.186 of deals against the book's own defence.
+  - Hand 23 makes 0.571; the book's own pounce onto the 5-5 exceeds its trick-one budget.
+- Stack repairs filed as #245. Data: `book/book-line-230c/` on HF.
+
+## [2026-10-22 | claude | night-math: the note's message counts checked; five policies are the note's]
+
+- Correction to the previous entry: the five fixed policies are the note's own result
+  ("Less demanding tasks"). `scenario/lean/Stab/Plans.lean` formalizes its argument.
+- Silas now checks all six of the note's message counts: 1, 5, 11, 15, 23, 31. Each threshold
+  has a witness whose only interior switch it is (`silas/tests/controller.rs`).
+- New from the night: only the envelope's knots move the best play on the plan's path, and
+  the path controllers have 142 and 132 states.
+- Page: [[comparison-algebra-2026-10-21]].
+
+## [2026-10-22 | claude | lem: Night-Probe-3 — joint-support labels route every decision; what routes is the observation up to relabeling (#241)]
+
+- `--labels --joint`: per play, the support of the unseen tiles (consistent-world pairs under
+  voids and hand sizes) on the pip graph up to relabeling, with a seat-erased control, a
+  block-end control and a tile-naming diagnostic. With the posterior facts the label leaves 0
+  roots with a decision collision (posterior family: 7) and 13 with a domain collision, and sees
+  0 of 128 fresh roots [0, 2.8%] at 8,425 states, more than the raw interface.
+  [[gus-joint-labels-2026-10-22]]
+- The seat-erased control gives the same row, and the block-end control leaves 96 roots with a
+  decision collision. So what routes is the per-play observation up to pip relabeling, not the
+  posterior. The four collisions that survive the joint support alone are pip order: the suit
+  led and the rank in a suit.
+- Default and `--labels` reports byte-identical (14fde1ac…, 66f4333b…). Evidence on HF
+  `lem/gus-joint-labels-2026-10-22/` (b754e4f5, verified); card row added.
+
+## [2026-10-22 | claude | night-math-2: the Walt endgame probe (#244)]
+
+- Filed the comparison algebra's three feasibility items as #242, #243 and #244 ([[comparison-algebra-2026-10-21]]).
+- #244 is done. On 27,118 real endgame decisions with two or three tricks left (Zeb's arena form and the champion),
+  Walt's tile was checked against the exact information-state optimum of its own model. The belief is uniform on
+  the whole fiber, and the others are played by Walt's own model of them.
+  - Silas (`silas family --courses`, new) and a Python Fraction reference agree at every decision.
+  - Wherever Walt enumerates, its tile is in the exact set: 24,179 of 24,179.
+  - Where it samples (three left, fiber > 512), it misses 5.7% [4.7, 6.7] (Zeb) and 5.6% [4.2, 7.1] (champion),
+    against chance at about 33%. The regret is 0.00077 [0.00058, 0.00098] and 0.00052 [0.00036, 0.00070] success
+    probability, under the pre-registered 0.001 bar.
+  - For Zeb, the floor is about half the endgame regret.
+- Enumerating up to 1,680 worlds closes the gap exactly. Filed as #246 (gated, low priority).
+- Tool: `lem/endgame.py`. Data: HF `texas-42-zeb-research-2026-10/zeb/walt-endgame-probe-2026-10-22`.
+- Page: [[walt-endgame-probe-2026-10-22]].
+
+## [2026-10-22 | 998a154 | The comparison algebra night, as a trail]
+
+**Touched pages:** [[trails/comparison-algebra-night|comparison-algebra-night]] [[gus-historical-choice-wish]]
+**Added:** a trail through the night's seven pages (quotient, Lean and Silas, the class probe, three label families, the Walt endgame probe), what they establish together, and the open issues #240–#246.
+**Updated:** [[gus-historical-choice-wish]] routes to the trail.

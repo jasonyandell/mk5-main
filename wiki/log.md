@@ -8,7 +8,7 @@ Entry prefix convention: `## [YYYY-MM-DD | shortsha | subject]` so `grep "^## \[
 
 **Stitching and rotation** happen on main after a merge, by script: `python -u scripts/wiki_log_rotate.py` first stitches the `log.d/` fragments in here, newest first, then keeps the newest 10 entries once there are more than 15, moves the rest verbatim into [[log-archive]] and sets the digest's count; whoever runs it folds their gist into the digest.
 
-## Digest (2026-04-09 → 2026-10-22, 510 archived entries)
+## Digest (2026-04-09 → 2026-10-22, 519 archived entries)
 
 What the log recorded, phase by phase. The story itself lives in the hubs and trails linked here; this is only a map of when the wiki ingested what.
 
@@ -61,7 +61,86 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **Lem's raw re-read and unit papers; Gus's contingent teaching** (2026-10-20, 37 archived entries) — [[lem-family-statistic-2026-10-20]] (fails its calibration), [[lem-coarse-or-mixed-2026-10-20]] (void by its own rule), [[lem-unit-origin-2026-10-20]] (#231), the raw headline re-read (#233) and unit papers 1–4 (#235); the Book desk's #201 registration and confirmation; the Mayor's fresh-read-before-sealing rule and tidy; Gus's fixed-checkpoint transfer ([[gus-contingent-transfer-2026-10-20]]), [[gus-u65-formation-2026-10-20]], the contingent teacher, cost, breadth and practice runs ([[gus-contingent-teacher-2026-10-20]], [[gus-contingent-cost-2026-10-20]], [[gus-contingent-breadth-2026-10-20]], [[gus-contingent-practice-recovery-2026-10-20]]).
 - **Lem unit papers 8–10, Gus's decision quotient, desks as agent files** (2026-10-21 → 10-22, 6 archived entries) — unit papers 8, 9 and 10 graded ([[lem-unit-count-on-it-2026-10-21]], [[lem-unit-top-double-2026-10-21]], [[lem-unit-hold-trump-2026-10-21]]; #235, #202), [[gus-decision-quotient-2026-10-21]], the Mayor's desks-as-agent-files and the ladder page ([[standing-desks]]).
 - **Lem unit papers 7–8, the audit's baseline report, Gus's contingent teaching tools** (2026-10-20 → 10-21, 10 archived entries) — unit papers 7 and 8 (#235, #202) and the audit's baseline and on/off report (#236); the Mayor's background desks and session-gated Lem frame; the Gus bid-30 pilot in the tournament store (#216); the Book desk's doubles-trump surface count (#230 A); Gus's historical-choice wish and broader contingent teaching ([[gus-tiny-gpt]]).
+- **Comparison algebra, Gus routing probes and book lines** (2026-10-22, 9 archived entries) — [[comparison-algebra-night]], [[comparison-algebra-2026-10-21]], [[gus-decision-class-probe-2026-10-21]], [[gus-observation-labels-2026-10-21]], [[gus-posterior-labels-2026-10-22]], [[gus-joint-labels-2026-10-22]], [[book-line-play-out-2026-10-22]], [[walt-endgame-probe-2026-10-22]].
 ---
+
+## [2026-11-02 | claude | Walt bids: the honest plan's root splat as a live bidder, piloted]
+
+**Touched pages:** [[walt-bidder-2026-11-02]], [[scenario-player]], [[arena]]
+**Added:** `arena/walt_bid.py`, spec `waltbid[:<walt play options>][,c<cutoff>]`: Zeb's bidder (`ZebBidder`) holding Walt's own planner, so Walt's honest forecast (floor 16) is read as a bid curve the way Zeb's is. A clock-sized pilot against the heuristic bidder with Walt play on both sides wins 34/48 games, +1.25 marks/game [+0.35, +2.12]; Walt bids 25% of hands at a mean of 32.7 and makes 88.8% against a mean forecast of 0.840 at the call, the heuristic 55.4% at 30.4; 48 games, 3.04e13 instructions. Data: `walt-bidder/` in [texas-42-zeb-research-2026-11](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-11). Follow-ups filed as #254.
+**Questions opened:** whether the forecast at the chosen call is honest at power (the max over seven declarations and thirteen targets); a Walt mode for the package so Plunge can bid live with Walt's play.
+
+## [2026-11-02 | codex | Zeb weight-space audit]
+
+**Added:** [[zeb-weight-space-2026-11-02]] — shipped weight identity, untrained bid inputs, one direct edit and a reproduced regression; candidate not promoted.
+**Updated:** [[scenario-player]] routes to the audit; evidence archived on Hugging Face.
+
+## [2026-10-22 | claude | exact-gpu: k = 2 for the seven trick-1 leads; the rate]
+
+**Touched pages:** [[exact-gpu-2026-10-22]]
+**Added:** k = 2 rungs for six leads (d12 refused at B2 = 3e12, 3.33e12 plays), every bound nested inside k = 1. Five tiles over the 1.2e8 leaf cap were split by the next seat's reply, 15 pieces each, with masses adding to 399,072,960 per tile. PREREG-GPU-RATE: 14/14 pieces byte-equal; Metal 10–11× the wall of 12 CPU threads, host instructions 1,027–2,347× fewer (GPU instructions not counted).
+**Questions opened:** whether deal 12's k = 2 rung is worth a raised B2 (Exact-T1's ruling); Hugging Face publication of the k = 2 triples and SHA-256 receipts (Exact-T1).
+
+## [2026-10-22 | claude | exact-1: S0 and S1 measured; T4 stopped partial on Jason's instruction]
+
+**Touched pages:** [[exact-player-s0-2026-10-22]], [[exact-player-s1-2026-10-22]]
+**S0:**
+- G1 exact at all 11,336 decisions; G2 on all 4,000 hands; G6 identical.
+- G7 passes, leaning optimistic. As run, it reads the uniform kernel's misfit to Walt's records,
+  not the construction.
+- Three own tiles, undecided: median 4.7×10³ choices and 4.5×10⁸ instructions; plan controller
+  median 57 states.
+
+**S1 (lean-low/lean-high mixture, every p):**
+- P: 6,064 of 6,065 exact, with G1 and G6 holding. For 7 decisions in 8 at three tricks left, the
+  act is the same at every p.
+- Median wall 0.9–3.2× Walt's live rung (data only).
+- T4 is partial, stopped on Jason's instruction: 41 of the 76 zeb positions attempted were solved
+  exactly; 23 were refused on the read budget, 10 on the wall cap and 2 on memory. The champion
+  pour was not reached.
+
+**Fixed:**
+- The drivers' dead throttle: `jobs -r` ran in a subshell.
+- `exact_report`: `--walt`, pooled instructions, Walt's zero times.
+- The Hub file count now follows pagination.
+
+**Questions opened:** #253 (cpu-slot orphans a wrapped solver at the cap). S1's G6 on T4 was not run. Trick 4's memory per course choice (about 1.2 KB)
+bounds the fibers that fit. The pure calibration gate (worlds drawn from the posterior) is still to
+be built.
+
+## [2026-10-22 | claude | exact-gpu: follow roots climbed on Metal; the depth-2 split; the leafless count; stopped]
+
+**Touched pages:** [[exact-gpu-2026-10-22]]
+**Added:** Nine follow roots from Exact-T1 were climbed from the rung its CPU reached. Two settled, d12 v3 at k = 3 (6-3) and d15 v2 at k = 4 (5-0, Γ 6.4‰); the rest remain unsettled at k = 3–4. Two new splits: by reply, and by the play after it (`Piece`). The viewer's node folds by max, with every piece holding all its worlds, and another seat's node sums; tested at both kinds of node. `fold` builds a root's rung from its triples lines. Fixed a hang: at k = 4 one command could fill the 2^25-slot leaf table, after which every insert probed every slot. The count now touches no table and stops partway through a tile past its budget, a command's worlds follow the leaves it claims, and an insert refuses after 4,096 probes. All pins hold. Deal 1's k = 2 bytes (33 GB) were deleted on Exact-T1's release; their digests stay in `k2-triples.txt`.
+**Questions opened:** the open climbs at the stop, queued but never run: d5 v2 k = 5 (depth-2 split), and d0 v2, d1 v2, d5 v3 and d39 v3 at k = 4; d39 v1 never started. Hugging Face publication rests with Exact-T1. Issue #248 (the silas-metal suite in `scripts/check`) waits on the Mayor.
+
+## [2026-10-22 | claude | exact-t1: the trick-1 ladder, how far the bidder's lead is from exact]
+
+**Touched pages:** [[trick1-ladder-2026-10-22]] (new), [[silas]], [[strategy-fusion-fence]] (inventory row for `silas/src/player/trick1.rs`), index-experiments.
+**Added:** `silas/src/player/trick1.rs` (counted belief, the focal-horizon sandwich with a lawful lower bound and a refuting upper bound, Γ certified, budget in plays; gathers as bytes that merge by shard and join by root tile), `silas/tests/trick1.rs`, `silas/examples/trick1_roots.rs`. The seven leads: Γ falls every rung; at k = 2, 75–295‰ on five, deal 1 proved, deal 12 past B2. Strictly settled 0/7, proved 1/7. Jason's settling half not met, his modelling half met on 6/7 (as a guarantee gain; the law's tile survives on 7/7). The orchestrator's met on 6/7. Exact-T1's "no lead settles" fails by deal 1. The 21 follow roots, reported apart and partial at Jason's stop: 8 forced, 3 proved (deal 2), 2 settled with a choice (k = 3, 4), 1 ended past 1e12, 6 still open, 1 not measured; the law's tile is refuted at three. Data on HF at texas-42-zeb-research-2026-10 exact/trick1-2026-10-22/.
+**Questions opened:** #250 (reduce as you go: the leaf map is the wall past k = 2), #251 (a family of types at trick 1; the record refutes one), #252 (how much of Γ is the clairvoyant upper side), #249 (cpu-slot's timeout misses a wrapped runner).
+
+## [2026-10-22 | mayor | cpu-slot caps the whole job, not just its wrapper (#249)]
+
+`scripts/cpu-slot` now starts the job in its own process group. The timeout ends the whole
+group, and an interrupt or hangup to cpu-slot is passed on to it. Before this, a wrapper such as
+`/usr/bin/time -l` exited on the cap and left the runner going outside any slot. One trick-1
+rung ran 18 minutes at 21 GB after "timed out". Two new tests fail on the old script and pass on
+the new one. The cost line still counts only the direct child, so a wrapper goes outside
+cpu-slot, not inside it (documented in the script). The night's pause file for the ladder
+(`scratch/ladder/PAUSED`, 988ded87) is in the same playbook spirit: a stop must outlive a respawn.
+
+## [2026-10-22 | claude | exact-gpu: the field epoch, M3 and the trick-1 ladder on Metal]
+
+**Touched pages:** [[exact-gpu-2026-10-22]], [[silas]], [[strategy-fusion-fence]]
+**Added:** `silas-metal/`, a standalone crate. It holds the Metal field epoch (= CPU mirror = Silas reference), the M3 h8 gate (all four roots, H and C equal texas-42's AUDIT) and the trick-1 ladder gather, whose bytes are Exact-T1's `Gathered` (k = 0, 1 and 2 byte parity). Per-root-tile gathers, SHA-256 receipts, and refusals for leaves, free memory and B2.
+**Questions opened:** #248 ([gated] a silas-metal suite in scripts/check); the rate PREREG (`PREREG-GPU-RATE.md` in the desk folder).
+
+## [2026-10-22 | claude | exact-1: the exact player lands in Silas (S0 pre-registered)]
+
+**Touched pages:** [[exact-player-s0-2026-10-22]]
+**Added:** `silas/src/player/` (counted posterior over world × type, information-state solve for every p via `family.rs`, `play_hand`, the second construction `recount`), `silas exact`, `silas/tests/player.rs` (G1 second construction, G2 Bayes+Bellman, G4 the 767 rebuilt, G6). Python checks banned on the track (Jason, 07:55).
+**Questions opened:** S0's measured batch (PREREG-S0 in the desk folder).
 
 ## [2026-10-22 | claude | book: #245 — an off's guard is the double or the top tile left in its suit]
 
@@ -70,130 +149,3 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **Measured on step C's deals.** Hand 23's stack arm makes 0.575 [0.560, 0.591], up from 0.394: paired +0.181 [+0.168, +0.195]. The line − stack gap closes to −0.005. Hands 24 and 25 are unchanged.
 - **Reproducing earlier numbers.** The thirteen studies that seat the book stack name the pre-#245 commit `64ecc6cf`. Re-runs follow on #245.
 - Pages: [[book-line-play-out-2026-10-22]].
-
-## [2026-10-22 | 998a154 | The comparison algebra night, as a trail]
-
-**Touched pages:** [[trails/comparison-algebra-night|comparison-algebra-night]] [[gus-historical-choice-wish]]
-**Added:** a trail through the night's seven pages (quotient, Lean and Silas, the class probe, three label families, the Walt endgame probe), what they establish together, and the open issues #240–#246.
-**Updated:** [[gus-historical-choice-wish]] routes to the trail.
-
-## [2026-10-22 | claude | night-math-2: the Walt endgame probe (#244)]
-
-- Filed the comparison algebra's three feasibility items as #242, #243 and #244 ([[comparison-algebra-2026-10-21]]).
-- #244 is done. On 27,118 real endgame decisions with two or three tricks left (Zeb's arena form and the champion),
-  Walt's tile was checked against the exact information-state optimum of its own model. The belief is uniform on
-  the whole fiber, and the others are played by Walt's own model of them.
-  - Silas (`silas family --courses`, new) and a Python Fraction reference agree at every decision.
-  - Wherever Walt enumerates, its tile is in the exact set: 24,179 of 24,179.
-  - Where it samples (three left, fiber > 512), it misses 5.7% [4.7, 6.7] (Zeb) and 5.6% [4.2, 7.1] (champion),
-    against chance at about 33%. The regret is 0.00077 [0.00058, 0.00098] and 0.00052 [0.00036, 0.00070] success
-    probability, under the pre-registered 0.001 bar.
-  - For Zeb, the floor is about half the endgame regret.
-- Enumerating up to 1,680 worlds closes the gap exactly. Filed as #246 (gated, low priority).
-- Tool: `lem/endgame.py`. Data: HF `texas-42-zeb-research-2026-10/zeb/walt-endgame-probe-2026-10-22`.
-- Page: [[walt-endgame-probe-2026-10-22]].
-
-## [2026-10-22 | claude | lem: Night-Probe-3 — joint-support labels route every decision; what routes is the observation up to relabeling (#241)]
-
-- `--labels --joint`: per play, the support of the unseen tiles (consistent-world pairs under
-  voids and hand sizes) on the pip graph up to relabeling, with a seat-erased control, a
-  block-end control and a tile-naming diagnostic. With the posterior facts the label leaves 0
-  roots with a decision collision (posterior family: 7) and 13 with a domain collision, and sees
-  0 of 128 fresh roots [0, 2.8%] at 8,425 states, more than the raw interface.
-  [[gus-joint-labels-2026-10-22]]
-- The seat-erased control gives the same row, and the block-end control leaves 96 roots with a
-  decision collision. So what routes is the per-play observation up to pip relabeling, not the
-  posterior. The four collisions that survive the joint support alone are pip order: the suit
-  led and the rank in a suit.
-- Default and `--labels` reports byte-identical (14fde1ac…, 66f4333b…). Evidence on HF
-  `lem/gus-joint-labels-2026-10-22/` (b754e4f5, verified); card row added.
-
-## [2026-10-22 | claude | night-math: the note's message counts checked; five policies are the note's]
-
-- Correction to the previous entry: the five fixed policies are the note's own result
-  ("Less demanding tasks"). `scenario/lean/Stab/Plans.lean` formalizes its argument.
-- Silas now checks all six of the note's message counts: 1, 5, 11, 15, 23, 31. Each threshold
-  has a witness whose only interior switch it is (`silas/tests/controller.rs`).
-- New from the night: only the envelope's knots move the best play on the plan's path, and
-  the path controllers have 142 and 132 states.
-- Page: [[comparison-algebra-2026-10-21]].
-
-## [2026-10-22 | book | the book's Ch. 9 lines played out on Hands 23–25 (#230 step C)]
-
-- Step B withdrawn: the book's surface count says pass on all three worked doubles hands, so a
-  chair bidding by it tests "never bid doubles", not the book's method.
-- Step C registered and sealed (bc68aa03) after a fresh Opus review of Ch. 9 read whole. The
-  primaries are the book's own claims. The general book stack leaves the book's line on Hands
-  23 and 24, so the line was scripted.
-- [[book-line-play-out-2026-10-22]]: every registered primary missed, and each miss is partly our
-  instrument. The faults: a no-help partner that hoards count, a classifier narrower than the
-  book's words, our declarer ducking sure tricks, setters' blind count throws.
-- Scoped reads:
-  - Hand 24's line makes 30 in 0.945 [0.938, 0.952]; its key move is worth +0.27.
-  - Hand 25's named run is all but the only way to be set (post hoc, 0.015 other), yet it comes
-    in 0.186 of deals against the book's own defence.
-  - Hand 23 makes 0.571; the book's own pounce onto the 5-5 exceeds its trick-one budget.
-- Stack repairs filed as #245. Data: `book/book-line-230c/` on HF.
-
-## [2026-10-22 | claude | lem: Night-Probe-2 — posterior-statistic labels and the decision-only audit (#239)]
-
-- Six posterior facts per observed play (unseen trumps and count, voids and exhausted suits per
-  seat, unseen tiles outranking the play, unseen tiles still following) plus a likelihood bucket.
-  The finest lawful label leaves 7 roots with a decision collision (hand-relative: 47) but sees 0
-  of 128 fresh roots; no label routes better than `seat` without seeing fewer. The 11 surviving
-  groups differ in nothing the family states: the joint placement of hidden tiles decides them.
-  [[gus-posterior-labels-2026-10-22]]
-- Decision-only (the subset construction) fails at exactly the decision-collision roots in every
-  row. Every label's quotient refines fork, so 56 of 128 bounds fresh roots seen; the solved label,
-  the next decision's answer (four symbols at a root), reaches it and covers 95 decision-only.
-- `lem/quotient.py --labels`, default report byte-identical (14fde1ac…). Evidence on HF
-  `lem/gus-posterior-labels-2026-10-22/`; the research card now maps the night's three label dirs.
-
-## [2026-10-22 | claude | lem: Night-Probe — the decision class in Gus, and tile-free routing labels (#239, #240)]
-
-- Gus does not linearly carry the decision class or the Q contrasts at the query token on fresh
-  roots (three-way: 107 fitting rows for 13 classes, underpowered). Pretraining put two-way
-  flatness there: parent layer-2 AUC 0.767, +0.157 [+0.048, +0.281] over untrained twins. The
-  masked lessons wore it down (wide −0.085 [−0.156, −0.017]) and moved the net's own three-way
-  choice instead (+0.129 [+0.016, +0.258]). [[gus-decision-class-probe-2026-10-21]]
-- No label in an eight-fact tile-free family routes the decision quotient, and none sees more than
-  7 of 128 fresh roots (fork: 56). Under the finest label, 47 roots keep a decision collision whose
-  blocks agree in every fact: the identity of a hidden tile decides the next choice.
-  [[gus-observation-labels-2026-10-21]]
-- `lem/probe/decision.py`; `lem/quotient.py --labels`, default report byte-identical. Evidence on
-  HF `lem/gus-decision-class-probe-2026-10-21/`, `lem/gus-observation-labels-2026-10-21/`.
-
-## [2026-10-22 | claude | night-math: the whole ending in Silas; good play meets only the knots]
-
-- Silas rebuilds the note's 560-deal no-trump ending on its own rules (`silas/src/family.rs`,
-  `silas/tests/controller.rs`) and reproduces every number:
-  - 14 thresholds and 31 classes;
-  - the 767-state controller, root ladder 1, 18, 31, 31;
-  - 302 states with 2-1 committed.
-- It derives the gap (5p − 1)/(1 + 18p) that Lean had taken as given.
-- New: the root optimum has five affine pieces, so five fixed plans suffice and are needed
-  (`scenario/lean/Stab/Plans.lean`, two lemmas).
-- Along good play only the four knots of the optimum move the best play. The path controller
-  has 132 states; the other ten thresholds are counterfactual.
-- The comparison dimension (`silas/src/comparison.rs`) is 2 at the note's local history and
-  168 at the root.
-- Page: [[comparison-algebra-2026-10-21]].
-
-## [2026-10-22 | claude | night-math: the minimal comparison algebra in Lean, the decision quotient in Silas]
-
-- Lean (`scenario/lean/Stab/Hexagon.lean`, `Residual.lean`, `Mixing.lean`): 22 theorems on the
-  three standard axioms, no sorry. They cover:
-  - the note's two numbers per decision and the hexagon;
-  - the 13 sign patterns as the sequential classes;
-  - the coarsest output-keeping right congruence, attained by the quotient machine;
-  - refinement exact after n − 1 blocks;
-  - convex mixing forcing equality at the 1/5 boundary.
-- Two brief claims proved false. The root Q triple has 4 weak orders, not 13, and one block is
-  not enough (a three-tile witness needs two). [[gus-decision-quotient-2026-10-21]]'s "every
-  ladder stabilizes after one block" is corrected: shape needs two.
-- Silas `quotient.rs` and `silas quotient --course FILE` (fed by `lem/quotient.py --export`)
-  reproduce `gus-decision-quotient-v1/report.json` in every count: 8,257 raw, 477 shape and 144
-  fork states, 0 differences.
-- Gate call: these Lean files are additive proofs in `scenario/lean`, as the brief placed them,
-  with no Walt code touched, so they merged ungated (precedent cb95168e). Silas changes avoid
-  core pins, physics and frame. [[comparison-algebra-2026-10-21]].
