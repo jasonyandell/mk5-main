@@ -3,7 +3,7 @@ title: "A field net written by hand: every weight a rule, no gradient (Lem)"
 kind: experiment
 first_seen: 2026-11-02
 last_updated: 2026-11-02
-status: registered
+status: complete
 ---
 
 Jason's commission (2026-11-02): write Zeb's field net from scratch, choosing every weight by hand.
@@ -166,6 +166,121 @@ Bad recovery does count against the audit.
 10. **Nulls.** The hand net's clean share exceeds the random conjunction net's by at least 0.2; the
     random net's own share is above the untrained twin's (booleanness alone buys some cleanliness).
 
+## Results
+
+Run 2026-11-02 as sealed (70988a02), on the 434,535 held-out rows. Evidence on the Hub (link below).
+
+**G1. Fidelity to Walt** (mean regret in make probability, deal-bootstrap 95%; chance is uniform legal play):
+
+| net | weights | regret | lead | 2nd | 3rd | last | exact match | zero-regret agree |
+|---|---|---|---|---|---|---|---:|---:|
+| random legal | — | 0.0413 [0.0410, 0.0417] | 0.0455 | 0.0346 | 0.0379 | 0.0450 | 0.335 | — |
+| untrained 165 × 124 | random init | 0.0434 [0.0430, 0.0438] | 0.0539 | 0.0329 | 0.0361 | 0.0445 | 0.329 | 0.550 |
+| **hand, zero passes** (100 × 85) | by hand | **0.0170** [0.0168, 0.0172] | 0.0184 | 0.0146 | 0.0214 | 0.0126 | 0.524 | 0.685 |
+| **hand, budgeted** (150 × 124) | by hand | **0.0143** [0.0141, 0.0145] | 0.0175 | 0.0133 | 0.0138 | 0.0108 | 0.535 | 0.700 |
+| shipped (128 × 64) | trained | 0.0084 [0.0083, 0.0086] | 0.0102 | 0.0083 | 0.0076 | 0.0066 | 0.533 | 0.754 |
+| trained twin (165 × 124) | trained | 0.0076 [0.0075, 0.0077] | 0.0094 | 0.0078 | 0.0066 | 0.0058 | 0.539 | 0.764 |
+
+- Written from the rules alone, with no forward pass, the net closes **0.74** of the random-to-shipped gap.
+  26 budgeted passes take it to **0.82**. The shipped net stays 1.7× better.
+- The hand net picks Walt's exact tile as often as the shipped net (0.535 against 0.533) and loses on
+  zero-regret agreement (0.700 against 0.754). It agrees on the easy rows and misses the costly ones.
+- The lead carries the largest excess per row (hand − shipped: lead 0.0073, second 0.0050, third 0.0062,
+  last 0.0042), as on dev. It is the shipped net's weakest region too.
+
+**G2. The arena.** Zeb with the hand field (budgeted arm) against Zeb with the shipped field, 384 games
+(24 seeds × 16, 192 mirrored pairs), heuristic bidding on both sides, games to 7 marks, both deciding by
+worlds:
+- **−0.55 marks per game [−0.76, −0.34]** for the hand field (bootstrap over pairs, 10,000 resamples);
+  it won 167 of 384 games (0.435). Chance is 0.
+- The game margin's SD was 3.3 marks, not the 5–6 assumed, so the MDE was 0.31, not 0.8.
+- **The field's fidelity moves Zeb's marks.** A field 1.7× less faithful to Walt costs about half a mark
+  a game, measured. Zeb plans against the field, so a cruder model of the other seats is a worse plan.
+- Cost: 9.25e13 instructions retired over the 24 calls.
+
+**G3. The instrument check.** The audit read the hand net (with its three decoys) as it reads any field net.
+
+| net (read R, list v2) | clean share of live poles |
+|---|---:|
+| hand net, every unit one known rule | **0.360** (195 of 542) |
+| the same, rows shuffled | 0.356 |
+| random conjunctions, same shape | 0.378 |
+| untrained 165 × 124 | 0.320 |
+| for scale: trained 128 × 64, three seeds (#233) | 0.542 (floor 0.276) |
+
+- **The clean share cannot tell rules from random conjunctions.** A net built entirely of named rules,
+  with no superposition by construction, reads 0.360. Two thirds of its live poles come out partial or
+  unnamed. The trained net's 0.542 sits further above its floor than the hand net does above its own.
+  So an unnamed pole really is, first, a word list v2 lacks (#202). Here we know the missing words: the
+  per-tile rules.
+- **Exact recovery**, the `+` label against the key: 0.35 (12 of 34). Most misses are not the instrument
+  failing.
+  - 19 of the 34 are copies of one count input. The audit named a declaration, or a coarser count slot,
+    that holds on exactly those rows or a superset of them: a synonym the key did not list.
+  - `bidding-side` (base rate 0.52) and `trump-out` (0.863) can never be labels, because the audit caps
+    a label's base rate at 0.5.
+  - Of the rest, 9 of 12 are named exactly. These are the five declaration gates, `partner-winning`, both
+    halves of `trumps-3plus`, and the offshoot decoy.
+- **Position**: the play-count baseline never grants `lead`, `third` or `last` (#236), and the excluded
+  column names all three (3 of 3).
+- **The on/off column (#236) recovers more** than the top-set label: 0.59 against 0.35.
+- **Per-tile rules**: 0.20 of the 188 live per-tile units are called clean. The labels are mostly a facet
+  (`partner-winning` ×8, `trump-is-fours/fives`) or a raw `gone` bit. Over all live units, 0.21 are called
+  clean with a label outside the key's set. That is 0.61 of everything called clean.
+- **The decoys.**
+  - The offshoot (partner holds the trick, or more weakly partner led) is labelled `partner-winning`,
+    clean, as keyed.
+  - **The unrelated OR (partner holds the trick, or fives are trump) is also called clean
+    `partner-winning`** at precision 1.000. The top 1% sees only the stronger half. A top-set reader
+    cannot see packing hidden in a pole's weaker branch. The on/off column names the other half
+    (`trump-is-fives`).
+  - The near miss (`lead` and no double held) reads unnamed: `lead` is position, which the baseline
+    never grants.
+- **Ties** moved 26 labels between the row orders but not the shares (0.360 against 0.356).
+
+**Predictions.**
+
+| # | prediction | result |
+|---|---|---|
+| 0 | zero-pass regret in [0.015, 0.020], above budgeted | **held** (0.0170) |
+| 1 | replication: [0.013, 0.018]; gap closed 0.75–0.88 | **held** (0.0143; 0.82) |
+| 2 | exact match within 0.03 of shipped; agreement 0.66–0.71 | **held** (0.535 vs 0.533; 0.700) |
+| 3 | the lead carries the largest per-row excess | **held** (0.0073) |
+| 4 | twin within 0.002 of shipped, clear of hand | **held** (0.0076) |
+| 5 | arena interval includes 0, lower end above −0.8 | **missed** (−0.55 [−0.76, −0.34] excludes 0; the bound held) |
+| 6 | non-position exact M1 ≥ 0.7; position label ≤ 0.2 and with excluded ≥ 0.8 | **missed** (0.35; position 0.33 by label, 1.0 with excluded). Diagnosed above: synonyms and the base cap. |
+| 7 | per-tile clean ≥ 0.3; M3 ≥ 0.15; shuffle moves ≥ 10 labels | **2 of 3** (0.20 missed; 0.21 held; 26 held) |
+| 8 | on/off beats the label by ≥ 0.1 | **held** (0.59 against 0.35) |
+| 9 | offshoot `partner-winning`; near miss clean `lead`; unrelated OR not clean | **1 of 3**: the unrelated OR passed as clean, the finding |
+| 10 | hand exceeds random conjunctions by ≥ 0.2; random above untrained | **missed / held**: hand 0.360 < random 0.378; random > untrained 0.320 |
+
+**Exploratory, not registered: does the shipped net read voids?** A blind read of its weights found
+the void block's mean |w1| about equal to the constant bid block's (commission addendum 2). On the
+held-out rows, zeroing the void block changes 12.8% of the shipped net's moves where some seat has
+shown a void on a live tile (62% of rows). Regret there rises from 0.0090 to 0.0100, and overall from
+0.0084 to 0.0091. Weight size undercounted a rarely-on input: the net reads voids, modestly. The hand
+net reads none. The one void rule tried, a walker an opponent can ruff, did not move Walt on dev
+(739 rows). Reading voids on purpose is the next rule to write.
+
+## What it taught us
+
+- **The field can be written by hand.** About 270 named boolean rules play within 1.7× of the trained
+  net's regret, and the compiled core runs them bit for bit. A model of the other seats can now be read,
+  and varied by editing one named weight.
+- **The book's rules carry most of it, and the lead is where they stop.** The trained twin's edge is
+  largest on the lead,, where Walt is softest: holding a walker, it leads one only 0.60 of the time on dev. The book's lead
+  rules are a priority list; the teacher's leads weigh more than one at a time.
+- **On a net of known rules, the audit's clean share reads as an untrained net does.** Its top-set
+  label misses rules list v2 has no word for, picks synonyms, and passes an unrelated OR as clean
+  whenever the OR's stronger half fills the top 1%.
+  - For the already-clean test, this cuts both ways. A low clean share is weak evidence of mixing, since
+    a perfectly clean net scores 0.36. A clean label is weak evidence against packing in a pole's weak
+    branch.
+  - The essay's own tools, read together, do better. The on/off column found the hidden half; growth
+    and use would test it.
+  - Scope: one hand-built net of saturated detectors, list v2, these rows. Trained units are graded
+    dials, so this calibrates the instrument's blind spots, not the 0.597.
+
 ## The review before sealing
 
 One fresh Opus reader read the essay whole, the commission and this plan (2026-11-02). It found G3
@@ -182,6 +297,9 @@ This net, these inputs (one position, uniform beliefs, no history), list v2. A r
 rule we did not write, not one the game lacks.
 
 ## Links
+
+Evidence: [Hub, `lem/hand-written-field-net-2026-11-02/`](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-11/tree/7b3ddc3ae095f0bf09abad72bb91f360dfd0ff03/lem/hand-written-field-net-2026-11-02).
+
 
 [[clean-neurons-42]] · [[lem-the-teacher]] · [[lem-fidelity-by-concept-2026-10-16]] ·
 [[lem-field-net-audit-2026-10-15]] · [[lem-fixed-conditioning-2026-10-20]] · [[scenario-player]]

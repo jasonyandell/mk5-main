@@ -338,3 +338,11 @@ What carried across them:
   the gate is missing (the leader led the second trump), the vote costs the take (+0.242 when
   ablated).
 - None of the ten read as mixing. Scope: one net, one position, uniform beliefs, no history.
+
+**The instrument, calibrated on a net we wrote (2026-11-02,
+[[lem-hand-written-field-net-2026-11-02]]).** A field net written by hand, every unit one named rule,
+reads 0.360 clean under read R. That is below a structure-matched random net (0.378) and just above an
+untrained one (0.320). A pole the audit leaves unnamed is first a word list v2 lacks; here the missing
+words are the per-tile rules. A clean top-set label is no proof against packing either: a decoy that
+ORs partner-winning with "fives are trump" was called clean `partner-winning`, and only the on/off
+column saw the other half. Read clean shares as fit to the list, and test packing by growth and use.
