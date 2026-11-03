@@ -1177,4 +1177,5 @@ forecast runs 3–8 points hot. Nothing ships; the option is proposed for the ne
 [[the-wall]] · [[the-wall-biography]] · [[belief-policy-value-algebra]] ·
 [[strategy-fusion]] · [[expected-q-value]] · [[arena]] · [[walt]] ·
 [[auction-decoder]] · [[gus]] · [[consumption-ledger]] ·
-[[zeb-weight-space-2026-11-02]] (the shipped field net's untrained bid rows; direct tying changes decisions but establishes no strength gain)
+[[zeb-weight-space-2026-11-02]] (the shipped field net's untrained bid rows; direct tying changes decisions but establishes no strength gain) ·
+[[bourne-written-field-2026-11-02]] (a field net written from zero without training: 68.9% against random legal play, 41.3% against the trained field; standalone policies, no promotion)

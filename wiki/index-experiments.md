@@ -280,6 +280,7 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 ## E[Q] / oracle / Zeb era
 
 - [[experiments/zeb-weight-space-2026-11-02|Zeb weight-space audit]] — untrained bid rows retain initialization; one direct edit preserves bid-30 outputs, fixes one tactical probe and breaks another; no promotion (complete)
+- [[experiments/bourne-written-field-2026-11-02|Bourne-0 written field]] — 53,332 directly written parameters, no training; exact symbolic/native checks; 68.9% against random and 41.3% against the trained standalone field over 1,008 paired deals each (complete)
 
 - [[experiments/eq-browser-visualizers|eq-browser-visualizers]] — local browser-runbook for E[Q] 3D surface, PDF discs, and game-journey visualizers; makes candlewax-shaped near-tie/uncertainty surfaces inspectable (complete)
 - [[experiments/full-teacher-eq-experiment|full-teacher-eq-experiment]] — the era-4 closeout: can mixing oracle-guided (full-teacher) games into Zeb's self-play break the bootstrapping compounding-error problem? (complete)
