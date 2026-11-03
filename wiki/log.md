@@ -64,6 +64,12 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **Comparison algebra, Gus routing probes and book lines** (2026-10-22, 9 archived entries) — [[comparison-algebra-night]], [[comparison-algebra-2026-10-21]], [[gus-decision-class-probe-2026-10-21]], [[gus-observation-labels-2026-10-21]], [[gus-posterior-labels-2026-10-22]], [[gus-joint-labels-2026-10-22]], [[book-line-play-out-2026-10-22]], [[walt-endgame-probe-2026-10-22]].
 ---
 
+## [2026-11-03 | lem | Lem: a blind weight read of the shipped field net, graded on real rows]
+
+**Touched pages:** [[lem-blind-read-2026-11-03]] [[clean-neurons-42]] [[index-experiments]]
+**Added:** the blind-read experiment, sealed after a fresh Opus essay review. Of 14 unseen predictions, 8 held, 3 in part, 3 missed.
+**Updated:** the clean-neurons card (L1 39 holds back the 6-5; three units shut trump leads; the net keeps feeding count where Walt stops). Data on the Hub at 37e3bacc.
+
 ## [2026-11-02 | claude | Lem: a field net written by hand, graded]
 
 **Touched pages:** [[lem-hand-written-field-net-2026-11-02]], [[clean-neurons-42]], [[index-experiments]]
