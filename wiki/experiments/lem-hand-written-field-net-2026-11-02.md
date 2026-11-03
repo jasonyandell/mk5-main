@@ -14,7 +14,7 @@ writes `hand.npz`, `hand.fnet` and `neurons.md`, the table of every unit.
 ## The net
 
 field-v2 (the shipped layout: pip trumps only, the canonical frame where trump is pip 6), shifts 0,
-**165 layer-1 units × 124 layer-2 units**. The shipped net is 128 × 64.
+**150 layer-1 units × 124 layer-2 units** (layer-1 units no rule reads are pruned). The shipped net is 128 × 64.
 
 - **Layer 1 reads the table.** Each unit is "all of these inputs, none of those": weights ±1 or −2
   and a bias, so its value is exactly 0 or 1. A count ("a trump is still out", "I hold three trumps")
@@ -42,13 +42,26 @@ against Walt's `q`. Seven rounds, every variant listed in `variants.md` on the H
 dev regret 0.0150 (shipped 0.0092 on rows it trained on, random legal 0.0418). Rules that lost on
 dev were removed, not kept at zero.
 
+## Two arms (the commission's addendum, 2026-11-02)
+
+The protocol mirrors Rikiya T.'s weight-space programming ([post](https://rikiyat.github.io/blog/weight-space-programming/)):
+- **Zero forward passes** (`build(zero=True)`, 100 × 85): the rules as first written, from the input
+  layout and the book alone, before the net was ever run: take, feed last, keep count, don't lead count,
+  draw with the boss trump, draw, walk, the static ranking. It is exactly v1 (dev regret 0.0175, the same
+  number before and after the code was refactored to hold both arms).
+- **Budgeted forward passes** (the frozen net, 150 × 124): edits kept only where they lowered dev regret.
+  Budget spent: **26 forward passes of candidate nets over the 86,495 dev rows (18 distinct candidates)**,
+  plus 5 reads of Walt's choices on dev rows that ran no net (`variants.md`). One deviation from
+  "keep an edit only if it wins": round 2 added five rules as one bundle, and later rounds tuned or
+  removed them one at a time.
+
 ## Grading plan, registered before any graded number
 
 All on the audit's **434,535 held-out rows** (the five training pours' `deal % 10 == 0`,
 `scratch/lem/audit-2026-10-15/sample.npz`), never seen while writing the rules.
 
-**G1. Fidelity to Walt.** For the hand net, the shipped net, a trained net of the same width
-(165 × 124, the shipped recipe: `lem.probe squeeze-train`, the same five pours, 60 epochs, seed 0),
+**G1. Fidelity to Walt.** For both arms, the shipped net, a trained net of the same width
+(165 × 124, started before pruning settled the width at 150; the squeeze recipe: `lem.probe squeeze-train`, the same five pours, 60 epochs, seed 0),
 its untrained twin (epoch 0) and uniform random legal play (analytic):
 - mean regret in make probability, with a deal-clustered bootstrap 95% interval (`lem.probe.fidelity`);
 - exact match with Walt's chosen tile, and zero-regret agreement (q ties count);
@@ -74,8 +87,7 @@ call it clean), `decoy-near-miss` = lead ∧ no double held (key: `lead` is a fa
 
 **Ties.** A hand unit's pre-activation is a small integer, so its top 1% is mostly a tie broken by row
 order, and the sample runs in pour order: a unit on in more than 1% of rows takes its top set from
-pour 0's earliest deals, where a per-deal concept like `trump-is-X` can win the label by accident. 54 of
-the 292 units are on in under 1% of rows; for them the top set is padded with near misses, and the true
+pour 0's earliest deals, where a per-deal concept like `trump-is-X` can win the label by accident. Many units are on in under 1% of rows; for them the top set is padded with near misses, and the true
 rule's precision cannot exceed on-rate ÷ 0.01 (`onrates.json` on the Hub, computed before the audit).
 So the audit runs twice: as the instrument stands, and on the sample with its rows permuted by a fixed
 seed. The difference between the two is itself a finding about the instrument. Score the audit's labels against the
@@ -128,6 +140,7 @@ Bad recovery does count against the audit.
 
 ## Predictions, sealed before G1–G3 run
 
+0. **The zero-pass arm**: held-out regret in [0.015, 0.020], above the budgeted arm's.
 1. **Replication, not prediction.** Dev regret was 0.0150, closing 0.82 of the random-to-shipped gap
    on dev. On the held-out rows: mean regret in [0.013, 0.018]; gap closed 0.75–0.88.
 2. **Match.** The wiki's 0.754 for the shipped net is zero-regret agreement (`fidelity.run`'s `agree`);

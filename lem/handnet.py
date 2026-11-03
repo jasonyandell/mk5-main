@@ -166,6 +166,12 @@ class Builder:
         self.l2[name] = Unit(name, rule, why, terms, 1 - len(lits), out=dict(out))
         return name
 
+    def prune(self) -> "Builder":
+        """Drop layer-1 units no rule reads (decoys stay: the audit reads them)."""
+        read = {k for u in self.l2.values() for k in u.terms}
+        self.l1 = {k: u for k, u in self.l1.items() if k in read or u.kind == "decoy"}
+        return self
+
     def compile(self) -> FieldNet:
         n = N_FEATURES_OF[LAYOUT]
         l1 = list(self.l1)
@@ -228,7 +234,10 @@ def strength(t: int) -> int:
     return (14 if hi == lo else 0) + 2 * hi + lo // 2
 
 
-def build(P: dict = P) -> Builder:
+def build(P: dict = P, zero: bool = False) -> Builder:
+    """The net. `zero` is the first arm of the commission's protocol: the rules as
+    written before any forward pass (v1: take, feed last, keep count, don't lead
+    count, draw with the boss trump, draw, walk; the static ranking)."""
     B = Builder()
 
     # ---- layer 1: the table as it stands
@@ -341,7 +350,8 @@ def build(P: dict = P) -> Builder:
                 # last to a countless trick it buys one point for a trump, so it ranks lower
                 tk = B.rule(f"take:{name(t)}", f"an opponent holds the trick and the {name(t)} takes it",
                             "book: can-take-it", [follow, owin, takes[t, s_]], {t: P["take"]})
-                B.rule(f"secure:{name(t)}", f"partner led a tile that can lose its suit and the {name(t)} takes the trick",
+                if not zero:
+                  B.rule(f"secure:{name(t)}", f"partner led a tile that can lose its suit and the {name(t)} takes the trick",
                        "book: protect partner's trick", [third, pwin, takes[t, s_]], {t: P["secure"]}, nots=[ptop])
             else:
                 led_s = [led[s_, n] for n in (1, 2, 3)]
@@ -350,7 +360,7 @@ def build(P: dict = P) -> Builder:
             # taking with count banks it: undo keep-count's vote against the tile and add its count
             when = [follow, owin, takes[t, s_]] if is_trump(t) else [[led[s_, n] for n in (1, 2, 3)], owin, takes[t, s_]]
             for pts, unit in ((10, ten1.get(t)), (5, five1.get(t))):
-                if unit:
+                if unit and not zero:
                     B.rule(f"take-{'ten' if pts == 10 else 'five'}:{name(t)}" + ("" if is_trump(t) else f"/{sn}"),
                            f"... and the {name(t)} is a {'ten' if pts == 10 else 'five'}: take with the count",
                            "book: count on your own trick", when + [unit],
@@ -363,31 +373,43 @@ def build(P: dict = P) -> Builder:
         dn = B.l1[decl[d]].name[5:]
         B.rule(f"feed:{dn}", "partner holds the trick and I play last: give it count",
                "book: safe-trick (count to a safe trick)", [pwin, last, decl[d]], give)
-        B.rule(f"feed-third:{dn}", "partner led a tile that cannot lose its suit: give it count",
-               "book: safe-trick", [third, pwin, ptop, decl[d]],
-               {t: v * P["feed_third"] // P["count"] for t, v in give.items()})
+        if not zero:
+            B.rule(f"feed-third:{dn}", "partner led a tile that cannot lose its suit: give it count",
+                   "book: safe-trick", [third, pwin, ptop, decl[d]],
+                   {t: v * P["feed_third"] // P["count"] for t, v in give.items()})
         B.rule(f"keep-count:{dn}", "an opponent holds the trick: keep my count off it",
                "book: don't give count to the setters' trick", [owin, decl[d]], keep)
         B.rule(f"lead-no-count:{dn}", "on lead: don't lead count that can lose",
                "book: an off calls for count", [lead, decl[d]], keep)
 
-    B.rule("pull", "on lead for the bidders, two trumps or more, trump out: draw trump",
-           "book: draw trump", [lead, side, trump_out, two_trumps], {t: P["pull"] for t in TRUMPS})
-    B.rule("pull-long", "on lead, three trumps or more, trump out: draw trump",
-           "book: four-trumps-or-more (lead trump)", [lead, trump_out, three_trumps],
-           {t: P["pull"] for t in TRUMPS}, nots=[side])
-    for t in TRUMPS:
-        B.rule(f"boss:{name(t)}", f"on lead with trump out: the boss trump {name(t)} before a lower one",
-               "book: draw with the top trump", [lead, trump_out, top[t]], {t: P["boss"]})
-    for t in OFFS:
-        dbl = DOMINO_HIGH[t] == DOMINO_LOW[t]
-        B.rule(f"walk:{name(t)}", f"on lead: the {name(t)} cannot lose its suit; lead it",
-               "book: walker (lead your doubles)", [lead, top[t]], {t: P["walk_double"] if dbl else P["walk"]})
+    if zero:
+        holds = B.step("holds-trump", "I hold a trump", "book: trump-tile", [f_hand(t) for t in TRUMPS], 1)
+        for t in TRUMPS:
+            B.rule(f"pull-boss:{name(t)}", f"on lead for the bidders with trump out: lead the boss trump {name(t)}",
+                   "book: draw trump with the top trump", [lead, side, trump_out, top[t]], {t: 3500})
+        B.rule("pull", "on lead for the bidders, holding trump with trump out: lead trump",
+               "book: draw trump", [lead, side, trump_out, holds], {t: 1500 for t in TRUMPS})
+        for t in OFFS:
+            B.rule(f"walk:{name(t)}", f"on lead: the {name(t)} cannot lose its suit; lead it",
+                   "book: walker (lead your doubles)", [lead, top[t]], {t: 2500})
+    else:
+        B.rule("pull", "on lead for the bidders, two trumps or more, trump out: draw trump",
+               "book: draw trump", [lead, side, trump_out, two_trumps], {t: P["pull"] for t in TRUMPS})
+        B.rule("pull-long", "on lead, three trumps or more, trump out: draw trump",
+               "book: four-trumps-or-more (lead trump)", [lead, trump_out, three_trumps],
+               {t: P["pull"] for t in TRUMPS}, nots=[side])
+        for t in TRUMPS:
+            B.rule(f"boss:{name(t)}", f"on lead with trump out: the boss trump {name(t)} before a lower one",
+                   "book: draw with the top trump", [lead, trump_out, top[t]], {t: P["boss"]})
+        for t in OFFS:
+            dbl = DOMINO_HIGH[t] == DOMINO_LOW[t]
+            B.rule(f"walk:{name(t)}", f"on lead: the {name(t)} cannot lose its suit; lead it",
+                   "book: walker (lead your doubles)", [lead, top[t]], {t: P["walk_double"] if dbl else P["walk"]})
 
     # the static ranking: give up the weakest tile
     B.b3 = np.array([-P["low"] * strength(t) for t in range(N_TILES)], np.int64)
     B.b3_why = "otherwise play the weakest tile: offs before trumps, singles before doubles, low pips first"
-    return B
+    return B.prune()
 
 
 def with_decoys(B: Builder) -> Builder:
@@ -465,6 +487,10 @@ def main(argv: list[str]) -> None:
             "l1": [u.name for u in B.l1.values()], "l2": [u.name for u in B.l2.values()],
             "kinds": {u.name: u.kind for u in B.l1.values()}}
     (out / "units.json").write_text(json.dumps(meta, indent=1))
+    Z = build(zero=True)
+    Z.compile().save(out / "zero.npz")
+    (out / "zero.fnet").write_bytes(Z.compile().to_bytes())
+    (out / "zero_neurons.md").write_text(table(Z))
     D = with_decoys(build())
     D.compile().save(out / "hand_audit.npz")
     (out / "units_audit.json").write_text(json.dumps({"l1": list(D.l1), "l2": list(D.l2)}, indent=1))
