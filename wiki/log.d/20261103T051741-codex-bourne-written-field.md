@@ -1,4 +1,4 @@
-## 2026-11-02 — Bourne-0: a field net written from scratch
+## [2026-11-02 | codex | Bourne-0: a field net written from scratch]
 
 Jason requested a fresh field net after the weight-space programming article.
 `zeb/scripts/written_field.py` writes a 343→111→108→28 integer ReLU network from
