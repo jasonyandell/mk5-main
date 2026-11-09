@@ -2,7 +2,7 @@
 title: "The tournament: an append-only, Bradley–Terry-rated ladder of Texas 42 players"
 kind: topic
 first_seen: 2026-10-14
-last_updated: 2026-10-19
+last_updated: 2026-11-09
 status: active
 ---
 
@@ -50,6 +50,18 @@ scripts/cpu-slot --threads 2 --timeout 60 -- scratch/venv/bin/python -u -m tourn
 The external timeout caps a run, not thinking. A timeout preserves its claim
 and completed hands; it is unfinished evidence, never a scored loss or a
 reason to reroll a seed. `work --budget-s` alone does not cap a faceoff.
+
+## The 42 Bench (walt1 binaries)
+
+Kind `walt1-binary` (`tournament/walt1_seat.py`) seats an external `walt1 play` binary as a
+bid30-ladder card player: one process per decision, the seat's own dealt hand and the public
+record in, every reply checked against the referee (legal, leader, points, forced). It is pinned by
+the binary's sha256, the build's git commit (or a source digest) and the tournament sources, at
+`n 40`/`n0 8` with seed rule `walt1-bench-v1`. `add-walt1 NAME BINARY BUILD` registers one;
+`table`/`work --anchor ID` rate against a chosen anchor, and `work --exclude IDS` withdraws ids
+from scheduling while keeping their records. The bench keeps its own store, apart from the canonical
+one, because `participants/` is shared by every ladder. The first run, seven clean-room builds
+against walt-wasm with a reseeded control: [[42-bench-ladder-2026-11-09]].
 
 ## Participants, pinned
 
