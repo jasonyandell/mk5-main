@@ -160,7 +160,10 @@ class Claims:
     def try_lock(self, d: Path) -> bool:
         import fcntl
 
-        fh = open(d / ".lock", "a")
+        try:
+            fh = open(d / ".lock", "a")
+        except FileNotFoundError:  # another worker finished and removed it after open() listed it
+            return False
         try:
             fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
