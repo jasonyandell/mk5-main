@@ -59,8 +59,9 @@ record in, every reply checked against the referee (legal, leader, points, force
 the binary's sha256, the build's git commit (or a source digest) and the tournament sources, at
 `n 40`/`n0 8` with seed rule `walt1-bench-v1`. `add-walt1 NAME BINARY BUILD` registers one;
 `table`/`work --anchor ID` rate against a chosen anchor, and `work --exclude IDS` withdraws ids
-from scheduling while keeping their records. The bench keeps its own store, apart from the canonical
-one, because `participants/` is shared by every ladder. The first run, seven clean-room builds
+from scheduling while keeping their records. The bench keeps its own store,
+[jasonyandell/texas-42-bench](https://huggingface.co/datasets/jasonyandell/texas-42-bench) (CC0),
+apart from the canonical one, because `participants/` is shared by every ladder. The first run, seven clean-room builds
 against walt-wasm with a reseeded control: [[42-bench-ladder-2026-11-09]].
 
 ## Participants, pinned

@@ -84,12 +84,13 @@ How to read it:
 
 ## Data
 
-Local store: `scratch/bench/remote.git` in the `bench/42-bench-ladder` worktree
-(`participants/`, `faceoffs/marks7-bid30/`); derived table `~/code/local/walt-corpus/elo.json`.
-The bench belongs in its own public CC0 dataset, `jasonyandell/texas-42-bench`, because the
-canonical store's `participants/` directory is shared by every ladder. Creating it was refused by
-this session's permission classifier. The card and the upload command are in
-`~/code/local/walt-corpus/TOURNEY-STATUS.md`. Not yet published.
+Published 2026-11-09, public, CC0:
+[jasonyandell/texas-42-bench](https://huggingface.co/datasets/jasonyandell/texas-42-bench)
+(`participants/` 9 records, `faceoffs/marks7-bid30/` 1011 records; append-only, the canonical
+record format). It is a separate dataset from the canonical store because `participants/` there
+is shared by every ladder. Re-derive the table with
+`python -u -m tournament --store hf:jasonyandell/texas-42-bench table --ladder marks7-bid30 --anchor walt1-ref-86ab0d3c`.
+Derived copy: `~/code/local/walt-corpus/elo.json`.
 
 ## Next
 
