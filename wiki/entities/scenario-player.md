@@ -54,6 +54,10 @@ of (rung, seat, remaining hand, record) and is cached as such.
   against the heuristic with Walt play both sides, clock-sized: +0.90 [+0.21, +1.56] marks/game
   over 96 games in two blocks (the second shrank the first), forecast at the call 0.842 against
   0.866 made ([[walt-bidder-2026-11-02]]).
+- **Seven clean-room `walt1 play` builds vs walt-wasm (2026-11-09).** On the bid30 ladder, with a
+  reseeded walt-ref as the chance baseline (level, 1502 [1465, 1539]), every build lies 35–50 Elo
+  below Walt. The fastest (Fable, 33 ms per decision, about 20× faster) is −33 [−53, −13], so none
+  passes the ±50 bar. The common gap points at what the spec leaves out ([[42-bench-ladder-2026-11-09]]).
 - **The champion is `walt:k1,n512,m8`** (two rungs, 512 root worlds, floor
   16). It stays champion until a field-net player beats it with an interval
   clear of zero; none has (best: +0.13 [−0.17, +0.44], the 250,000-deal net).
