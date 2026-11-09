@@ -11,6 +11,7 @@ mismatch is an error, never a fallback.
 from __future__ import annotations
 
 import base64
+import fcntl
 import hashlib
 import os
 import shutil
@@ -37,10 +38,19 @@ def _integrity(data: bytes) -> str:
 def materialize(p: Participant, cache: Path = DEFAULT_CACHE) -> Path:
     """The directory holding p's verified artifacts (created once, then reused)."""
     target = cache / p.id
-    done = target / ".verified"
-    if done.exists():
+    if (target / ".verified").exists():
         return target
-    tmp = Path(tempfile.mkdtemp(prefix=f".{p.id}-", dir=_ensure(cache)))
+    # One build per participant at a time: a faceoff's parallel games each materialize, and two
+    # concurrent builds share a cargo target dir, so one could compile against the other's sources.
+    with open(_ensure(cache) / f".{p.id}.lock", "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        if not (target / ".verified").exists():
+            _build(p, cache, target)
+    return target
+
+
+def _build(p: Participant, cache: Path, target: Path) -> None:
+    tmp = Path(tempfile.mkdtemp(prefix=f".{p.id}-", dir=cache))
     try:
         if p.kind == "zeb-npm":
             _zeb(p, tmp)
@@ -67,7 +77,6 @@ def materialize(p: Participant, cache: Path = DEFAULT_CACHE) -> Path:
     finally:
         if tmp.exists():
             shutil.rmtree(tmp, ignore_errors=True)
-    return target
 
 
 def _ensure(d: Path) -> Path:
