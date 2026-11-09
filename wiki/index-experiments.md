@@ -5,7 +5,7 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 
 ## Tournament
 
-- [[experiments/42-bench-ladder-2026-11-09|42-bench-ladder-2026-11-09]] — seven clean-room `walt1 play` builds rated on the bid30 ladder against walt-wasm (2022 games): a reseeded control sits level (1502 [1465, 1539]), every build lies 35–50 Elo below Walt, the fastest (Fable, 33 ms/decision, ~20× faster) −33 [−53, −13], none within the ±50 bar (complete)
+- [[experiments/42-bench-ladder-2026-11-09|42-bench-ladder-2026-11-09]] — seven clean-room `walt1 play` builds rated on the bid30 ladder against walt-wasm (2022 games): a reseeded control sits level (1502 [1465, 1539]), every build lies 35–50 Elo below Walt, the fastest (Fable, 33 ms/decision, ~20× faster) −33 [−53, −13], none within the ±50 bar; round 2 (4276 games): Zeb 0.4.1 1586 [1552, 1621], clearly stronger; the tie-refining builds (v1-spec Sol 68 ms/decision, v1-spec Haiku, Fable tierefine) all inside ±50 (complete)
 - [[experiments/walt-bidder-2026-11-02|walt-bidder-2026-11-02]] — Walt bids: the honest plan's root splat as a live bidder (`waltbid`), piloted against the heuristic with Walt play both sides, two clock-sized blocks, +0.90 [+0.21, +1.56] marks/game over 96 games, the forecast honest at the call (complete)
 - [[experiments/gus-contingent-teacher-2026-10-20|Gus contingent teacher]] — complete; exact contingent teacher gains, selected student remains initialization
 - [[experiments/gus-sampled-confirmation-2026-10-19|Gus sampled-policy confirmation]] — complete; sampled-policy replication failed; all10,240 hands replayed

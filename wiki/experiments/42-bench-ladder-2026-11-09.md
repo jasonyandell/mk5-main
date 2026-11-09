@@ -1,5 +1,5 @@
 ---
-title: The 42 Bench on the bid30 ladder — seven clean-room walt1 builds rated against walt-wasm (2026-11-09)
+title: The 42 Bench on the bid30 ladder — clean-room walt1 builds and Zeb rated against walt-wasm (2026-11-09)
 kind: experiment
 first_seen: 2026-11-09
 last_updated: 2026-11-09
@@ -72,6 +72,55 @@ How to read it:
   for all seven. Reseeding walt-ref alone flips its opening lead on the grader's first example
   (19 → 8), so a match rate in that range may be near walt-ref's own reproducibility.
 
+## Round 2 (2026-11-09 19:17Z–22:01Z): Zeb, Fable's tie refinement, v1-spec builds
+
+The same ladder and store. New players:
+
+- **Zeb 0.4.1** (kind `zeb-native`, 160 worlds, seed 0, the common Bid30Bidder). This is
+  the only Zeb rated on the canonical `marks7-bid30` ladder, where it is the anchor. The
+  canonical record fails closed against today's harness. Its source pin holds
+  `arena/hand_metrics.py` from before b41b3121, which adds a function no player reads
+  ([#262](https://github.com/jasonyandell/mk5-main/issues/262)). So the same player (same
+  native binary pin, wasm, trees and config) is seated as
+  `zeb-0.4.1-contested-bid30-src-b41b3121`, re-pinned to the current sources. The record names
+  the canonical id.
+- **Fable's later builds**, `walt1-fable-tierefine-c9c7192d` (tie refinement added) and
+  `-fixedmind-b40ae229`.
+- **Two builds written only from the v1.0 Walt spec** (`~/code/local/walt-spec/WALT.md`), which
+  makes the n→4n→16n tie refinement mandatory: `walt1-v1-haiku-18f00ffc` and
+  `walt1-v1-sol-1facc7b4`.
+
+Final table: 2138 faceoffs, 4276 games, walt-ref = 1500.
+
+| player | Elo | 95% CI | games | vs walt-ref, marks/game (pairs) | CPU/decision |
+|---|---|---|---|---|---|
+| Zeb 0.4.1 | 1586 | [1552, 1621] | 268 | +1.03 [+0.64, +1.43] (61) | ~3 s/game |
+| fable-tierefine | 1517 | [1498, 1535] | 628 | +0.13 [−0.05, +0.30] (274) | 57 ms |
+| ref-reseeded (control) | 1510 | [1476, 1544] | 296 | | |
+| fable-tierefine-fixedmind | 1503 | [1484, 1523] | 634 | −0.11 [−0.27, +0.04] (317) | 56 ms |
+| v1-haiku | 1491 | [1460, 1522] | 276 | −0.08 [−0.35, +0.19] (110) | 938 ms |
+| v1-sol | 1486 | [1464, 1508] | 468 | −0.10 [−0.27, +0.08] (220) | 68 ms |
+
+How to read it:
+
+- **Zeb is clearly stronger than Walt.** It leads by about +86 Elo and +1.0 marks/game, and it
+  beats every walt1 build on the point estimate except tierefine: −0.38 marks/game [−1.16,
+  +0.41] over 8 pairs.
+- **Tie refinement closes the round-1 gap.** Every build that does it passes the ±50 bar: both
+  v1-spec builds and both tierefine builds. Every round-1 build left it out and sat 35–50 Elo
+  low. The spec gap that round 1 pointed at was §6.3.
+- **v1-sol is the fast Walt.** It is Walt-strength at 68 ms per decision, about 7× walt-ref
+  (CPU is descriptive only).
+- **Caveat:** the v1 verdicts were read at repeated looks (every 10 minutes), and play stopped
+  at the first look inside. The games played after the stop kept both inside. A
+  fresh confirmation block, judged once, would make the verdicts airtight.
+- **Failures:** none in 4276 games: no illegal or malformed reply, no hang-guard timeout. One
+  outside SIGTERM killed some `walt-play` processes mid-claim, and those claims replayed with
+  the same seeds.
+
+Harness fix: `materialize` now takes a per-participant lock. Two parallel games had built
+zeb-native into one cargo target dir at once.
+
 ## What was learned about the tournament
 
 - The information-gain scheduler starved Sol (14 games, gain 0.000) and later Qwen: from a few
@@ -86,16 +135,18 @@ How to read it:
 
 Published 2026-11-09, public, CC0:
 [jasonyandell/texas-42-bench](https://huggingface.co/datasets/jasonyandell/texas-42-bench)
-(`participants/` 9 records, `faceoffs/marks7-bid30/` 1011 records; append-only, the canonical
-record format). It is a separate dataset from the canonical store because `participants/` there
+(round 1: 9 participants and 1011 faceoffs; round 2 adds 6 participants and 1127 faceoffs,
+data commit `0f7078f0`; append-only, the canonical record format). It is a separate dataset from the canonical store because `participants/` there
 is shared by every ladder. Re-derive the table with
 `python -u -m tournament --store hf:jasonyandell/texas-42-bench table --ladder marks7-bid30 --anchor walt1-ref-86ab0d3c`.
 Derived copy: `~/code/local/walt-corpus/elo.json`.
 
 ## Next
 
-Diff Fable (the fastest build) against walt-wasm on the positions where they part, to find the
-shared gap; a fix there is the road to a fast Walt.
+- Confirm the v1 verdicts with a fresh block, judged once.
+- Seat v1-sol where a fast Walt opens experiments: arena opponents, Zeb's teacher and the
+  bid ladders.
+- Fix the source pin that keeps the canonical bid30 anchor from playing on main (#262).
 
 ## Links
 
