@@ -172,6 +172,9 @@ def seat(p: Participant, game: str, device: str | None = None, *, historical: bo
     if p.kind == "gus-splat":
         from .gus_splat_seat import make_seat
         return make_seat(p, materialize(p))
+    if p.kind == "walt1-binary":
+        from .walt1_seat import Walt1Seat
+        return Walt1Seat(p, game)
     if p.kind == "zeb-npm":
         return HostSeat(NodeHost("zeb", materialize(p), p.config), game)
     if p.kind == "zeb-native":

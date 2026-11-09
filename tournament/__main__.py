@@ -56,6 +56,12 @@ def main() -> int:
     j.add_argument("name")
     j.add_argument("revision", help="Hub tag or commit, resolved to an immutable commit")
     j.add_argument("--head", choices=("tile", "splat"), default="tile")
+    b = sub.add_parser("add-walt1", help="pin an external walt1 play binary to the bid30 ladder")
+    b.add_argument("name")
+    b.add_argument("binary")
+    b.add_argument("build", help="the build directory (src/, Cargo.toml)")
+    b.add_argument("--source-repo", help="git repo of the player source, when not the build")
+    b.add_argument("--source-sub", default="", help="the player source's path inside --source-repo")
     sub.add_parser("add-demon-bid30", help="pin the existing Demon cardplay under the common bid30 auction")
     w = sub.add_parser("work", help="run the worker loop")
     w.add_argument("--ladder", default="marks7")
@@ -64,9 +70,11 @@ def main() -> int:
     w.add_argument("--max-faceoffs", type=int)
     w.add_argument("--only", help="comma-separated participant ids to schedule among")
     w.add_argument("--device", help="torch device for the fenced E[Q] seat (default: mps > cuda > cpu)")
+    w.add_argument("--anchor", help="the rating anchor (default: the ladder's)")
     w.add_argument("--serial", action="store_true", help="play a faceoff's games one at a time")
     t = sub.add_parser("table", help="print the derived rating table")
     t.add_argument("--ladder", default="marks7")
+    t.add_argument("--anchor", help="the rating anchor (default: the ladder's)")
     args = ap.parse_args()
 
     store = open_store(args.store)
@@ -98,7 +106,7 @@ def main() -> int:
         only = set(args.only.split(",")) if args.only else None
         n = work(store, ladder=args.ladder, pairs=args.pairs, budget_s=args.budget_s,
                  max_faceoffs=args.max_faceoffs, only=only, parallel=not args.serial,
-                 device=args.device)
+                 device=args.device, anchor=args.anchor)
         log(f"done: {n} faceoff(s) this run")
     elif args.cmd == "add-gus-splat":
         import hashlib
@@ -108,13 +116,17 @@ def main() -> int:
         checkpoint = Path(hf_hub_download("jasonyandell/gus", "gus.pt", revision=revision))
         commit = subprocess.check_output(["git", "log", "-1", "--format=%H", "--", *source_hashes()], cwd=ROOT, text=True).strip()
         seed_roster(store, [participant(args.name, revision, hashlib.sha256(checkpoint.read_bytes()).hexdigest(), commit, args.head)])
+    elif args.cmd == "add-walt1":
+        from tournament.walt1_seat import participant
+        repo = Path(args.source_repo) if args.source_repo else None
+        seed_roster(store, [participant(args.name, Path(args.binary), Path(args.build), source_repo=repo, source_sub=args.source_sub)])
     elif args.cmd == "add-demon-bid30":
         # STRATEGY-FUSION FENCE. The Demon: a fenced tournament opponent; measuring stick only.
         from tournament.demon_bid30 import participant
         commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
         seed_roster(store, [participant(commit)])
     elif args.cmd == "table":
-        print(table(store, args.ladder))
+        print(table(store, args.ladder, args.anchor))
     if isinstance(store, HfStore) and args.cmd != "table":
         log("Hub publication: " + json.dumps(store.flush()))
     return 0
