@@ -69,6 +69,7 @@ def main() -> int:
     w.add_argument("--budget-s", type=float, default=240.0, help="no new faceoff starts after this")
     w.add_argument("--max-faceoffs", type=int)
     w.add_argument("--only", help="comma-separated participant ids to schedule among")
+    w.add_argument("--exclude", help="comma-separated participant ids never to schedule (records kept)")
     w.add_argument("--device", help="torch device for the fenced E[Q] seat (default: mps > cuda > cpu)")
     w.add_argument("--anchor", help="the rating anchor (default: the ladder's)")
     w.add_argument("--serial", action="store_true", help="play a faceoff's games one at a time")
@@ -106,7 +107,8 @@ def main() -> int:
         only = set(args.only.split(",")) if args.only else None
         n = work(store, ladder=args.ladder, pairs=args.pairs, budget_s=args.budget_s,
                  max_faceoffs=args.max_faceoffs, only=only, parallel=not args.serial,
-                 device=args.device, anchor=args.anchor)
+                 device=args.device, anchor=args.anchor,
+                 exclude=set(args.exclude.split(",")) if args.exclude else set())
         log(f"done: {n} faceoff(s) this run")
     elif args.cmd == "add-gus-splat":
         import hashlib

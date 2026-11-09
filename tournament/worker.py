@@ -225,7 +225,7 @@ def run_claim(claim: Path, store, *, parallel: bool = True, device: str | None =
 def work(store, *, ladder: str = "marks7", pairs: int = 1, budget_s: float = 240.0,
          max_faceoffs: int | None = None, only: set[str] | None = None,
          claims_dir: Path | None = None, parallel: bool = True, device: str | None = None,
-         anchor: str | None = None) -> int:
+         anchor: str | None = None, exclude: set[str] = frozenset()) -> int:
     """Run faceoffs until the budget (wall seconds) or max_faceoffs is spent.
 
     The budget bounds when a NEW faceoff may start; a claim in progress is
@@ -244,7 +244,8 @@ def work(store, *, ladder: str = "marks7", pairs: int = 1, budget_s: float = 240
         try:
             meta = json.loads((claim / "spec.json").read_text())
             spec = meta["spec"]
-            if spec["ladder"] != ladder or (only is not None and not {spec["a"], spec["b"]} <= only):
+            if (spec["ladder"] != ladder or (only is not None and not {spec["a"], spec["b"]} <= only)
+                    or {spec["a"], spec["b"]} & exclude):
                 continue
             log(f"resuming claim {claim.name}")
             if not all(schedulable(p) and supports_ladder(p, meta["spec"]["ladder"])
@@ -261,7 +262,7 @@ def work(store, *, ladder: str = "marks7", pairs: int = 1, budget_s: float = 240
     caps = capabilities()
     while (max_faceoffs is None or done < max_faceoffs) and time.time() - t0 < budget_s:
         participants, records = read_state(store, ladder)
-        allowed = runnable(participants, caps, only, ladder)
+        allowed = [p for p in runnable(participants, caps, only, ladder) if p not in exclude]
         if len(allowed) < 2:
             log(f"fewer than two participants this machine can seat ({caps}); stopping")
             break
