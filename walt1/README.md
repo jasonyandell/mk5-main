@@ -150,6 +150,12 @@ reference agrees with itself, run on a different seed, on 74%. Sampled
 estimates differ between implementations by design, so the specification
 does not ask for identical choices.
 
+## Have a bot of your own?
+
+[SEAT-YOUR-BOT.md](https://github.com/jasonyandell/mk5-main/blob/main/walt1/SEAT-YOUR-BOT.md)
+shows how to seat it against Walt and Zeb on duplicate deals and read the
+result.
+
 ## License
 
 [CC0-1.0](https://creativecommons.org/publicdomain/zero/1.0/). Walt, its
