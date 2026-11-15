@@ -1,12 +1,26 @@
 # Texas 42
 
-A web implementation of the classic Texas trick-taking dominoes game — event-sourced
-architecture, composable layer system, capability-based multiplayer — and a ground-up ML
-pipeline built on top of it: a GPU oracle that solves the game exactly, expected-value
-reasoning under hidden information, distilled neural students, and an emerging unified
-belief-state player.
+Free, open tools for the Texas domino game 42: computer players that never look at another
+seat's hand, a language for asking exact questions about a position, a public ladder, and the
+research behind them. Everything runs offline. Built on weekends for the love of the game.
 
-Built on weekends for the love of building. 8th major overhaul and counting.
+## Building a 42 game? Start here
+
+| You want | Take | Where |
+|----------|------|-------|
+| A computer partner or opponent | **Zeb**: bids, plays and explains a play from one seat's seven tiles and the public record. WebAssembly, for browsers, Web Workers and Node. MIT. | `npm install @jasonyandell/zeb` · [`zeb/`](zeb/README.md) |
+| The algorithm, to write your own | **Walt**, the scenario player under Zeb: sample the deals the seat cannot tell apart, plan one line of play across all of them, play its first move. CC0. | [`scenario/`](scenario/) · [scenario-player](wiki/entities/scenario-player.md) |
+| Exact answers about a position | **Silas**: a typed query language over the hidden deals. The four-fives 84 of *Winning 42* p. 113 comes out as exactly 33/95. CC0. | [`silas/`](silas/README.md) |
+| To measure your own player | **The ladder**: an append-only, Bradley–Terry-rated record of every player here, and a one-line-per-decision seat protocol for bringing yours. | [tournament](wiki/topics/tournament.md) · [records](https://huggingface.co/datasets/jasonyandell/texas-42-tournament) · [the-table](https://github.com/jasonyandell/the-table) |
+| The rules, written down completely | Straight 42 and the family variants. | [rules-of-42](wiki/topics/rules-of-42.md) |
+| Data and trained nets | Every dataset and model the project has generated, public. | [huggingface-assets](wiki/topics/huggingface-assets.md) |
+| To see it played | A free mobile web game, no login. | [plunge](https://github.com/jasonyandell/plunge) |
+
+The proofs live next door: [texas-42](https://github.com/jasonyandell/texas-42) holds the
+mathematics of 42 as an imperfect-information game, checked in Lean.
+
+The rest of this page describes the repository itself: the TypeScript game engine and the
+research history, including the finished oracle era.
 
 ## Quick Start
 
