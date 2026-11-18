@@ -73,3 +73,7 @@ The [public experiment archive](https://huggingface.co/datasets/jasonyandell/tex
 contains both protocols, all 896 game records, the audited report, participant
 configs, binary hashes and reproduction scripts. The archive, report,
 provenance and checksum manifest were downloaded and hash-verified.
+
+The [immutable tournament participant](https://huggingface.co/datasets/jasonyandell/texas-42-tournament/blob/f3b74ef9259a45144ebabee5b996de7d5f742a41/participants/demon-pimc-n100-bid928480c1-straight-bounds-support-bait40-adaptive-d48909c4.json)
+was downloaded after registration and matched the roster bytes. All 73 earlier
+participant records kept their blob IDs.

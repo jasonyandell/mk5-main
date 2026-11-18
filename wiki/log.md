@@ -64,6 +64,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **Comparison algebra, Gus routing probes and book lines** (2026-10-22, 9 archived entries) — [[comparison-algebra-night]], [[comparison-algebra-2026-10-21]], [[gus-decision-class-probe-2026-10-21]], [[gus-observation-labels-2026-10-21]], [[gus-posterior-labels-2026-10-22]], [[gus-joint-labels-2026-10-22]], [[book-line-play-out-2026-10-22]], [[walt-endgame-probe-2026-10-22]].
 ---
 
+## [2026-11-17 | Demon | Adaptive counter-40]
+
+- [[demon-counter40-2026-11-17]] tests the second-seat raise against Zeb 0.4.1 and the adaptive bidder against the incumbent [[the-demon]]. Work in #264, roster heads-up in #265.
+
 ## [2026-11-03 | lem | Lem: a blind weight read of the shipped field net, graded on real rows]
 
 **Touched pages:** [[lem-blind-read-2026-11-03]] [[clean-neurons-42]] [[index-experiments]]
