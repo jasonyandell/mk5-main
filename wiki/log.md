@@ -8,7 +8,7 @@ Entry prefix convention: `## [YYYY-MM-DD | shortsha | subject]` so `grep "^## \[
 
 **Stitching and rotation** happen on main after a merge, by script: `python -u scripts/wiki_log_rotate.py` first stitches the `log.d/` fragments in here, newest first, then keeps the newest 10 entries once there are more than 15, moves the rest verbatim into [[log-archive]] and sets the digest's count; whoever runs it folds their gist into the digest.
 
-## Digest (2026-04-09 → 2026-10-22, 519 archived entries)
+## Digest (2026-04-09 → 2026-10-22, 525 archived entries)
 
 What the log recorded, phase by phase. The story itself lives in the hubs and trails linked here; this is only a map of when the wiki ingested what.
 
@@ -63,6 +63,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **Lem unit papers 7–8, the audit's baseline report, Gus's contingent teaching tools** (2026-10-20 → 10-21, 10 archived entries) — unit papers 7 and 8 (#235, #202) and the audit's baseline and on/off report (#236); the Mayor's background desks and session-gated Lem frame; the Gus bid-30 pilot in the tournament store (#216); the Book desk's doubles-trump surface count (#230 A); Gus's historical-choice wish and broader contingent teaching ([[gus-tiny-gpt]]).
 - **Comparison algebra, Gus routing probes and book lines** (2026-10-22, 9 archived entries) — [[comparison-algebra-night]], [[comparison-algebra-2026-10-21]], [[gus-decision-class-probe-2026-10-21]], [[gus-observation-labels-2026-10-21]], [[gus-posterior-labels-2026-10-22]], [[gus-joint-labels-2026-10-22]], [[book-line-play-out-2026-10-22]], [[walt-endgame-probe-2026-10-22]].
 ---
+
+## [2026-11-17 | Demon | Public-play inference wins the drop-30 rematch]
+
+[[demon-drop30-2026-11-17]] records 1,075 wins in 2,048 holdout games against the 100-world Demon with the same fixed bidder, at 79.3% of its whole-seat instructions. [[the-demon]] now has a separate 80-draw drop-30 reader and a versioned reference with the incumbent's native pin.
 
 ## [2026-11-17 | Demon | Adaptive counter-40]
 
@@ -147,45 +151,3 @@ archived on Hugging Face; Plunge and the shipped net are unchanged.
 **Questions opened:** #253 (cpu-slot orphans a wrapped solver at the cap). S1's G6 on T4 was not run. Trick 4's memory per course choice (about 1.2 KB)
 bounds the fibers that fit. The pure calibration gate (worlds drawn from the posterior) is still to
 be built.
-
-## [2026-10-22 | claude | exact-gpu: follow roots climbed on Metal; the depth-2 split; the leafless count; stopped]
-
-**Touched pages:** [[exact-gpu-2026-10-22]]
-**Added:** Nine follow roots from Exact-T1 were climbed from the rung its CPU reached. Two settled, d12 v3 at k = 3 (6-3) and d15 v2 at k = 4 (5-0, Γ 6.4‰); the rest remain unsettled at k = 3–4. Two new splits: by reply, and by the play after it (`Piece`). The viewer's node folds by max, with every piece holding all its worlds, and another seat's node sums; tested at both kinds of node. `fold` builds a root's rung from its triples lines. Fixed a hang: at k = 4 one command could fill the 2^25-slot leaf table, after which every insert probed every slot. The count now touches no table and stops partway through a tile past its budget, a command's worlds follow the leaves it claims, and an insert refuses after 4,096 probes. All pins hold. Deal 1's k = 2 bytes (33 GB) were deleted on Exact-T1's release; their digests stay in `k2-triples.txt`.
-**Questions opened:** the open climbs at the stop, queued but never run: d5 v2 k = 5 (depth-2 split), and d0 v2, d1 v2, d5 v3 and d39 v3 at k = 4; d39 v1 never started. Hugging Face publication rests with Exact-T1. Issue #248 (the silas-metal suite in `scripts/check`) waits on the Mayor.
-
-## [2026-10-22 | claude | exact-t1: the trick-1 ladder, how far the bidder's lead is from exact]
-
-**Touched pages:** [[trick1-ladder-2026-10-22]] (new), [[silas]], [[strategy-fusion-fence]] (inventory row for `silas/src/player/trick1.rs`), index-experiments.
-**Added:** `silas/src/player/trick1.rs` (counted belief, the focal-horizon sandwich with a lawful lower bound and a refuting upper bound, Γ certified, budget in plays; gathers as bytes that merge by shard and join by root tile), `silas/tests/trick1.rs`, `silas/examples/trick1_roots.rs`. The seven leads: Γ falls every rung; at k = 2, 75–295‰ on five, deal 1 proved, deal 12 past B2. Strictly settled 0/7, proved 1/7. Jason's settling half not met, his modelling half met on 6/7 (as a guarantee gain; the law's tile survives on 7/7). The orchestrator's met on 6/7. Exact-T1's "no lead settles" fails by deal 1. The 21 follow roots, reported apart and partial at Jason's stop: 8 forced, 3 proved (deal 2), 2 settled with a choice (k = 3, 4), 1 ended past 1e12, 6 still open, 1 not measured; the law's tile is refuted at three. Data on HF at texas-42-zeb-research-2026-10 exact/trick1-2026-10-22/.
-**Questions opened:** #250 (reduce as you go: the leaf map is the wall past k = 2), #251 (a family of types at trick 1; the record refutes one), #252 (how much of Γ is the clairvoyant upper side), #249 (cpu-slot's timeout misses a wrapped runner).
-
-## [2026-10-22 | mayor | cpu-slot caps the whole job, not just its wrapper (#249)]
-
-`scripts/cpu-slot` now starts the job in its own process group. The timeout ends the whole
-group, and an interrupt or hangup to cpu-slot is passed on to it. Before this, a wrapper such as
-`/usr/bin/time -l` exited on the cap and left the runner going outside any slot. One trick-1
-rung ran 18 minutes at 21 GB after "timed out". Two new tests fail on the old script and pass on
-the new one. The cost line still counts only the direct child, so a wrapper goes outside
-cpu-slot, not inside it (documented in the script). The night's pause file for the ladder
-(`scratch/ladder/PAUSED`, 988ded87) is in the same playbook spirit: a stop must outlive a respawn.
-
-## [2026-10-22 | claude | exact-gpu: the field epoch, M3 and the trick-1 ladder on Metal]
-
-**Touched pages:** [[exact-gpu-2026-10-22]], [[silas]], [[strategy-fusion-fence]]
-**Added:** `silas-metal/`, a standalone crate. It holds the Metal field epoch (= CPU mirror = Silas reference), the M3 h8 gate (all four roots, H and C equal texas-42's AUDIT) and the trick-1 ladder gather, whose bytes are Exact-T1's `Gathered` (k = 0, 1 and 2 byte parity). Per-root-tile gathers, SHA-256 receipts, and refusals for leaves, free memory and B2.
-**Questions opened:** #248 ([gated] a silas-metal suite in scripts/check); the rate PREREG (`PREREG-GPU-RATE.md` in the desk folder).
-
-## [2026-10-22 | claude | exact-1: the exact player lands in Silas (S0 pre-registered)]
-
-**Touched pages:** [[exact-player-s0-2026-10-22]]
-**Added:** `silas/src/player/` (counted posterior over world × type, information-state solve for every p via `family.rs`, `play_hand`, the second construction `recount`), `silas exact`, `silas/tests/player.rs` (G1 second construction, G2 Bayes+Bellman, G4 the 767 rebuilt, G6). Python checks banned on the track (Jason, 07:55).
-**Questions opened:** S0's measured batch (PREREG-S0 in the desk folder).
-
-## [2026-10-22 | claude | book: #245 — an off's guard is the double or the top tile left in its suit]
-
-- **Re-scoped from the policy log.** Of #245's four suspected faults, one was a real encoding gap: Hand 23's 6-5, which the book saves for next-to-last as the 6-1's double (W42 p. 77). Two were book silences (the bidder's duck, the low-trump first lead), and one was retracted: the "blind throws" are the book's own pounce.
-- **Repair.** `stands-for-the-double` replaces the literal double in `bare-off` and in the two rules that play an off the bid-of-marks way. Four core pins moved on purpose. A new surface test checks that the double's own case is unchanged on every frame. For the bidder, `bare-off` changes on 13 random frames and none of the book's narrated ones.
-- **Measured on step C's deals.** Hand 23's stack arm makes 0.575 [0.560, 0.591], up from 0.394: paired +0.181 [+0.168, +0.195]. The line − stack gap closes to −0.005. Hands 24 and 25 are unchanged.
-- **Reproducing earlier numbers.** The thirteen studies that seat the book stack name the pre-#245 commit `64ecc6cf`. Re-runs follow on #245.
-- Pages: [[book-line-play-out-2026-10-22]].
