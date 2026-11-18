@@ -97,6 +97,12 @@ class DemonSeat:
         from arena.cli import parse_bidder
 
         cfg = p.config
+        self.play_op = "play"
+        if "play_model" in cfg:
+            if (cfg["play_model"] != "drop30-reader-v1" or cfg.get("ladders") != ["marks7-bid30"]
+                    or cfg.get("common_bidder") != "Bid30Bidder"):
+                raise ValueError("drop30-reader-v1 requires the common drop-30 bidder")
+            self.play_op = "play_drop30"
         self.bid_spec = cfg["bidder"]
         if self.bid_spec.startswith(("pimc-over", "pimc-jump", "pimc-bait", "pimc-counter")):
             parts = self.bid_spec.split(":")
@@ -225,7 +231,7 @@ class DemonSeat:
         for s, bid in zip(states, bid_values):
             seat = current_player(s)
             dealt = list(s.hands[seat])
-            req = {"op": "play", "seat": seat, "hand": [t for t in dealt if t not in s.played],
+            req = {"op": self.play_op, "seat": seat, "hand": [t for t in dealt if t not in s.played],
                    "decl": s.decl_id, "bid": int(bid), "bidder": s.bidder,
                    "plays": [list(p) for p in s.play_history],
                    "leader": s.trick_leader, "points": list(s.team_points),

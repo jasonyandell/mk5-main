@@ -56,7 +56,7 @@ def main() -> int:
     j.add_argument("name")
     j.add_argument("revision", help="Hub tag or commit, resolved to an immutable commit")
     j.add_argument("--head", choices=("tile", "splat"), default="tile")
-    sub.add_parser("add-demon-bid30", help="pin the existing Demon cardplay under the common bid30 auction")
+    sub.add_parser("add-demon-bid30", help="pin the reference and public-play reader under the common bid30 auction")
     w = sub.add_parser("work", help="run the worker loop")
     w.add_argument("--ladder", default="marks7")
     w.add_argument("--pairs", type=int, default=1, help="duplicate deal pairs per faceoff")
@@ -110,9 +110,9 @@ def main() -> int:
         seed_roster(store, [participant(args.name, revision, hashlib.sha256(checkpoint.read_bytes()).hexdigest(), commit, args.head)])
     elif args.cmd == "add-demon-bid30":
         # STRATEGY-FUSION FENCE. The Demon: a fenced tournament opponent; measuring stick only.
-        from tournament.demon_bid30 import participant
-        commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
-        seed_roster(store, [participant(commit)])
+        from tournament.demon_bid30 import participant, reader, source_commit
+        commit = source_commit()
+        seed_roster(store, [participant(commit), reader(commit)])
     elif args.cmd == "table":
         print(table(store, args.ladder))
     if isinstance(store, HfStore) and args.cmd != "table":

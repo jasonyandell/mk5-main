@@ -15,7 +15,7 @@ from lem.observer.splat.play import SplatPlay
 from lem.tests.test_observer import recording
 from lem.tests.test_observer_play import state_from_record
 from tournament import faceoff, seats
-from tournament.demon_bid30 import participant as demon_bid30, game_key
+from tournament.demon_bid30 import participant as demon_bid30, game_key, reader
 from tournament.gus_seat import LADDER
 from tournament.gus_splat_seat import make_seat, participant
 from tournament.participants import DEMON_BAIT40_REUSE_N100, supports_ladder
@@ -82,6 +82,20 @@ def test_demon_common_contract_preserves_pinned_cardplay():
     assert supports_ladder(bounded.to_record(), LADDER)
     assert not supports_ladder(original.to_record(), LADDER)
     assert not supports_ladder(bounded.to_record(), 'marks7')
+
+
+def test_drop30_reader_is_a_distinct_capability_and_uses_the_same_referee():
+    control = demon_bid30('a' * 40)
+    challenger = reader('a' * 40)
+    assert challenger.id != control.id and reader('b' * 40).id != challenger.id
+    assert challenger.pin['source_files'] == control.pin['source_files']
+    assert challenger.config['common_bidder'] == control.config['common_bidder']
+    assert challenger.config['seed_key'] == control.config['seed_key']
+    assert challenger.config['worlds'] == 80
+    assert challenger.config['play_model'] == 'drop30-reader-v1'
+    assert 'demon-drop30-reader-v1' in challenger.needs
+    assert supports_ladder(challenger.to_record(), LADDER)
+    assert not supports_ladder(challenger.to_record(), 'marks7')
 
 
 def test_fixed_demon_draws_ignore_candidate_name_and_claim_time():
