@@ -1,0 +1,6 @@
+# The compiler the package is built with: a fixed toolchain (and Cargo.lock)
+# makes `scripts/build.sh` reproduce the same .wasm from a checkout.
+[toolchain]
+channel = "1.95.0"
+targets = ["wasm32-unknown-unknown"]
+components = ["clippy", "rustfmt"]

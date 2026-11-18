@@ -1,0 +1,25 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
+[package]
+name = "walt"
+version = "0.1.0"
+edition = "2021"
+description = "Walt: the level-1 scenario player for Texas 42, built from WALT.md, native and WebAssembly"
+license = "CC0-1.0"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "walt-play"
+path = "src/main.rs"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = "0.2"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
