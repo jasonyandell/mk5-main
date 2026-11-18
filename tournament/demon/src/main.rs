@@ -147,7 +147,7 @@ fn answer(cfg: Config, line: &str) -> Value {
                 Err(e) => json!({"error":e}),
             }
         }
-        _ => json!({"error": "op must be play, hello, forecast, forecast_best, forecast_support or declaration_model"}),
+        _ => json!({"error": "op must be play, play_drop30, hello, forecast, forecast_best, forecast_support or declaration_model"}),
     }
 }
 

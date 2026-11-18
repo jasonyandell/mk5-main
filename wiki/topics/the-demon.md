@@ -15,6 +15,10 @@ over a lower opening from second seat. When that early bid stands, it switches
 to forecast bidding for the rest of the game. It improves against shipped Zeb
 and beats the previous Demon head-to-head.
 
+[[demon-drop30-2026-11-17]] is the fixed-bid play form. It conditions deals on the
+common bidder's pip declaration and on each seat's public tile choices. It beat
+the 100-world root-reuse Demon on the same contracts while retiring fewer instructions.
+
 ## What it is
 
 The Demon is the textbook strategy-fusion player, Perfect-Information Monte Carlo (PIMC), and
@@ -22,7 +26,7 @@ it runs on any CPU. Jason asked for it on 2026-10-14: "we definitely want to tes
 fusion." Until then the ladder's only fusion player was E[Q] n=10 ([[expected-q-value]]). E[Q]
 needs a GPU, so the cloud worker could not seat it.
 
-At each play the seat:
+At each play the uniform baseline:
 
 1. replays the public record with Walt's `Rec` (`scenario/core/src/planner.rs`): the plays,
    the banked points and every void a seat has shown;

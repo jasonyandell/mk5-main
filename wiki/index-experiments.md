@@ -5,6 +5,8 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 
 ## Tournament
 
+- [[experiments/demon-drop30-2026-11-17|demon-drop30-2026-11-17]] — 80 weighted draws beat the 100-world Demon at fixed bid 30, using 79.3% of the instructions (complete).
+
 - [[experiments/demon-counter40-2026-11-17|demon-counter40-2026-11-17]] — adaptive counter-40 against shipped Zeb and the incumbent Demon (complete)
 
 - [[experiments/walt-bidder-2026-11-02|walt-bidder-2026-11-02]] — Walt bids: the honest plan's root splat as a live bidder (`waltbid`), piloted against the heuristic with Walt play both sides, two clock-sized blocks, +0.90 [+0.21, +1.56] marks/game over 96 games, the forecast honest at the call (complete)
