@@ -341,3 +341,60 @@ def test_high_early_openings_play_legal_repeatable_whole_games(working_tree_demo
     second = _game(spec, participants, tmp_path / "two.json")
     assert first["done"] and first["hands"] == second["hands"] and first["marks"] == second["marks"]
     assert all(h["decl_id"] in STRAIGHT_DECLARATIONS for h in first["hands"])
+
+
+@pytest.mark.parametrize("seat_id", range(4))
+def test_counter_requires_second_seat_and_a_legal_raise(seat_id):
+    from arena.auction import BidContext, bidding_order, legal_bids
+
+    seat = object.__new__(DemonSeat)
+    seat.bid_spec = "pimc-counter:64:0.875:0.875"
+    seat.bait_bid = 40
+    seat._bid_seats = {}
+    seat.support_forecast = True
+    seat._ask = lambda req: {"worlds": 64, "supported": False}
+    for position in (1, 2, 3):
+        dealer = (seat_id - position - 1) % 4
+        prior = bidding_order(dealer)[:position]
+        for opening in (30, 39, 40, 41, 42, 84):
+            bids = [-1] * 4
+            for previous in prior:
+                bids[previous] = 0
+            bids[prior[0]] = opening
+            ctx = BidContext(tuple(range(7)), seat_id, dealer, tuple(bids),
+                             opening, prior[0], legal_bids(opening))
+            assert seat.bid(ctx, None) == (40 if position == 1 and opening < 40 else 0)
+
+
+def test_adaptive_bait_restores_from_public_auctions(working_tree_demon, tmp_path, monkeypatch):
+    monkeypatch.setattr(S, "materialize", lambda p: working_tree_demon)
+    d = demon("a" * 40, {}, worlds=4, bidder="pimc-counter:4:0.875:0.875",
+              bounded_forecast=True, support_forecast=True, bait_bid=40, retire_unraised_bait=True)
+    # A pass-only opponent reliably leaves the opening bid with the Demon.
+    foe = Participant("pass", "arena", {"spec": "random:0+random"})
+    records = {p.id: p.to_record() for p in (d, foe)}
+    spec = F.FaceoffSpec("marks7", d.id, foe.id, 264, 1, "20261117T000000Z")
+    full = _game(spec, records, tmp_path / "full.json")
+    hands = full["hands"]
+    first = next(i for i, h in enumerate(hands)
+                 if h["bidder"] % 2 == 0 and h["bid_value"] == 40
+                 and (h["bidder"] - h["dealer"]) % 4 in (1, 2))
+    assert first + 1 < len(hands)
+    progress = tmp_path / "resume.json"
+    progress.write_text(json.dumps({"pair": 0, "a_team": 0, "hands": hands[:first + 1],
+                                    "done": False, "elapsed_s": 0.0}))
+    assert _game(spec, records, progress)["hands"] == hands
+
+
+def test_bait_retires_only_when_our_early_bid_stands():
+    from tournament.demon_fenced_seat import AdaptiveBaitSeat
+
+    seat = object.__new__(AdaptiveBaitSeat)
+    initial = "pimc-counter:64:0.875:0.5"
+    seat.bid_spec, seat.bait_bid = initial, 40
+    # Dealer 0 orders the seats 1, 2, 3, 0. Our team sits at 0 and 2.
+    for bidder, bid in [(1, 40), (2, 39), (3, 41), (0, 40)]:
+        seat.restore_auction(0, bidder, bid, 0)
+        assert seat.bid_spec == initial
+    seat.restore_auction(0, 2, 40, 0)
+    assert seat.bid_spec == "pimc-over:64:0.875:0.5"

@@ -199,7 +199,7 @@ DEMON_SOURCE = ("silas", "scenario/core", "tournament/demon")
 def demon(commit: str, trees: dict[str, str], *, worlds: int, margin_tiebreak: bool = True,
           bidder: str = "heuristic", sampler_note: str = "Walt's exact-uniform sampler",
           declaration_weight: int = 1, bounded_forecast: bool = False, support_forecast: bool = False,
-          bait_bid: int = 30) -> Participant:
+          bait_bid: int = 30, retire_unraised_bait: bool = False) -> Participant:
     # The source pin selects the sampler; this describes it without changing
     # the bytes of already-published participant records.
     tb = "" if margin_tiebreak else "-notb"
@@ -223,11 +223,17 @@ def demon(commit: str, trees: dict[str, str], *, worlds: int, margin_tiebreak: b
         suffix += "-support"
         extra["support_forecast"] = True
     if (type(bait_bid) is not int or not 30 <= bait_bid <= 40
-            or (bait_bid != 30 and not bidder.startswith("pimc-bait:"))):
-        raise ValueError("bait_bid must be an integer 30..40 and requires a pimc-bait bidder")
+            or (bait_bid != 30 and not bidder.startswith(("pimc-bait:", "pimc-counter:")))):
+        raise ValueError("bait_bid must be an integer 30..40 and non-default values require a bait bidder")
     if bait_bid != 30:
         suffix += f"-bait{bait_bid}"
         extra["bait_bid"] = bait_bid
+    if type(retire_unraised_bait) is not bool or (
+            retire_unraised_bait and not bidder.startswith(("pimc-bait:", "pimc-counter:"))):
+        raise ValueError("retiring an unraised bait requires a bait bidder")
+    if retire_unraised_bait:
+        suffix += "-adaptive"
+        extra["retire_unraised_bait"] = True
     belief_note = (f" Declaration evidence uses a soft heuristic model: matching original "
                    f"hands have likelihood {declaration_weight}, others 1; posterior draws are IID "
                    f"by rejection, and small fibers use exact weighted sums."
@@ -239,13 +245,19 @@ def demon(commit: str, trees: dict[str, str], *, worlds: int, margin_tiebreak: b
                 f"Bidder `{bidder}`: common-world double-dummy contract forecasts; "
                 f"{raise_note} and partner pass in full bidding mode; "
                 f"the nine straight declarations only (not nello's declaration 8). ")
-    if bidder.startswith(("pimc-over:", "pimc-jump:", "pimc-bait:")):
+    if bidder.startswith(("pimc-over:", "pimc-jump:", "pimc-bait:", "pimc-counter:")):
         bid_note += (f"Uses DD cutoff {bidder.split(':')[3]} over an opponent's point bid "
                      f"and {bidder.split(':')[2]} when opening; no mark overcalls. ")
-    if bidder.startswith("pimc-bait:"):
+    if bidder.startswith(("pimc-bait:", "pimc-counter:")):
         opening = "minimum point bid" if bait_bid == 30 else f"point bid {bait_bid}"
         bid_note += ("With no standing bid and at least two seats still to speak, opens the "
                      f"{opening} regardless of its forecast. ")
+    if bidder.startswith("pimc-counter:"):
+        bid_note += (f"Second to speak over a lower opponent opening, raises to {bait_bid} "
+                     "regardless of forecast while that point bid is legal. ")
+    if retire_unraised_bait:
+        bid_note += ("After winning an auction at the bait bid from either of the first two seats, "
+                     "uses the ordinary forecast cutoffs for the rest of that game. ")
     if support_forecast:
         bid_note += ("Bid decisions use exact sample support bounds; only a won auction computes "
                      "the best declaration and its winning count. ")

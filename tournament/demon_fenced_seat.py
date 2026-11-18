@@ -98,18 +98,18 @@ class DemonSeat:
 
         cfg = p.config
         self.bid_spec = cfg["bidder"]
-        if self.bid_spec.startswith(("pimc-over", "pimc-jump", "pimc-bait")):
+        if self.bid_spec.startswith(("pimc-over", "pimc-jump", "pimc-bait", "pimc-counter")):
             parts = self.bid_spec.split(":")
-            if len(parts) != 4 or parts[0] not in ("pimc-over", "pimc-jump", "pimc-bait"):
-                raise ValueError("pimc-over / pimc-jump / pimc-bait needs worlds:opening_cutoff:opponent_cutoff")
+            if len(parts) != 4 or parts[0] not in ("pimc-over", "pimc-jump", "pimc-bait", "pimc-counter"):
+                raise ValueError("pimc-over / pimc-jump / pimc-bait / pimc-counter needs worlds:opening_cutoff:opponent_cutoff")
             if not 1 <= int(parts[1]) <= 4096 or any(
                 not math.isfinite(float(x)) or not 0 <= float(x) <= 1 for x in parts[2:]
             ):
-                raise ValueError("pimc-over / pimc-jump / pimc-bait needs worlds 1..4096 and finite cutoffs in 0..1")
+                raise ValueError("pimc-over / pimc-jump / pimc-bait / pimc-counter needs worlds 1..4096 and finite cutoffs in 0..1")
         self.bait_bid = cfg.get("bait_bid", 30)
         if (type(self.bait_bid) is not int or not 30 <= self.bait_bid <= 40
-                or (self.bait_bid != 30 and not self.bid_spec.startswith("pimc-bait:"))):
-            raise ValueError("bait_bid must be an integer 30..40 and requires a pimc-bait bidder")
+                or (self.bait_bid != 30 and not self.bid_spec.startswith(("pimc-bait:", "pimc-counter:")))):
+            raise ValueError("bait_bid must be an integer 30..40 and non-default values require a bait bidder")
         self.bounded_forecast = cfg.get("bounded_forecast", False)
         if not isinstance(self.bounded_forecast, bool):
             raise ValueError("bounded_forecast must be a boolean")
@@ -139,7 +139,7 @@ class DemonSeat:
     # BidPolicy
     def bid(self, ctx, rng):
         self._bid_seats[tuple(ctx.hand)] = ctx.seat
-        if self.bid_spec.startswith(("pimc:", "pimc-over:", "pimc-jump:", "pimc-bait:")):
+        if self.bid_spec.startswith(("pimc:", "pimc-over:", "pimc-jump:", "pimc-bait:", "pimc-counter:")):
             points = sorted(b for b in ctx.legal if b <= 42)
             if not points or (ctx.high_seat >= 0 and ctx.high_seat % 2 == ctx.seat % 2):
                 return 0
@@ -147,11 +147,15 @@ class DemonSeat:
             # before the final bidder. This experimental policy opens its
             # configured legal point bid even with a weak hand; the normal
             # cutoff applies later. Forty leaves a point overcall below 42.
-            if (self.bid_spec.startswith("pimc-bait:") and ctx.high_seat < 0
+            if (self.bid_spec.startswith(("pimc-bait:", "pimc-counter:")) and ctx.high_seat < 0
                     and sum(b < 0 for b in ctx.bids) - 1 >= 2):
                 return self.bait_bid if self.bait_bid in points else 0
+            if (self.bid_spec.startswith("pimc-counter:") and ctx.high_seat >= 0
+                    and ctx.bids.count(-1) == 3 and self.bait_bid in points):
+                # Second to speak: the next opponent can still raise before the dealer.
+                return self.bait_bid
             cutoff = float(self.bid_spec.split(":")[2])
-            if self.bid_spec.startswith(("pimc-over:", "pimc-jump:", "pimc-bait:")) and ctx.high_seat >= 0:
+            if self.bid_spec.startswith(("pimc-over:", "pimc-jump:", "pimc-bait:", "pimc-counter:")) and ctx.high_seat >= 0:
                 # The partner case returned above. The opponent already holds
                 # the auction, so passing is not the same option as opening.
                 # This is an explicit experimental DD threshold, not a
@@ -246,3 +250,18 @@ class DemonSeat:
         from .seats import close_and_cost
 
         self.cost = close_and_cost(self.proc)
+
+
+class AdaptiveBaitSeat(DemonSeat):
+    """Retire the bluff for this game once the table lets our early bid stand."""
+
+    def restore_auction(self, dealer, bidder, bid, our_team):
+        if (bidder % 2 == our_team and bid == self.bait_bid
+                and (bidder - dealer) % 4 in (1, 2)):
+            # The ordinary overcaller forecasts each bid at the same two cutoffs.
+            _, params = self.bid_spec.split(":", 1)
+            self.bid_spec = "pimc-over:" + params
+
+    def declare_at(self, ctx, rng):
+        self.restore_auction(ctx.dealer, ctx.seat, ctx.high_bid, ctx.team)
+        return self.declare(ctx.hand, ctx.high_bid, rng)

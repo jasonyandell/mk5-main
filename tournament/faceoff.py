@@ -140,6 +140,12 @@ def play_game(spec_dict: dict, pair: int, a_team: int, progress_path: str,
                 _atomic_write(progress, state)
 
     try:
+        # A resumed seat learns the same public auction outcomes as a fresh game.
+        for policy, team in zip(seats, (a_team, 1 - a_team)):
+            restore = getattr(policy, "restore_auction", None)
+            if restore is not None:
+                for hand in state["hands"]:
+                    restore(hand["dealer"], hand["bidder"], hand["bid_value"], team)
         g = Game()
         _run_lockstep([g], sa, sb, cfg.marks_to_win)
     finally:
