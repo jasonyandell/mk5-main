@@ -31,6 +31,7 @@
 
 pub mod bidding;
 pub mod hand_model;
+mod drop30;
 mod sampling;
 mod search;
 
@@ -119,6 +120,18 @@ pub fn record(decl: u8, bidder: u8, plays: &[(u8, u8)]) -> Result<(Rules, Rec), 
 /// STRATEGY-FUSION FENCE: the Demon's decision. Per-world clairvoyant values,
 /// averaged: a fenced opponent's choice, never a seat's value anywhere else.
 pub fn decide(cfg: Config, req: &Request) -> Result<Decision, String> {
+    decide_with_model(cfg, req, false)
+}
+
+/// STRATEGY-FUSION FENCE. PIMC conditioned on the fixed bidder and public play.
+pub fn decide_drop30(cfg: Config, req: &Request) -> Result<Decision, String> {
+    if req.bid != 30 || req.decl > 6 {
+        return Err("drop-30 play requires a bid of 30 and a pip declaration".into());
+    }
+    decide_with_model(cfg, req, true)
+}
+
+fn decide_with_model(cfg: Config, req: &Request, drop30: bool) -> Result<Decision, String> {
     if cfg.worlds == 0 || cfg.worlds > 1_000_000 || !(1..=1024).contains(&cfg.declaration_weight) {
         return Err("worlds must be 1..=1000000 and declaration weight 1..=1024".into());
     }
@@ -145,10 +158,12 @@ pub fn decide(cfg: Config, req: &Request) -> Result<Decision, String> {
     }
     let legal = rules.legal(req.hand, rec.led());
     let tiles: Vec<u8> = (0..28u8).filter(|&t| legal >> t & 1 == 1).collect();
-    if tiles.len() == 1 {
+    let team = (req.bidder % 2) as usize;
+    let settled = drop30 && (rec.banked[team] >= 30 || rec.banked[1 - team] > 12);
+    if tiles.len() == 1 || settled {
         return Ok(Decision {
             tile: tiles[0],
-            moves: vec![(tiles[0], 0, None)],
+            moves: tiles.iter().map(|&t| (t, 0, None)).collect(),
             worlds: 0,
             exact: false,
             nodes: 0,
@@ -164,10 +179,13 @@ pub fn decide(cfg: Config, req: &Request) -> Result<Decision, String> {
     let known = req.plays.iter().filter(|&&(s, _)| s == req.bidder).fold(0, |m, &(_, t)| m | 1 << t);
     // The bidder knows its own hand; its declaration adds no evidence to it.
     let ratio = if req.seat == req.bidder || req.decl >= 7 { 1 } else { cfg.declaration_weight };
-    let (worlds, weights, exact, proposals) =
+    let (worlds, weights, exact, proposals) = if drop30 {
+        drop30::draw(&mut fiber, cfg.worlds, req, &rules)?
+    } else {
         sampling::posterior(&mut fiber, cfg.worlds, &mut SplitMix::new(req.seed), ratio, |w| {
             hand_model::declaration_likelihood(w[req.bidder as usize] | known, req.decl, ratio)
-        })?;
+        })?
+    };
     let mass = weights.iter().sum();
     let template = search::template(req.decl);
     let physics = template.physics();

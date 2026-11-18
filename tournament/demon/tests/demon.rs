@@ -322,6 +322,50 @@ fn a_request_that_misstates_the_record_is_refused() {
 }
 
 #[test]
+fn common_bidder_can_choose_a_pip_with_only_two_trumps() {
+    // arena.hand_metrics.best_trump for tile ids [2, 3, 6, 14, 17, 21, 25].
+    let hand = 0x222404c;
+    assert_eq!(demon::hand_model::bid30_declaration(hand), 2);
+    assert_eq!(demon::hand_model::heuristic_declaration(hand), 0);
+}
+
+#[test]
+fn drop30_replays_and_spends_no_search_on_settled_marks() {
+    let mut rng = SplitMix::new(266);
+    let cfg = Config { worlds: 5, ..Config::default() };
+    let mut settled_choices = 0;
+    for bidder in 0..4 {
+        let mut hands = deal(&mut rng);
+        let decl = demon::hand_model::bid30_declaration(hands[bidder as usize]);
+        let (rules, mut rec) = record(decl, bidder, &[]).unwrap();
+        let mut plays = vec![];
+        while !rec.finished() {
+            let seat = rec.seat();
+            let hand = hands[seat as usize];
+            let req = Request { seat, hand, decl, bid: 30, bidder, plays: plays.clone(), seed: rng.next_u64() };
+            let result = demon::decide_drop30(cfg, &req).unwrap();
+            assert_eq!(result, demon::decide_drop30(cfg, &req).unwrap());
+            let legal = rules.legal(hand, rec.led());
+            assert_ne!(legal & (1 << result.tile), 0);
+            let side = bidder as usize % 2;
+            if legal.count_ones() > 1 && (rec.banked[side] >= 30 || rec.banked[1 - side] > 12) {
+                assert_eq!(result.nodes, 0);
+                assert_eq!(result.tile, legal.trailing_zeros() as u8);
+                settled_choices += 1;
+            }
+            if plays.is_empty() {
+                assert!(demon::decide_drop30(cfg, &Request { bid: 31, ..req.clone() }).is_err());
+                assert!(demon::decide_drop30(cfg, &Request { decl: 7, ..req }).is_err());
+            }
+            hands[seat as usize] &= !(1 << result.tile);
+            plays.push((seat, result.tile));
+            rec = rec.advance(result.tile, &rules);
+        }
+    }
+    assert!(settled_choices > 0);
+}
+
+#[test]
 fn every_source_file_carries_the_fence_token() {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
     for f in [
@@ -330,6 +374,7 @@ fn every_source_file_carries_the_fence_token() {
         "src/main.rs",
         "src/sampling.rs",
         "src/hand_model.rs",
+        "src/drop30.rs",
         "src/bidding.rs",
         "src/search.rs",
         "tests/demon.rs",

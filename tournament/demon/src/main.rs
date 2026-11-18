@@ -87,9 +87,10 @@ fn answer(cfg: Config, line: &str) -> Value {
     match v.get("op").and_then(Value::as_str) {
         Some("hello") => json!({"demon": env!("CARGO_PKG_VERSION"), "worlds": cfg.worlds,
                                 "margin_tiebreak": cfg.margin_tiebreak}),
-        Some("play") => {
+        Some("play" | "play_drop30") => {
             let t0 = Instant::now();
-            match request(&v).and_then(|r| table_agrees(&v, &r)).and_then(|r| decide(cfg, &r)) {
+            let pick = if v["op"] == "play_drop30" { demon::decide_drop30 } else { decide };
+            match request(&v).and_then(|r| table_agrees(&v, &r)).and_then(|r| pick(cfg, &r)) {
                 Ok(d) => json!({
                     "tile": d.tile, "worlds": d.worlds, "exact": d.exact, "nodes": d.nodes,
                     "mass": d.mass, "proposals": d.proposals,

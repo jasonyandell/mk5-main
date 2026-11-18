@@ -40,8 +40,17 @@ static TABLES: LazyLock<Tables> = LazyLock::new(|| {
 /// The arena's `HeuristicBidder(min_trumps=3).declare`, including the fallback
 /// for a forced bid. Held count is constant across trumps and cancels in ties.
 pub fn heuristic_declaration(hand: u32) -> u8 {
+    let minimum = if TABLES.suits.iter().any(|s| (hand & s).count_ones() >= 3) { 3 } else { 0 };
+    best_pip(hand, minimum)
+}
+
+/// Bid30Bidder always declares the best pip, with no minimum trump length.
+pub fn bid30_declaration(hand: u32) -> u8 {
+    best_pip(hand, 0)
+}
+
+fn best_pip(hand: u32, minimum: u32) -> u8 {
     let t = &*TABLES;
-    let minimum = if t.suits.iter().any(|s| (hand & s).count_ones() >= 3) { 3 } else { 0 };
     (0..7u8)
         .filter(|&p| (hand & t.suits[p as usize]).count_ones() >= minimum)
         .max_by_key(|&p| {
