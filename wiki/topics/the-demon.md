@@ -2,13 +2,18 @@
 title: "The Demon: a fenced CPU PIMC player, seated in the tournament as strategy fusion's measuring stick"
 kind: topic
 first_seen: 2026-10-14
-last_updated: 2026-10-16
+last_updated: 2026-11-17
 status: active
 ---
 
 **STRATEGY-FUSION FENCE.** The Demon is a fenced tournament opponent and a measuring stick
 only. It is never a component of Zeb, Walt or Silas. The ruling is on
 [[strategy-fusion-fence]].
+
+[[demon-counter40-2026-11-17]] is the current auction form. It also bids 40
+over a lower opening from second seat. When that early bid stands, it switches
+to forecast bidding for the rest of the game. It improves against shipped Zeb
+and beats the previous Demon head-to-head.
 
 ## What it is
 

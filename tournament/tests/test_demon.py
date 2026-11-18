@@ -352,6 +352,8 @@ def test_counter_requires_second_seat_and_a_legal_raise(seat_id):
     seat.bait_bid = 40
     seat._bid_seats = {}
     seat.support_forecast = True
+    seat.declarations = STRAIGHT_DECLARATIONS
+    seat.game, seat.hand_no = "counter", 1
     seat._ask = lambda req: {"worlds": 64, "supported": False}
     for position in (1, 2, 3):
         dealer = (seat_id - position - 1) % 4
@@ -370,8 +372,8 @@ def test_adaptive_bait_restores_from_public_auctions(working_tree_demon, tmp_pat
     monkeypatch.setattr(S, "materialize", lambda p: working_tree_demon)
     d = demon("a" * 40, {}, worlds=4, bidder="pimc-counter:4:0.875:0.875",
               bounded_forecast=True, support_forecast=True, bait_bid=40, retire_unraised_bait=True)
-    # A pass-only opponent reliably leaves the opening bid with the Demon.
-    foe = Participant("pass", "arena", {"spec": "random:0+random"})
+    # This opponent never raises our bait. Its cardplay uses per-decision seeds.
+    foe = demon("a" * 40, {}, worlds=4, bidder="bid30")
     records = {p.id: p.to_record() for p in (d, foe)}
     spec = F.FaceoffSpec("marks7", d.id, foe.id, 264, 1, "20261117T000000Z")
     full = _game(spec, records, tmp_path / "full.json")
@@ -398,3 +400,14 @@ def test_bait_retires_only_when_our_early_bid_stands():
         assert seat.bid_spec == initial
     seat.restore_auction(0, 2, 40, 0)
     assert seat.bid_spec == "pimc-over:64:0.875:0.5"
+
+
+def test_workers_must_know_the_new_auction_before_seating_it():
+    from tournament.participants import DEMON_ADAPTIVE_COUNTER40, DEMON_BAIT40_REUSE_N100
+    from tournament.worker import runnable
+
+    new, old = DEMON_ADAPTIVE_COUNTER40, DEMON_BAIT40_REUSE_N100
+    assert new.pin["trees"] == old.pin["trees"] and new.pin["commit"] == old.pin["commit"]
+    records = {p.id: p.to_record() for p in (new, old)}
+    assert runnable(records, {"cargo"}) == [old.id]
+    assert set(runnable(records, {"cargo", "demon-counter-v1"})) == {old.id, new.id}

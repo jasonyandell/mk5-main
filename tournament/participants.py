@@ -264,12 +264,18 @@ def demon(commit: str, trees: dict[str, str], *, worlds: int, margin_tiebreak: b
     if bounded_forecast:
         bid_note += ("Exact incumbent bounds skip losing declaration searches while preserving "
                      "the winning declaration and its count on the same sampled worlds. ")
+    # Old workers interpret unknown bidder strings differently. Only workers
+    # with this auction implementation may seat either new policy.
+    new_auction = bidder.startswith("pimc-counter:") or retire_unraised_bait
+    pin = {"repo": "jasonyandell/mk5-main", "commit": commit, "trees": dict(trees)}
+    if new_auction:
+        pin["auction_commit"] = "7eec74c04bcb1ef41b7a3242e49cce78281bdf61"
     return Participant(
         id=f"demon-pimc-n{worlds}{tb}{suffix}-{commit[:8]}",
         kind="demon",
-        pin={"repo": "jasonyandell/mk5-main", "commit": commit, "trees": dict(trees)},
+        pin=pin,
         config={"worlds": worlds, "margin_tiebreak": margin_tiebreak, "bidder": bidder, **extra},
-        needs=("cargo",),
+        needs=("cargo", "demon-counter-v1") if new_auction else ("cargo",),
         note=(f"STRATEGY-FUSION FENCE: the Demon, classic PIMC. At each play it draws {worlds} "
               f"worlds from its fiber ({sampler_note}; the whole fiber when "
               f"smaller), solves each double dummy (Silas's ClairvoyantSolver, make-or-set of the "
@@ -352,9 +358,17 @@ DEMON_BAIT40_REUSE_N100 = demon("d48909c485dc647ac6bada3577000b5602b95f64",
                                 sampler_note="Walt's completion-count DP, distinct uniform worlds without replacement",
                                 bounded_forecast=True, support_forecast=True, bait_bid=40)
 
+DEMON_ADAPTIVE_COUNTER40 = demon(
+    DEMON_BAIT40_REUSE_N100.pin["commit"], DEMON_BAIT40_REUSE_N100.pin["trees"],
+    worlds=100, bidder="pimc-counter:64:0.875:0.875", bait_bid=40,
+    sampler_note="Walt's completion-count DP, distinct uniform worlds without replacement",
+    bounded_forecast=True, support_forecast=True, retire_unraised_bait=True,
+)
+
 ROSTER = (WALT, FAIR_WALT, ZEB_010, ZEB_020, EQ_N10, DEMON_N100, DEMON_FAST_N100, DEMON_N400,
           DEMON_DISTINCT_N100, DEMON_DISTINCT_N1600, DEMON_OVERCALL_N100,
-          ZEB_040_MATCH, ZEB_041_CONTESTED, DEMON_BAIT40_N100, DEMON_BAIT40_REUSE_N100)
+          ZEB_040_MATCH, ZEB_041_CONTESTED, DEMON_BAIT40_N100, DEMON_BAIT40_REUSE_N100,
+          DEMON_ADAPTIVE_COUNTER40)
 ANCHOR = FAIR_WALT.id
 
 # Withdrawn from scheduling, records kept: their faceoffs still count in the rating fit, so the
