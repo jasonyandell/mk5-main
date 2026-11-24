@@ -1,8 +1,15 @@
 # Texas 42
 
-Free, open tools for the Texas domino game 42: computer players that never look at another
-seat's hand, a language for asking exact questions about a position, a public ladder, and the
-research behind them. Everything runs offline. Built on weekends for the love of the game.
+Free, open tools and research for the Texas domino game 42: computer players that never look
+at another seat's hand, a language for asking exact questions about a position, a public
+ladder, and a long research log on what it takes to learn the game. Everything runs offline.
+Built on weekends for the love of the game. CC0 / MIT.
+
+Sister repositories: [texas-42](https://github.com/jasonyandell/texas-42) (the mathematics of
+42 as an imperfect-information game, proved in Lean) ·
+[plunge](https://github.com/jasonyandell/plunge) (the free mobile web game) ·
+[the-table](https://github.com/jasonyandell/the-table) (where players from different projects
+meet).
 
 ## Building a 42 game? Start here
 
@@ -16,109 +23,102 @@ research behind them. Everything runs offline. Built on weekends for the love of
 | Data and trained nets | Every dataset and model the project has generated, public. | [huggingface-assets](wiki/topics/huggingface-assets.md) |
 | To see it played | A free mobile web game, no login. | [plunge](https://github.com/jasonyandell/plunge) |
 
-The proofs live next door: [texas-42](https://github.com/jasonyandell/texas-42) holds the
-mathematics of 42 as an imperfect-information game, checked in Lean.
+## What is being worked on
 
-The rest of this page describes the repository itself: the TypeScript game engine and the
-research history, including the finished oracle era.
+The north star is to learn 42 as completely as it can be learned: policies, beliefs and
+dynamics, from players that only ever see what a seat can see. Several streams run side by
+side, each with its own pages in the [wiki](wiki/index.md) and its data on
+[Hugging Face](wiki/topics/huggingface-assets.md).
 
-## Quick Start
+**The players: Walt and Zeb.** Walt samples the deals a seat cannot tell apart and plans one
+line across all of them; Zeb is that player with a small integer field net playing the other
+seats, compiled to WebAssembly. Current work is Walt bidding for itself
+([walt-bidder](wiki/experiments/walt-bidder-2026-11-02.md)).
+[`scenario/`](scenario/) · [`zeb/`](zeb/README.md) · [zeb](wiki/entities/zeb.md)
 
-```bash
-npm install
-npm run dev       # Development server
-npm test          # Unit tests (Vitest)
-npm run test:e2e  # Playwright E2E tests
-npm run typecheck # TypeScript validation
+**Silas and the exact player.** Silas is a typed relational language over the worlds a seat
+cannot tell apart, in Rust. On top of it sits an exact information-state player: under a fixed
+model of how the other three play, what is the best move here, computed exactly rather than
+sampled. `silas-metal/` moves the counting onto Apple GPUs, byte-equal to the CPU; the
+trick-1 ladder is the current frontier.
+[`silas/`](silas/README.md) · [`silas-metal/`](silas-metal/) ·
+[silas](wiki/entities/silas.md) · [exact-gpu](wiki/experiments/exact-gpu-2026-10-22.md) ·
+[trick-1 ladder](wiki/experiments/trick1-ladder-2026-10-22.md)
+
+**Lem: interpretability.** Can a net that plays 42 well be read? Lem trains small nets and
+reads them: neuron audits of Zeb's field net, a field net written by hand where every weight
+is a rule, and blind weight reads with predictions sealed before grading. Negative results are
+kept and published.
+[`lem/`](lem/) · [lem-the-teacher](wiki/topics/lem-the-teacher.md) ·
+[blind read](wiki/experiments/lem-blind-read-2026-11-03.md) ·
+[hand-written net](wiki/experiments/lem-hand-written-field-net-2026-11-02.md)
+
+**The Book.** Dennis Roberson's *Winning 42* is treated as the authority: when the book's
+advice fails to measure as better, the measurement is the suspect. This stream turns the
+book's claims into detectors and played-out lines, and covers the assumptions the book leaves
+implicit. [`w42/`](w42/README.md) · [book-authority](wiki/topics/book-authority.md) ·
+[book-assumptions](wiki/topics/book-assumptions.md)
+
+**The ladder and the Demon.** Every player here is seated on an append-only, Bradley–Terry
+ladder with paired deals and pre-registered trials. The Demon is a CPU sampling player that
+is allowed to reason per-deal; it is fenced off as a measuring stick and never becomes part
+of Walt, Zeb or Silas ([the fence](wiki/topics/strategy-fusion-fence.md)).
+[`tournament/`](tournament/) · [tournament](wiki/topics/tournament.md) ·
+[the-demon](wiki/topics/the-demon.md)
+
+**History.** Earlier eras live on in the tree and the wiki: a GPU oracle solver and E[Q]
+labels (`forge/`), the Gus transformer (`gus/`), the Champion and Jud belief-state players
+(`champion/`, `arena/`), Otis (`otis/`), and LLM players on small open models (`burl/`). Start
+at [the-wall](wiki/topics/the-wall.md) for the central question, or [the log](wiki/log.md)
+for what happened when.
+
+## Repository map
+
+```
+src/            TypeScript game engine: pure core, rule layers, multiplayer, Svelte UI
+scenario/       Walt, the scenario player (CC0) and Zeb's layer on it (MIT)
+zeb/            Zeb: Rust → WebAssembly, published as @jasonyandell/zeb
+silas/          Silas: the query language and the exact player (Rust)
+silas-metal/    Silas counting on Apple GPUs (Rust + Metal)
+lem/            Interpretability: probes, audits, hand-written nets
+w42/            Winning 42 claim validation
+tournament/     The ladder, seats, the fenced Demon
+arena/          Full-game evaluation (auctions, marks to 7)
+walt/ forge/ gus/ champion/ otis/ burl/   earlier research lines
+wiki/           The knowledge wiki: start at wiki/index.md
+docs/           Operational references and dated evidence
 ```
 
-## The Knowledge Wiki
+## The engine
 
-The project's full history and current state — every architecture decision, experiment,
-and design concept — lives in a backlinked knowledge wiki under [`wiki/`](wiki/index.md).
-Start at [the-wall](wiki/topics/the-wall.md) (the project's central question) or the hubs:
-[texas-42](wiki/entities/texas-42.md) (the game itself),
-[engine](wiki/entities/engine.md), [forge](wiki/entities/forge.md),
-[champion](wiki/entities/champion.md).
+The game engine is built around one transformation, `STATE → ACTION → NEW STATE`.
 
-## Architecture
-
-The entire system is built around one transformation:
-
-```
-STATE → ACTION → NEW STATE
-```
-
-**Event sourcing** — `state = replayActions(config, history)`. Actions are truth, state is
-derived. Every game is replayable, shareable via compressed URL, and deterministically
-testable.
-
-**Unified Layer system** — composable layers provide both execution rules and action
-generation on two orthogonal surfaces. Nello overrides `isTrickComplete` for 3-player
-tricks; Tournament filters special bids; Speed annotates forced moves. Zero conditional
-logic in executors — they delegate to `rules.method()` and trust the result.
-
-**Capability-based multiplayer** — permission tokens (`act-as-player`, `observe-hands`)
-replace identity checks. The server validates everything; the client is intentionally dumb —
-it receives a pre-computed `GameView` and displays it without importing game logic.
+- **Event sourcing.** `state = replayActions(config, history)`. Every game is replayable,
+  shareable by URL, and deterministically testable.
+- **Rule layers.** Composable layers supply both execution rules and legal actions: Nello
+  overrides trick completion for three players, Tournament filters special bids. Executors
+  hold no variant conditionals.
+- **Capability-based multiplayer.** Permission tokens (`act-as-player`, `observe-hands`)
+  instead of identity checks; the client receives a pre-computed view and imports no game
+  logic, and guardrail tests check no hidden state leaks to it.
 
 Deep dives: [engine-architecture](wiki/topics/engine-architecture.md) ·
 [layer-system](wiki/topics/layer-system.md) ·
 [multiplayer-pattern](wiki/topics/multiplayer-pattern.md) ·
-[suit-algebra-spec](wiki/topics/suit-algebra-spec.md) (the algebra that makes the rules fast)
-
-## The ML Pipeline
-
-| Stage | What | Where |
-|-------|------|-------|
-| **Oracle** | GPU backward-induction solver — exact minimax values for the full play phase of any deal | `forge/oracle/`, [the-oracle](wiki/topics/the-oracle.md) |
-| **E[Q]** | Expectation over sampled hidden worlds — value under imperfect information | `forge/eq/`, [expected-q-value](wiki/topics/expected-q-value.md) |
-| **Gus** | Multi-head transformer distilled from the oracle: policy, value, belief | `gus/`, [gus](wiki/entities/gus.md) |
-| **Champion** | The unification target: one belief-state player that bids and plays full games to 7 marks | `champion/`, `arena/`, [champion](wiki/entities/champion.md), [jud](wiki/entities/jud.md) |
-
-The [w42](wiki/entities/w42.md) workstream validates the strategy claims of Dennis
-Roberson's *Winning 42* against oracle ground truth.
-
-## Project Structure
-
-```
-src/                 TypeScript game engine (pure core, layers, multiplayer, UI)
-forge/               ML pipeline: oracle solver, E[Q], training, analysis, models
-gus/                 Oracle-distillation student (multi-head transformer)
-champion/            Unified belief-state player + evidence artifacts
-arena/               Full-game evaluation harness (auctions, marks to 7)
-w42/                 Winning 42 book-validation artifacts
-wiki/                The knowledge wiki (start at wiki/index.md)
-docs/                Operational references and dated evidence artifacts
-scratch/             Gitignored scratch space
-```
-
-## Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| **Frontend** | Svelte 5, TypeScript, Vite, Tailwind CSS, DaisyUI |
-| **Architecture** | Event sourcing, immutable state, pure functions |
-| **Testing** | Vitest, Playwright, architectural guardrail tests |
-| **ML** | PyTorch, Lightning, HuggingFace Hub, Weights & Biases |
-| **Compute** | Apple Silicon (MPS), Modal (cloud GPU), Vast.ai |
-
-## Testing
+[suit-algebra-spec](wiki/topics/suit-algebra-spec.md)
 
 ```bash
-npm test              # Unit tests
-npm run test:e2e      # Playwright E2E tests
-npm run typecheck     # TypeScript strict mode
-npm run check         # Svelte type checking
-npm run lint          # ESLint
-npm run test:all      # Everything
+npm install
+npm run dev        # development server
+npm test           # unit tests (Vitest)
+npm run test:e2e   # Playwright
+npm run test:all   # typecheck, lint, everything
+cargo test --manifest-path silas/Cargo.toml   # Silas
 ```
 
-Architectural guardrail tests enforce invariants automatically — no-bypass (imports can't
-skip the GameRules interface), projection-security (no hidden state leaks to clients),
-rule-contracts, and no-backwards-compat (no `@deprecated`, no legacy shims — this is a
-greenfield project and we keep it that way). See
-[engine-testing-patterns](wiki/topics/engine-testing-patterns.md).
+**Stack:** TypeScript, Svelte 5, Vite · Rust, WebAssembly, Metal · Python, PyTorch ·
+Hugging Face for data and models · Lean next door in
+[texas-42](https://github.com/jasonyandell/texas-42).
 
 ## License
 
